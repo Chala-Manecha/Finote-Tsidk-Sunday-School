@@ -1,0 +1,68 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { fetchDeptSummaries } from '@/lib/money-data';
+import { DEPT_NAME, MONEY_STATUS, STATUS_PILL, formatBirr } from '@/lib/constants';
+import { formatEc } from '@/lib/ethiopian-calendar';
+import { DeptMoneySummaryTable } from '@/components/dept-money-summary';
+import { PrintButton } from '@/components/print-button';
+
+export default async function FinanceTracking({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ dept: string }>;
+  searchParams: Promise<{ d?: string }>;
+}) {
+  const { dept } = await params;
+  if (dept !== 'finance') notFound();
+  const { d } = await searchParams;
+  const supabase = await createClient();
+  const { rows, requests } = await fetchDeptSummaries(supabase);
+  const selfTotal = rows.reduce((s, r) => s + r.self_contributed, 0);
+  const refundTotal = rows.reduce((s, r) => s + r.refund, 0);
+  const detail = d ? requests.filter((r) => r.dept === d) : [];
+
+  return (
+    <>
+      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+        <h2 className="section" style={{ margin: 0 }}>የገንዘብ ክትትል</h2>
+        <PrintButton />
+      </div>
+      <div className="stat-cards">
+        <div className="stat-card"><b>{formatBirr(selfTotal)}</b>ጠቅላላ ከራስ ወጪ</div>
+        <div className="stat-card"><b>{formatBirr(refundTotal)}</b>ጠቅላላ ተመላሽ</div>
+      </div>
+      <DeptMoneySummaryTable rows={rows} detailHref={(x) => `/staff/finance/tracking?d=${x}`} />
+
+      {d && (
+        <>
+          <h2 className="section">
+            {DEPT_NAME[d]} — ዝርዝር <Link className="link small no-print" href="/staff/finance/tracking">ዝጋ</Link>
+          </h2>
+          {detail.map((r) => (
+            <div key={r.id} className="card" style={{ marginBottom: 12 }}>
+              <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+                <b>{r.reason}</b>
+                <span className={`pill ${STATUS_PILL[r.status]}`}>{MONEY_STATUS[r.status]}</span>
+              </div>
+              <p className="small muted" style={{ margin: '4px 0' }}>
+                የጸደቀ {formatBirr(r.amount)} · የወጣ {formatBirr(r.spent)} · ተመላሽ {formatBirr(r.refund)} · ከራስ ወጪ {formatBirr(r.self_contributed)}
+              </p>
+              {r.lines.length > 0 ? (
+                <table>
+                  <tbody>
+                    {r.lines.map((l) => (
+                      <tr key={l.id}><td>{formatEc(l.spent_on)}</td><td className="num">{formatBirr(l.amount)}</td><td>{l.reason}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : <p className="small muted">የወጪ መስመር አልተመዘገበም።</p>}
+            </div>
+          ))}
+          {detail.length === 0 && <p className="muted">የጸደቀ ጥያቄ የለም።</p>}
+        </>
+      )}
+    </>
+  );
+}

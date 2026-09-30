@@ -56,3 +56,34 @@ export const STAFF_EMAIL_DOMAIN = process.env.NEXT_PUBLIC_STAFF_EMAIL_DOMAIN || 
 export const usernameToEmail = (username: string) =>
   `${username.trim().toLowerCase()}@${STAFF_EMAIL_DOMAIN}`;
 export const USERNAME_RE = /^[a-z0-9._-]{3,32}$/;
+
+export type EventStatus = 'pending' | 'approved' | 'rejected';
+export const EVENT_STATUS: Record<EventStatus, string> = {
+  pending: 'በመጠባበቅ ላይ',
+  approved: 'ጸደቀ',
+  rejected: 'ተከልክሏል',
+};
+
+export type MoneyStatus = 'pending' | 'approved' | 'rejected' | 'paid' | 'withdrawn';
+export const MONEY_STATUS: Record<MoneyStatus, string> = {
+  pending: 'በመጠባበቅ ላይ',
+  approved: 'ጸደቀ',
+  rejected: 'ተከልክሏል',
+  paid: 'ተከፈለ',
+  withdrawn: 'ተሰርዟል',
+};
+
+export type EarningStatus = 'pending' | 'approved' | 'rejected';
+export const EARNING_STATUS: Record<EarningStatus, string> = {
+  pending: 'በመጠባበቅ ላይ',
+  approved: 'ጸደቀ',
+  rejected: 'ተከልክሏል',
+};
+
+/** Status → pill colour class */
+export const STATUS_PILL: Record<string, string> = {
+  pending: 'half', approved: 'present', paid: 'present', rejected: 'absent', withdrawn: '',
+};
+
+export const formatBirr = (n: number | string | null | undefined) =>
+  n == null ? '—' : `${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ብር`;

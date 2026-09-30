@@ -167,3 +167,9 @@ td a.link, a.link { color: var(--maroon); border-bottom: 1px dotted var(--maroon
   .topbar, .dept-tab-nav, .no-print, .btn { display: none !important; }
   body { background: #fff; color: #000; }
 }
+
+.subtabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+.num { text-align: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tfoot td { font-weight: 700; border-top: 2px solid var(--maroon); }

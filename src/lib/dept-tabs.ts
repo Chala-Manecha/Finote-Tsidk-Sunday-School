@@ -6,8 +6,8 @@ export type Tab = { slug: string; label: string; ready: boolean };
 const shared = (dept: DeptCode): Tab[] => [
   { slug: 'members', label: 'የክፍሉ ንዑሳን', ready: true },
   { slug: 'property', label: 'የክፍሉ ንብረት', ready: false },
-  ...(dept === 'finance' ? [] : [{ slug: 'money', label: 'የገንዘብ አስተዳደር', ready: false }]),
-  ...(dept === 'schedule' ? [] : [{ slug: 'request-event', label: 'ቀጠሮ ላክ', ready: false }]),
+  ...(dept === 'finance' ? [] : [{ slug: 'money', label: 'የገንዘብ አስተዳደር', ready: true }]),
+  ...(dept === 'schedule' ? [] : [{ slug: 'request-event', label: 'ቀጠሮ ላክ', ready: true }]),
   { slug: 'feedback', label: 'አስተያየቶች', ready: false },
 ];
 
@@ -15,6 +15,7 @@ const shared = (dept: DeptCode): Tab[] => [
 const specific: Record<DeptCode, Tab[]> = {
   office: [
     { slug: 'roster', label: 'የአባላት ዝርዝር', ready: true },
+    { slug: 'money-approvals', label: 'የገንዘብ ጥያቄ ማጸደቂያ', ready: true },
     { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: false },
     { slug: 'photos', label: 'ዝግጅት ፎቶዎች', ready: false },
     { slug: 'history', label: 'ታሪካችን', ready: false },
@@ -36,19 +37,20 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'duty', label: 'አባል መድብ', ready: false },
     { slug: 'all-duties', label: 'ሁሉም ምደባዎች', ready: false },
   ],
-  schedule: [{ slug: 'events', label: 'ቀጠሮዎች', ready: false }],
+  schedule: [{ slug: 'events', label: 'ቀጠሮዎች', ready: true }],
   finance: [
-    { slug: 'earnings', label: 'የተገኘ ገንዘብ ለማጸደቅ', ready: false },
-    { slug: 'requests', label: 'የገንዘብ ጥያቄዎች', ready: false },
-    { slug: 'tracking', label: 'የገንዘብ ክትትል', ready: false },
+    { slug: 'requests', label: 'የገንዘብ ጥያቄዎች', ready: true },
+    { slug: 'earnings', label: 'የተገኘ ገንዘብ ለማጸደቅ', ready: true },
+    { slug: 'tracking', label: 'የገንዘብ ክትትል', ready: true },
   ],
   development: [
     { slug: 'sale-items', label: 'የሽያጭ ዕቃዎች', ready: false },
     { slug: 'duty', label: 'አባል መድብ', ready: false },
   ],
   audit: [
+    { slug: 'contributions', label: 'የክፍላት አስተዋጽኦ', ready: true },
+    { slug: 'money-review', label: 'የገንዘብ ጥያቄዎች ክትትል', ready: true },
     { slug: 'reports', label: 'ሪፖርቶች', ready: false },
-    { slug: 'contributions', label: 'የክፍላት አስተዋጽኦ', ready: false },
   ],
   education: [
     { slug: 'attendance', label: 'ክትትል መያዝ', ready: true },

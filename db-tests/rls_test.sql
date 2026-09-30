@@ -182,4 +182,45 @@ select pg_temp.must_equal((select count(*) from public.member_departments md joi
 select pg_temp.must_equal((select count(*) from public.members where full_name = 'ሄኖን ጫላ' and work_status = 'student' and prior_school is null), 1, 'save_member updates');
 reset role;
 
+-- ---------- phase 2: scheduling ----------
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+-- a dept can't self-approve on insert
+select pg_temp.must_fail($q$insert into public.events (title, event_date, event_time, dept, status) values ('x', '2026-10-05', '10:00', 'mezmur', 'approved')$q$);
+-- nor propose for another dept
+select pg_temp.must_fail($q$insert into public.events (title, event_date, event_time, dept) values ('x', '2026-10-05', '10:00', 'hr')$q$);
+insert into public.events (id, title, event_date, event_time, dept)
+  values ('30000000-0000-0000-0000-000000000002', 'ልምምድ', '2026-10-05', '10:00', 'mezmur');
+-- requester withdraws its pending event
+delete from public.events where id = '30000000-0000-0000-0000-000000000002';
+select pg_temp.must_equal((select count(*) from public.events where id = '30000000-0000-0000-0000-000000000002'), 0, 'requester withdraws pending event');
+-- requester can't delete an approved one
+delete from public.events where id = '30000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select count(*) from public.events where id = '30000000-0000-0000-0000-000000000001'), 1, 'requester cannot delete approved event');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a6', false);
+insert into public.events (title, event_date, event_time, dept, status) values ('ጸሎት', '2026-10-05', '10:00', 'schedule', 'approved');
+update public.events set title = 'ወረብ ጥናት (ተቀይሯል)' where id = '30000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select count(*) from public.events where title like '%ተቀይሯል%'), 1, 'schedule edits any event');
+reset role;
+
+-- ---------- phase 2: earnings + withdraw ----------
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+insert into public.earnings (id, dept, amount, source, earned_on, submitted_by)
+  values ('40000000-0000-0000-0000-000000000001', 'mezmur', 500, 'ሽያጭ', '2026-09-28', '00000000-0000-0000-0000-0000000000a2');
+select pg_temp.must_fail($q$update public.earnings set status = 'approved' where id = '40000000-0000-0000-0000-000000000001'$q$);
+insert into public.money_requests (id, dept, amount, reason, requested_by)
+  values ('20000000-0000-0000-0000-000000000002', 'mezmur', 200, 'ወረቀት', '00000000-0000-0000-0000-0000000000a2');
+update public.money_requests set status = 'withdrawn' where id = '20000000-0000-0000-0000-000000000002';
+select pg_temp.must_fail($q$update public.money_requests set status = 'pending' where id = '20000000-0000-0000-0000-000000000002'$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+-- office has no update rights on earnings at all: RLS silently matches 0 rows
+update public.earnings set status = 'approved' where id = '40000000-0000-0000-0000-000000000001';
+select pg_temp.must_fail($q$update public.money_requests set status = 'approved' where id = '20000000-0000-0000-0000-000000000002'$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+select pg_temp.must_equal((select count(*) from public.earnings where status = 'approved'), 0, 'office cannot approve earning');
+update public.earnings set status = 'approved' where id = '40000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select count(*) from public.earnings where status = 'approved' and decided_by is not null), 1, 'finance approves earning');
+reset role;
+
 \echo ALL RLS TESTS PASSED
