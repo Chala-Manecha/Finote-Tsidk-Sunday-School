@@ -252,4 +252,38 @@ select pg_temp.must_equal((select count(*) from public.wereb_items), 1, 'anon re
 select pg_temp.must_fail('select * from public.duty_assignments');
 reset role;
 
+-- ---------- phase 4: office content, feedback, property, education ----------
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+insert into public.event_photos (image_path, caption) values ('photos/x.jpg', 'x');
+insert into public.history_items (category, media_type, media_path) values ('meskel', 'photo', 'history/x.jpg');
+insert into public.dept_assignees (dept, full_name, sex) values ('mezmur', 'ሀ', 'male')
+  on conflict (dept) do update set full_name = excluded.full_name;
+insert into public.mahiberat (association_name, event_date) values ('የማርያም ማኅበር', '2026-10-20');
+insert into public.prayer_schedule (program, days, times) values ('ምዕራፍ', '{1,3}', '{ማታ 11:00}');
+insert into public.dept_property (name, qty, condition, owner_dept) values ('ከበሮ', 3, 'old', 'mezmur');
+select pg_temp.must_fail($q$insert into public.abnet_sessions (subjects, days, times, teacher) values ('{ቅኔ}', '{1}', '{x}', 'y')$q$);
+select pg_temp.must_fail($q$insert into public.sale_items (name, qty) values ('x', 1)$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail($q$insert into public.event_photos (image_path) values ('photos/y.jpg')$q$);
+select pg_temp.must_fail($q$insert into public.dept_property (name, qty, condition, owner_dept) values ('x', 1, 'new', 'mezmur')$q$);
+select pg_temp.must_equal((select count(*) from public.dept_property where owner_dept = 'mezmur'), 1, 'mezmur sees its property');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+insert into public.dept_property (name, qty, condition, owner_dept) values ('ካዝና', 1, 'new', 'finance');
+select pg_temp.must_fail($q$insert into public.dept_property (name, qty, condition, owner_dept) values ('x', 1, 'new', 'hr')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+insert into public.abnet_sessions (subjects, days, times, teacher) values ('{ቅኔ,ዜማ}', '{1,3}', '{ጠዋት 12:00 ጀምሮ}', 'የኔታ አእምሮ');
+insert into public.edu_plan (course_name) values ('ሥርዓተ ቤተክርስቲያን');
+insert into public.course_sessions (name, days) values ('ዶግማ', '{0}');
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select pg_temp.must_equal((select count(*) from public.abnet_sessions), 1, 'anon reads abnet');
+select pg_temp.must_equal((select count(*) from public.edu_plan), 1, 'anon reads plan');
+select pg_temp.must_equal((select count(*) from public.mahiberat), 1, 'anon reads mahiberat');
+select pg_temp.must_equal((select count(*) from public.event_photos), 1, 'anon reads photos');
+select pg_temp.must_fail('select * from public.dept_property');
+select pg_temp.must_fail('select * from public.sale_items');
+reset role;
+
 \echo ALL RLS TESTS PASSED

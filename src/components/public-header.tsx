@@ -3,8 +3,14 @@ import { SCHOOL_NAME } from '@/lib/constants';
 
 // Public top nav. Items appear here as each public page is built.
 const NAV = [
+  { href: '/course', label: 'ኮርስ' },
+  { href: '/abnet', label: 'አብነት' },
   { href: '/zema', label: 'ዜማ' },
+  { href: '/history', label: 'ታሪካችን' },
   { href: '/roster', label: 'የአባላት ምደባ' },
+  { href: '/mahiberat', label: 'ማኅበራት' },
+  { href: '/prayer', label: 'የጸሎት መርኀ ግብራት' },
+  { href: '/feedback', label: 'አስተያየት ለመስጠት' },
 ];
 
 export function PublicHeader() {

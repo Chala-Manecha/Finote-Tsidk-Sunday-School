@@ -185,3 +185,29 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--maroon); }
 .cat-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
 .cat-tabs a { padding: 5px 12px; border-radius: 14px; border: 1.5px solid var(--maroon); font-size: .82rem; }
 .cat-tabs a.active { background: var(--maroon); color: var(--cream); }
+
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.photo-tile { margin: 0; background: var(--cream-2); border-radius: 6px; overflow: hidden; }
+.photo-tile img { width: 100%; height: 130px; object-fit: cover; display: block; }
+.photo-tile figcaption { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 6px 8px; font-size: .8rem; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); }
+
+.history-layout { display: flex; gap: 20px; align-items: flex-start; margin-top: 12px; }
+@media (max-width: 760px) { .history-layout { flex-direction: column; } .history-layout .dept-tab-nav { flex-direction: row; overflow-x: auto; width: 100%; } }
+.history-tile > summary { cursor: pointer; display: block; }
+.history-tile > summary img, .history-tile > summary video { width: 100%; height: 130px; object-fit: cover; display: block; }
+.history-tile > summary span { display: block; padding: 6px 8px; }
+.history-tile[open] { grid-column: 1 / -1; }
+.history-tile[open] > summary { display: none; }
+.history-full { padding: 10px; }
+
+.marquee { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); }
+.marquee .track { display: flex; gap: 14px; width: max-content; animation: marquee 40s linear infinite; }
+.marquee:hover .track { animation-play-state: paused; }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee a { width: 200px; height: 140px; flex-shrink: 0; border-radius: 6px; overflow: hidden; position: relative; display: block; box-shadow: 0 2px 0 var(--gold); }
+.marquee img { width: 100%; height: 100%; object-fit: cover; }
+.marquee span { position: absolute; inset: auto 0 0 0; padding: 6px 8px; font-size: .78rem; color: #fff; background: linear-gradient(0deg, rgba(0,0,0,.6), transparent); }
+@media (prefers-reduced-motion: reduce) { .marquee .track { animation: none; } }
+a.stat-card { display: block; cursor: pointer; }
+a.stat-card:hover, a.stat-card.active { background: var(--gold-light); }

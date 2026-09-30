@@ -119,3 +119,22 @@ export const SONG_CATEGORIES = [
 export const SONG_CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   SONG_CATEGORIES.map((c) => [c.key, c.label]),
 );
+
+// ---------- Office-managed public schedules ----------
+export const PRAYER_PROGRAMS = ['መሐረነ አብ', 'መዝሙረ ዳዊት', 'የዘወትር ጸሎት', 'ምዕራፍ'] as const;
+export const MAHIBER_NAMES = ['የቅዱስ ሩፋኤል ማኅበር', 'የማርያም ማኅበር', 'የዮሐንስ ማኅበር', 'የአቡነ አረጋዊ ማኅበር'] as const;
+
+// ---------- Education ----------
+export const ABNET_SUBJECTS = ['መልእክተ ዮሐንስ', 'ውዳሴ ማርያም', 'መዝሙረ ዳዊት', 'ቅዳሴ', 'ዜማ', 'አቋቋም', 'ቅኔ'] as const;
+export const ABNET_TIMES = ['ጠዋት 12:00 ጀምሮ', 'ጠዋት 3:00 ጀምሮ', 'ማታ 10:00 ጀምሮ', 'ማታ 11:00 ጀምሮ'] as const;
+export const ABNET_TEACHERS = ['የኔታ አእምሮ', 'የኔታ ይባቤ'] as const;
+/** Day-of-week order used in pickers (Monday first); values are JS weekday indexes (0 = Sunday). */
+export const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
+
+// ---------- Property ----------
+export type ItemCondition = 'new' | 'old' | 'refurbished' | 'unusable';
+export const ITEM_CONDITION: Record<ItemCondition, string> = {
+  new: 'አዲስ', old: 'አሮጌ', refurbished: 'የታደሰ', unusable: 'የማያገለግል',
+};
+
+export const FEEDBACK_STATUS = { unseen: 'አልታየም', seen: 'ታይቷል' } as const;
