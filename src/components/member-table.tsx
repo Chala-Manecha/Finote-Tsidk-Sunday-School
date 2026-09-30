@@ -1,0 +1,145 @@
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
+import { ageFromIso } from '@/lib/ethiopian-calendar';
+import {
+  DEPARTMENTS, DEPT_NAME, MEMBER_STATUS, SEX, WORK_STATUS, TITLES,
+} from '@/lib/constants';
+import { PrintButton } from './print-button';
+
+type Filters = { q?: string; status?: string; work?: string; dept?: string };
+
+type Row = {
+  id: string;
+  full_name: string;
+  title: keyof typeof TITLES | null;
+  sex: keyof typeof SEX;
+  dob: string | null;
+  phone: string | null;
+  work_status: keyof typeof WORK_STATUS;
+  member_status: keyof typeof MEMBER_STATUS;
+  all_depts: { dept: string }[];
+};
+
+/**
+ * Member list used by: a department's የክፍሉ ንዑሳን (fixedDept),
+ * HR's all-member view and ጽሕፈት ቤት's የአባላት ዝርዝር (filterable dept).
+ */
+export async function MemberTable({
+  basePath,
+  filters,
+  fixedDept,
+  linkToDetail,
+}: {
+  basePath: string;
+  filters: Filters;
+  fixedDept?: string;
+  linkToDetail: boolean;
+}) {
+  const supabase = await createClient();
+  const dept = fixedDept ?? filters.dept;
+
+  let query = supabase
+    .from('members')
+    .select(
+      dept
+        ? 'id, full_name, title, sex, dob, phone, work_status, member_status, all_depts:member_departments(dept), f:member_departments!inner(dept)'
+        : 'id, full_name, title, sex, dob, phone, work_status, member_status, all_depts:member_departments(dept)',
+    )
+    .eq('is_active', true)
+    .order('full_name');
+
+  if (dept) query = query.eq('f.dept', dept);
+  if (filters.q) query = query.ilike('full_name', `%${filters.q}%`);
+  if (filters.status) query = query.eq('member_status', filters.status);
+  if (filters.work) query = query.eq('work_status', filters.work);
+
+  const { data, error } = await query.returns<Row[]>();
+
+  return (
+    <>
+      <form className="toolbar no-print" action={basePath}>
+        <div className="field">
+          <label htmlFor="q">ስም</label>
+          <input id="q" name="q" defaultValue={filters.q} placeholder="ስም ይፈልጉ" />
+        </div>
+        <div className="field">
+          <label htmlFor="status">የአባልነት ሁኔታ</label>
+          <select id="status" name="status" defaultValue={filters.status ?? ''}>
+            <option value="">ሁሉም</option>
+            {Object.entries(MEMBER_STATUS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="work">የስራ ሁኔታ</label>
+          <select id="work" name="work" defaultValue={filters.work ?? ''}>
+            <option value="">ሁሉም</option>
+            {Object.entries(WORK_STATUS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+        </div>
+        {!fixedDept && (
+          <div className="field">
+            <label htmlFor="dept">ክፍል</label>
+            <select id="dept" name="dept" defaultValue={filters.dept ?? ''}>
+              <option value="">ሁሉም ክፍል</option>
+              {DEPARTMENTS.map((d) => (
+                <option key={d.code} value={d.code}>{d.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <button className="btn sm">አጣራ</button>
+        <span style={{ flex: 1 }} />
+        <PrintButton />
+      </form>
+
+      {error && <div className="alert error">{error.message}</div>}
+      <p className="muted small">{data?.length ?? 0} አባላት</p>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>ሙሉ ስም</th>
+              <th>ፆታ</th>
+              <th>ዕድሜ</th>
+              <th>ስልክ</th>
+              <th>የስራ ሁኔታ</th>
+              <th>የአባልነት ሁኔታ</th>
+              <th>የመረጡት ክፍል</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data ?? []).map((m, i) => (
+              <tr key={m.id}>
+                <td>{i + 1}</td>
+                <td>
+                  {m.title ? `${TITLES[m.title]} ` : ''}
+                  {linkToDetail ? (
+                    <Link className="link" href={`/staff/members/${m.id}`}>{m.full_name}</Link>
+                  ) : (
+                    m.full_name
+                  )}
+                </td>
+                <td>{SEX[m.sex]}</td>
+                <td>{ageFromIso(m.dob) ?? '—'}</td>
+                <td dir="ltr">{m.phone ?? '—'}</td>
+                <td>{WORK_STATUS[m.work_status]}</td>
+                <td>{MEMBER_STATUS[m.member_status]}</td>
+                <td className="small">{m.all_depts.map((d) => DEPT_NAME[d.dept]).join('፣ ') || '—'}</td>
+              </tr>
+            ))}
+            {data?.length === 0 && (
+              <tr>
+                <td colSpan={8} className="muted">ምንም አባል አልተገኘም።</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
