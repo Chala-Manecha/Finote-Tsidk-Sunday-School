@@ -152,3 +152,16 @@ export async function flagRequest(_: FormState, fd: FormData): Promise<FormState
   refresh();
   return { ok: 'ተቀምጧል።' };
 }
+
+/** ሒሳብና ንብረት approves a department's spend report — its lines lock after this. */
+export async function approveSpend(id: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from('money_requests')
+    .update({ spend_approved_at: new Date().toISOString() }, { count: 'exact' })
+    .eq('id', id);
+  if (error) return { error: error.message.includes('only') ? 'ፈቃድ የለዎትም።' : error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+}

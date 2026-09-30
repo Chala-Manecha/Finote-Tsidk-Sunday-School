@@ -14,6 +14,9 @@ export default async function EditMemberPage({ params }: { params: Promise<{ id:
     .eq('id', id)
     .maybeSingle();
   if (!m) notFound();
+  const photo_url = m.photo_path
+    ? (await supabase.storage.from('member-docs').createSignedUrl(m.photo_path, 600)).data?.signedUrl ?? null
+    : null;
 
   return (
     <>
@@ -22,7 +25,7 @@ export default async function EditMemberPage({ params }: { params: Promise<{ id:
       </div>
       <h1 className="title">የአባል መረጃ አርም</h1>
       <MemberForm
-        initial={{ ...m, depts: m.member_departments.map((d: { dept: string }) => d.dept) }}
+        initial={{ ...m, photo_url, depts: m.member_departments.map((d: { dept: string }) => d.dept) }}
       />
     </>
   );

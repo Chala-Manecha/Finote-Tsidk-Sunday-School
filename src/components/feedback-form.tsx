@@ -3,7 +3,7 @@ import { useActionState } from 'react';
 import { submitFeedback, type FormState } from '@/lib/actions/feedback';
 import { DEPARTMENTS } from '@/lib/constants';
 
-export function FeedbackForm({ members }: { members: { id: string; full_name: string }[] }) {
+export function FeedbackForm() {
   const [state, action, pending] = useActionState<FormState & { n?: number }, FormData>(
     async (prev, fd) => {
       const res = await submitFeedback(prev, fd);
@@ -15,12 +15,13 @@ export function FeedbackForm({ members }: { members: { id: string; full_name: st
     <form action={action} className="card" key={state.n}>
       <div className="form-grid">
         <div className="field">
-          <label htmlFor="fb-member">ስምዎት <span className="req">*</span></label>
-          <select id="fb-member" name="member_id" required defaultValue="">
-            <option value="" disabled>ስምዎትን ይምረጡ</option>
-            {members.map((m) => <option key={m.id} value={m.id}>{m.full_name}</option>)}
-          </select>
-          <span className="hint">ስምዎ ከሌለ በቢሮ ቁጥር 9 ይመዝገቡ።</span>
+          <label htmlFor="fb-reg">የመመዝገቢያ ቁጥር <span className="req">*</span></label>
+          <input id="fb-reg" name="reg_no" required dir="ltr" placeholder="ፍጽ-0001" autoComplete="off" />
+        </div>
+        <div className="field">
+          <label htmlFor="fb-tg">Telegram username</label>
+          <input id="fb-tg" name="telegram" dir="ltr" placeholder="@username" autoComplete="off" />
+          <span className="hint">ሲመዘገቡ Telegram ካላስገቡ ባዶ ይተዉት።</span>
         </div>
         <div className="field">
           <label htmlFor="fb-dept">አስተያየቱ የሚመለከተው ክፍል <span className="req">*</span></label>
@@ -28,11 +29,6 @@ export function FeedbackForm({ members }: { members: { id: string; full_name: st
             <option value="" disabled>ክፍል ይምረጡ</option>
             {DEPARTMENTS.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
           </select>
-        </div>
-        <div className="field">
-          <label htmlFor="fb-contact">Telegram ወይም ስልክ</label>
-          <input id="fb-contact" name="contact" dir="ltr" placeholder="@username ወይም 09…" />
-          <span className="hint">መልስ እንዲደርስዎ።</span>
         </div>
       </div>
       <div className="field">

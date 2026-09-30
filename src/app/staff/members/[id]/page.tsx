@@ -51,9 +51,11 @@ export default async function MemberDetail({
   const signed = async (path?: string | null) =>
     path ? (await supabase.storage.from('member-docs').createSignedUrl(path, 600)).data?.signedUrl : null;
   const priorUrl = await signed(m.prior_school?.evidence_path);
+  const photoUrl = await signed(m.photo_path);
   const secularUrl = await signed(m.secular_school?.evidence_path);
 
   const rows: [string, React.ReactNode][] = [
+    ['የምዝገባ መለያ ቁጥር', <b key="r">{m.reg_no}</b>],
     ['ፆታ', SEX[m.sex as keyof typeof SEX]],
     ['ማዕረግ', m.title ? TITLES[m.title as keyof typeof TITLES] : '—'],
     ['ሁኔታ', WORK_STATUS[m.work_status as keyof typeof WORK_STATUS]],
@@ -63,7 +65,7 @@ export default async function MemberDetail({
     ['Email', m.email ?? '—'],
     ['Telegram', m.telegram_username ? `@${m.telegram_username}` : '—'],
     ['ክፍለ ከተማ', m.sub_city ?? '—'],
-    ['ቋንቋ', m.language ?? '—'],
+    ['ቋንቋ', (m.languages ?? []).join('፣ ') || '—'],
     ['የግዕዝ ችሎታ', GEEZ_LEVEL[m.geez_level as keyof typeof GEEZ_LEVEL]],
     ['ዜግነት', m.is_ethiopian ? 'ኢትዮጵያዊ' : m.nationality],
     ['ቀድሞ ሰ/ት/ቤት', m.prior_school
@@ -93,6 +95,10 @@ export default async function MemberDetail({
         </div>
       </div>
 
+      {photoUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={photoUrl} alt={m.full_name} className="member-photo" />
+      )}
       <h2 className="section">የምዝገባ መረጃ</h2>
       <div className="table-wrap">
         <table>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SCHOOL_NAME } from '@/lib/constants';
+import { Brand } from '@/components/brand';
 import { createClient } from '@/lib/supabase/server';
 import { LoginForm } from './login-form';
 import { logout } from './actions';
@@ -17,7 +17,7 @@ export default async function LoginPage({
   return (
     <>
       <header className="topbar">
-        <Link href="/" className="brand">{SCHOOL_NAME}</Link>
+        <Brand />
       </header>
       <main className="page">
         <div className="card login-box">

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SCHOOL_NAME } from '@/lib/constants';
+import { Brand } from '@/components/brand';
 
 // Public top nav. Items appear here as each public page is built.
 const NAV = [
@@ -10,13 +10,15 @@ const NAV = [
   { href: '/roster', label: 'የአባላት ምደባ' },
   { href: '/mahiberat', label: 'ማኅበራት' },
   { href: '/prayer', label: 'የጸሎት መርኀ ግብራት' },
+  { href: '/departments', label: 'ክፍሎቻችን' },
+  { href: '/shop', label: 'ለመግዛት' },
   { href: '/feedback', label: 'አስተያየት ለመስጠት' },
 ];
 
 export function PublicHeader() {
   return (
     <header className="topbar">
-      <Link href="/" className="brand">{SCHOOL_NAME}</Link>
+      <Brand />
       <span className="spacer" />
       <nav>
         {NAV.map((n) => <Link key={n.href} href={n.href}>{n.label}</Link>)}

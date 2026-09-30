@@ -170,3 +170,70 @@ export async function deletePrayer(id: string) {
   if (denied(count)) return denied(count)!;
   refresh();
 }
+
+// ---------- Department description PDFs ----------
+export async function saveDeptDoc(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const dept = text(fd, 'dept');
+  if (!(dept in DEPT_NAME)) return { error: 'ክፍል ይምረጡ።' };
+  const file_path = pathIn(fd, 'file', 'docs');
+  if (!file_path) return { error: 'PDF ፋይል ይምረጡ።' };
+  if (!file_path.endsWith('.pdf')) { await removeMedia(file_path); return { error: 'PDF ፋይል ብቻ ይፈቀዳል።' }; }
+  const supabase = await createClient();
+  const { data: old } = await supabase.from('dept_documents').select('file_path').eq('dept', dept).maybeSingle();
+  const { error } = await supabase.from('dept_documents')
+    .upsert({ dept, file_path, file_name: `${DEPT_NAME[dept]}.pdf` }, { onConflict: 'dept' });
+  if (error) { await removeMedia(file_path); return { error: error.message.includes('row-level') ? 'ፈቃድ የለዎትም።' : error.message }; }
+  if (old?.file_path && old.file_path !== file_path) await removeMedia(old.file_path);
+  refresh();
+  return { ok: 'ተጭኗል።' };
+}
+
+export async function deleteDeptDoc(dept: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { data: old } = await supabase.from('dept_documents').select('file_path').eq('dept', dept).maybeSingle();
+  const { error, count } = await supabase.from('dept_documents').delete({ count: 'exact' }).eq('dept', dept);
+  if (error) return { error: error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  await removeMedia(old?.file_path);
+  refresh();
+}
+
+// ---------- Leadership terms (የአመራር ቡድን) ----------
+export async function saveTerm(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const name = text(fd, 'name');
+  const teamNo = text(fd, 'team_no');
+  const team_no = teamNo ? Number(teamNo) : null;
+  const starts_on = text(fd, 'starts_on');
+  const ends_on = text(fd, 'ends_on') || null;
+  if (!name) return { error: 'የቡድኑን ስም ያስገቡ።' };
+  if (team_no !== null && (!Number.isInteger(team_no) || team_no < 1)) return { error: 'የቡድን ቁጥር ትክክል አይደለም።' };
+  if (!DATE_RE.test(starts_on)) return { error: 'የመጀመሪያ ቀን ይምረጡ።' };
+  if (ends_on && (!DATE_RE.test(ends_on) || ends_on < starts_on)) return { error: 'የማብቂያ ቀን ትክክል አይደለም።' };
+  const supabase = await createClient();
+  const { data: active } = await supabase.from('leadership_terms').select('id').eq('is_active', true).maybeSingle();
+  const { error } = await supabase.from('leadership_terms')
+    .insert({ name, team_no, starts_on, ends_on, is_active: !active });
+  if (error) return { error: error.message.includes('row-level') ? 'ፈቃድ የለዎትም።' : error.message };
+  refresh();
+  return { ok: active ? 'ተመዝግቧል። ንቁ ለማድረግ “ንቁ አድርግ” ይጫኑ።' : 'ተመዝግቧል፤ ንቁ ቡድን ሆኗል።' };
+}
+
+export async function setActiveTerm(id: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('set_active_term', { p_id: id });
+  if (error) return { error: error.message.includes('row-level') || error.message.includes('permission') ? 'ፈቃድ የለዎትም።' : error.message };
+  refresh();
+}
+
+export async function deleteTerm(id: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('leadership_terms').delete({ count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+}

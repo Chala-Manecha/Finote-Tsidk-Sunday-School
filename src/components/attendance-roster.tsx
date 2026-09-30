@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { ATTENDANCE_STATUS, type AttendanceStatus } from '@/lib/constants';
 
 export type RosterMember = { id: string; full_name: string };
@@ -10,7 +11,7 @@ type Props = {
   /** New sessions start editable; saved ones start locked (history). */
   startLocked: boolean;
   saveLabel: string;
-  onSave: (statuses: Record<string, AttendanceStatus>) => Promise<{ error?: string } | void>;
+  onSave: (statuses: Record<string, AttendanceStatus>) => Promise<{ error?: string; redirectTo?: string } | void>;
   onDelete?: () => Promise<void>;
 };
 
@@ -20,6 +21,7 @@ export function AttendanceRoster({ members, initial, startLocked, saveLabel, onS
   const [q, setQ] = useState('');
   const [msg, setMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [pending, start] = useTransition();
+  const router = useRouter();
 
   const get = (id: string) => statuses[id] ?? 'absent';
   const counts = useMemo(() => {
@@ -41,9 +43,13 @@ export function AttendanceRoster({ members, initial, startLocked, saveLabel, onS
       const all = Object.fromEntries(members.map((m) => [m.id, get(m.id)]));
       const res = await onSave(all);
       if (res && res.error) setMsg({ kind: 'error', text: res.error });
-      else {
+      else if (res && res.redirectTo) {
+        router.push(res.redirectTo);
+        router.refresh();
+      } else {
         setMsg({ kind: 'ok', text: 'ተቀምጧል።' });
         if (startLocked) setLocked(true);
+        router.refresh();
       }
     });
 

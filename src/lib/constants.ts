@@ -138,3 +138,17 @@ export const ITEM_CONDITION: Record<ItemCondition, string> = {
 };
 
 export const FEEDBACK_STATUS = { unseen: 'አልታየም', seen: 'ታይቷል' } as const;
+
+export type PropertyLogKind = 'added' | 'maintained' | 'lost';
+export const PROPERTY_LOG_KIND: Record<PropertyLogKind, string> = {
+  added: 'ንብረት በመጨመር',
+  maintained: 'ንብረት አያያዝ',
+  lost: 'የጎደለ ንብረት',
+};
+
+// ---------- Anniversary (ምሥረታ) ----------
+/**
+ * Founding date in the Ethiopian calendar. Change here if it needs correcting —
+ * the running anniversary year ("16ኛ ምሥረታ አመት") is computed from it.
+ */
+export const FOUNDED_EC = { year: 2003, month: 9, day: 13 } as const; // ግንቦት 13, 2003 ዓ.ም

@@ -10,6 +10,7 @@ type Filters = { q?: string; status?: string; work?: string; dept?: string };
 
 type Row = {
   id: string;
+  reg_no: string;
   full_name: string;
   title: keyof typeof TITLES | null;
   sex: keyof typeof SEX;
@@ -42,14 +43,17 @@ export async function MemberTable({
     .from('members')
     .select(
       dept
-        ? 'id, full_name, title, sex, dob, phone, work_status, member_status, all_depts:member_departments(dept), f:member_departments!inner(dept)'
-        : 'id, full_name, title, sex, dob, phone, work_status, member_status, all_depts:member_departments(dept)',
+        ? 'id, reg_no, full_name, title, sex, dob, phone, work_status, member_status, all_depts:member_departments(dept), f:member_departments!inner(dept)'
+        : 'id, reg_no, full_name, title, sex, dob, phone, work_status, member_status, all_depts:member_departments(dept)',
     )
     .eq('is_active', true)
     .order('full_name');
 
   if (dept) query = query.eq('f.dept', dept);
-  if (filters.q) query = query.ilike('full_name', `%${filters.q}%`);
+  if (filters.q) {
+    const digits = filters.q.replace(/\D/g, '');
+    query = digits ? query.ilike('reg_no', `%${digits}%`) : query.ilike('full_name', `%${filters.q}%`);
+  }
   if (filters.status) query = query.eq('member_status', filters.status);
   if (filters.work) query = query.eq('work_status', filters.work);
 
@@ -59,8 +63,8 @@ export async function MemberTable({
     <>
       <form className="toolbar no-print" action={basePath}>
         <div className="field">
-          <label htmlFor="q">ስም</label>
-          <input id="q" name="q" defaultValue={filters.q} placeholder="ስም ይፈልጉ" />
+          <label htmlFor="q">ስም / መለያ ቁ.</label>
+          <input id="q" name="q" defaultValue={filters.q} placeholder="ስም ወይም መለያ ቁጥር" />
         </div>
         <div className="field">
           <label htmlFor="status">የአባልነት ሁኔታ</label>
@@ -102,7 +106,7 @@ export async function MemberTable({
         <table>
           <thead>
             <tr>
-              <th>#</th>
+              <th>መለያ ቁ.</th>
               <th>ሙሉ ስም</th>
               <th>ፆታ</th>
               <th>ዕድሜ</th>
@@ -115,7 +119,7 @@ export async function MemberTable({
           <tbody>
             {(data ?? []).map((m, i) => (
               <tr key={m.id}>
-                <td>{i + 1}</td>
+                <td className="small" title={String(i + 1)}>{m.reg_no}</td>
                 <td>
                   {m.title ? `${TITLES[m.title]} ` : ''}
                   {linkToDetail ? (

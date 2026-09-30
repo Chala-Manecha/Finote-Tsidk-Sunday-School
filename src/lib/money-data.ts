@@ -14,6 +14,8 @@ export type RequestRow = {
   requested_at: string;
   decided_at: string | null;
   paid_at: string | null;
+  spend_approved_at: string | null;
+  term_id: string | null;
   spent: number;
   refund: number;          // ተመላሽ
   self_contributed: number; // ከራስ ወጪ
@@ -27,7 +29,7 @@ export async function fetchRequests(
 ): Promise<RequestRow[]> {
   let q = supabase
     .from('money_requests')
-    .select('id, dept, amount, reason, needed_by, status, audit_flag, audit_note, requested_at, decided_at, paid_at, expense_lines(id, amount, reason, spent_on)')
+    .select('id, dept, amount, reason, needed_by, status, audit_flag, audit_note, requested_at, decided_at, paid_at, spend_approved_at, term_id, expense_lines(id, amount, reason, spent_on)')
     .order('requested_at', { ascending: false });
   if (opts.dept) q = q.eq('dept', opts.dept);
   if (opts.statuses) q = q.in('status', opts.statuses);

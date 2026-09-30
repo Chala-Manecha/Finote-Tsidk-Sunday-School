@@ -35,7 +35,7 @@ export default async function DeptMoneyPage({
       <h2 className="section" style={{ marginTop: 0 }}>የገንዘብ አስተዳደር</h2>
       <div className="subtabs no-print">
         {(Object.keys(VIEWS) as View[]).map((k) => (
-          <Link key={k} href={`/staff/${dept}/money?view=${k}`} className={`btn sm ${k === view ? 'green' : 'secondary'}`}>
+          <Link scroll={false} key={k} href={`/staff/${dept}/money?view=${k}`} className={`btn sm ${k === view ? 'green' : 'secondary'}`}>
             {VIEWS[k]}
           </Link>
         ))}
@@ -101,42 +101,53 @@ async function SpendView({ dept, supabase }: { dept: string; supabase: Sb }) {
     <>
       <p className="muted small">
         ተመላሽ እና ከራስ ወጪ በራሱ ይሰላል፦ ወጪው ከጸደቀው ካነሰ ልዩነቱ ተመላሽ ነው፤ ከበለጠ ትርፉ ከራስ ወጪ ነው።
+        ሒሳብና ንብረት ወጪ ሪፖርቱን ካጸደቀ በኋላ መቀየር አይቻልም። ለመክፈት ርዕሱን ይጫኑ።
       </p>
-      {rows.map((r) => (
-        <div key={r.id} className="card" style={{ marginBottom: 14 }}>
-          <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-            <b>{r.reason}</b>
-            <span className={`pill ${STATUS_PILL[r.status]}`}>{MONEY_STATUS[r.status]}</span>
-          </div>
-          <div className="stat-cards">
-            <div className="stat-card"><b>{formatBirr(r.amount)}</b>የጸደቀ</div>
-            <div className="stat-card"><b>{formatBirr(r.spent)}</b>የወጣ</div>
-            <div className="stat-card"><b>{formatBirr(r.refund)}</b>ተመላሽ</div>
-            <div className="stat-card"><b>{formatBirr(r.self_contributed)}</b>ከራስ ወጪ</div>
-          </div>
-          {r.lines.length > 0 && (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>ቀን</th><th>የወጣው መጠን</th><th>የወጣበት ምክንያት</th><th></th></tr></thead>
-                <tbody>
-                  {r.lines.map((l) => (
-                    <tr key={l.id}>
-                      <td>{formatEc(l.spent_on)}</td>
-                      <td>{formatBirr(l.amount)}</td>
-                      <td>{l.reason}</td>
-                      <td>
-                        <ActionButton action={deleteExpense.bind(null, l.id)} label="አጥፋ" className="btn sm danger"
-                          confirmText="ይህን የወጪ መስመር ማጥፋት ይፈልጋሉ?" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {rows.map((r) => {
+        const locked = !!r.spend_approved_at;
+        return (
+          <details key={r.id} className="card spend-card" style={{ marginBottom: 12 }}>
+            <summary>
+              <b>{r.reason}</b>
+              <span className="small muted">{formatBirr(r.amount)} · የወጣ {formatBirr(r.spent)}</span>
+              {locked
+                ? <span className="pill present">✓ ወጪ ሪፖርት ጸድቋል</span>
+                : <span className={`pill ${STATUS_PILL[r.status]}`}>{MONEY_STATUS[r.status]}</span>}
+            </summary>
+            <div className="stat-cards">
+              <div className="stat-card"><b>{formatBirr(r.amount)}</b>የጸደቀ</div>
+              <div className="stat-card"><b>{formatBirr(r.spent)}</b>የወጣ</div>
+              <div className="stat-card"><b>{formatBirr(r.refund)}</b>ተመላሽ</div>
+              <div className="stat-card"><b>{formatBirr(r.self_contributed)}</b>ከራስ ወጪ</div>
             </div>
-          )}
-          <div style={{ marginTop: 12 }}><ExpenseForm requestId={r.id} /></div>
-        </div>
-      ))}
+            {r.lines.length > 0 && (
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>ቀን</th><th>የወጣው መጠን</th><th>የወጣበት ምክንያት</th>{!locked && <th />}</tr></thead>
+                  <tbody>
+                    {r.lines.map((l) => (
+                      <tr key={l.id}>
+                        <td>{formatEc(l.spent_on)}</td>
+                        <td>{formatBirr(l.amount)}</td>
+                        <td>{l.reason}</td>
+                        {!locked && (
+                          <td>
+                            <ActionButton action={deleteExpense.bind(null, l.id)} label="አጥፋ" className="btn sm danger"
+                              confirmText="ይህን የወጪ መስመር ማጥፋት ይፈልጋሉ?" />
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {locked
+              ? <p className="small muted" style={{ marginTop: 10 }}>ሒሳብና ንብረት ይህን ወጪ ሪፖርት አጽድቋል፤ ከዚህ በኋላ መቀየር አይቻልም።</p>
+              : <div style={{ marginTop: 12 }}><ExpenseForm requestId={r.id} /></div>}
+          </details>
+        );
+      })}
     </>
   );
 }

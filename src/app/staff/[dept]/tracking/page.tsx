@@ -6,6 +6,11 @@ import { DEPT_NAME, MONEY_STATUS, STATUS_PILL, formatBirr } from '@/lib/constant
 import { formatEc } from '@/lib/ethiopian-calendar';
 import { DeptMoneySummaryTable } from '@/components/dept-money-summary';
 import { PrintButton } from '@/components/print-button';
+import { MediaForm } from '@/components/media-form';
+import { EcDatePicker } from '@/components/ec-date-picker';
+import { setOpeningBalance } from '@/lib/actions/finance';
+import { loadWallet, signed } from '@/lib/ledger';
+import { todayIsoAddis } from '@/lib/ethiopian-calendar';
 
 export default async function FinanceTracking({
   params,
@@ -18,7 +23,11 @@ export default async function FinanceTracking({
   if (dept !== 'finance') notFound();
   const { d } = await searchParams;
   const supabase = await createClient();
-  const { rows, requests } = await fetchDeptSummaries(supabase);
+  const [{ rows, requests }, wallet] = await Promise.all([fetchDeptSummaries(supabase), loadWallet(supabase)]);
+  const after = wallet.movements.filter((m) => !wallet.asOf || m.date >= wallet.asOf);
+  const walletIn = after.filter((m) => m.kind !== 'paid').reduce((s, m) => s + m.amount, 0);
+  const walletOut = after.filter((m) => m.kind === 'paid').reduce((s, m) => s + m.amount, 0);
+  const balance = wallet.opening + after.reduce((s, m) => s + signed(m), 0);
   const selfTotal = rows.reduce((s, r) => s + r.self_contributed, 0);
   const refundTotal = rows.reduce((s, r) => s + r.refund, 0);
   const detail = d ? requests.filter((r) => r.dept === d) : [];
@@ -30,9 +39,22 @@ export default async function FinanceTracking({
         <PrintButton />
       </div>
       <div className="stat-cards">
+        <div className="stat-card"><b>{formatBirr(balance)}</b>የሰንበት ት/ቤቱ ቀሪ ሂሳብ</div>
+        <div className="stat-card"><b>{formatBirr(wallet.opening)}</b>መነሻ ሂሳብ{wallet.asOf ? ` (${formatEc(wallet.asOf)})` : ''}</div>
+        <div className="stat-card"><b>{formatBirr(walletIn)}</b>ገቢ + ተመላሽ</div>
+        <div className="stat-card"><b>{formatBirr(walletOut)}</b>የተከፈለ</div>
         <div className="stat-card"><b>{formatBirr(selfTotal)}</b>ጠቅላላ ከራስ ወጪ</div>
         <div className="stat-card"><b>{formatBirr(refundTotal)}</b>ጠቅላላ ተመላሽ</div>
       </div>
+      <details className="card no-print" style={{ marginBottom: 12 }}>
+        <summary><b>መነሻ ሂሳብ (Opening balance)</b> <span className="small muted">— ክትትል ሲጀመር በሰንበት ት/ቤቱ እጅ የነበረው ገንዘብ</span></summary>
+        <MediaForm action={setOpeningBalance} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false}>
+          <div className="form-grid">
+            <div className="field"><label>መጠን (ብር)</label><input name="opening_balance" type="number" min={0} step="0.01" defaultValue={wallet.opening} required /></div>
+            <div className="field"><span className="label">ከዚህ ቀን ጀምሮ (ዓ.ም)</span><EcDatePicker name="as_of" defaultIso={wallet.asOf ?? todayIsoAddis()} yearsBack={5} yearsForward={0} required /></div>
+          </div>
+        </MediaForm>
+      </details>
       <DeptMoneySummaryTable rows={rows} detailHref={(x) => `/staff/finance/tracking?d=${x}`} />
 
       {d && (

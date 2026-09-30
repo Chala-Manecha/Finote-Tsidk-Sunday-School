@@ -9,7 +9,7 @@ const VALID: AttendanceStatus[] = ['absent', 'present', 'half'];
 const clean = (s: Record<string, string>) =>
   Object.fromEntries(Object.entries(s).filter(([, v]) => VALID.includes(v as AttendanceStatus)));
 
-export type SaveResult = { error?: string };
+export type SaveResult = { error?: string; redirectTo?: string };
 
 export async function createSession(input: {
   type: SessionType;
@@ -33,8 +33,9 @@ export async function createSession(input: {
     if (error.code === '23505') return { error: 'በዚህ ቀን እና ሰዓት ተመሳሳይ ክፍለ ጊዜ አስቀድሞ ተመዝግቧል።' };
     return { error: error.message };
   }
-  revalidatePath(`/staff/${meta.dept}/attendance`);
-  redirect(`/staff/${meta.dept}/attendance/${data}?saved=1`);
+  revalidatePath('/staff', 'layout');
+  // Client navigates + refreshes so the list and counts are fresh immediately.
+  return { redirectTo: `/staff/${meta.dept}/attendance/${data}?saved=1` };
 }
 
 export async function saveSession(sessionId: string, statuses: Record<string, string>): Promise<SaveResult> {
@@ -57,6 +58,6 @@ export async function deleteSession(dept: string, sessionId: string) {
     .delete({ count: 'exact' })
     .eq('id', sessionId);
   if (error || !count) throw new Error(error?.message ?? 'ማጥፋት አልተቻለም።');
-  revalidatePath(`/staff/${dept}/attendance`);
+  revalidatePath('/staff', 'layout');
   redirect(`/staff/${dept}/attendance`);
 }

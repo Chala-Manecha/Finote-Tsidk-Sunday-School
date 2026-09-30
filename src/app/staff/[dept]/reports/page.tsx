@@ -4,22 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import {
   DEPT_NAME, ITEM_CONDITION, MEMBER_STATUS, WORK_STATUS, formatBirr, type ItemCondition,
 } from '@/lib/constants';
-import { EC_MONTHS, daysInEcMonth, ecToIso, formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
+import { formatEc } from '@/lib/ethiopian-calendar';
+import { PERIODS, isPeriod, resolveRange, type Period } from '@/lib/periods';
 import { PrintButton } from '@/components/print-button';
-
-const PERIODS = { month: { label: 'ወርሃዊ', months: 1 }, quarter: { label: 'ሩብ አመት', months: 3 }, half: { label: 'ግማሽ አመት', months: 6 }, year: { label: 'አመታዊ', months: 12 } } as const;
-type Period = keyof typeof PERIODS;
-
-/** The last N Ethiopian months ending with the current one (ጳጉሜ folds into ነሐሴ's period). */
-function periodRange(months: number) {
-  const today = isoToEc(todayIsoAddis());
-  let { year, month } = today;
-  if (month === 13) month = 12;
-  const endMonth = today.month;
-  const endIso = ecToIso({ year: today.year, month: endMonth, day: daysInEcMonth(today.year, endMonth) });
-  for (let i = 1; i < months; i++) { month--; if (month < 1) { month = 12; year--; } }
-  return { from: ecToIso({ year, month, day: 1 }), to: endIso, label: `${EC_MONTHS[month - 1]} ${year} – ${EC_MONTHS[endMonth - 1]} ${today.year}` };
-}
 
 export default async function AuditReports({
   params, searchParams,
@@ -30,9 +17,9 @@ export default async function AuditReports({
   const { dept } = await params;
   if (dept !== 'audit') notFound();
   const sp = await searchParams;
-  const period: Period = sp.p && sp.p in PERIODS ? (sp.p as Period) : 'month';
-  const { from, to, label } = periodRange(PERIODS[period].months);
+  const period: Period = isPeriod(sp.p) ? sp.p : 'month';
   const supabase = await createClient();
+  const { from, to, label } = await resolveRange(supabase, period);
 
   const [{ data: members }, { data: property }, { data: earnings }, { data: expenses }] = await Promise.all([
     supabase.from('members').select('id, full_name, member_status, work_status, phone, created_at').eq('is_active', true).order('full_name'),
@@ -51,7 +38,7 @@ export default async function AuditReports({
   const show = sp.show;
   const base = `/staff/audit/reports?p=${period}`;
   const card = (key: string, value: React.ReactNode, text: string) => (
-    <Link href={show === key ? base : `${base}&show=${key}`} className={`stat-card ${show === key ? 'active' : ''}`}>
+    <Link scroll={false} href={show === key ? base : `${base}&show=${key}`} className={`stat-card ${show === key ? 'active' : ''}`}>
       <b>{value}</b>{text}
     </Link>
   );
@@ -64,7 +51,7 @@ export default async function AuditReports({
       </div>
       <div className="subtabs no-print">
         {(Object.keys(PERIODS) as Period[]).map((k) => (
-          <Link key={k} href={`/staff/audit/reports?p=${k}`} className={`btn sm ${k === period ? 'green' : 'secondary'}`}>{PERIODS[k].label}</Link>
+          <Link scroll={false} key={k} href={`/staff/audit/reports?p=${k}`} className={`btn sm ${k === period ? 'green' : 'secondary'}`}>{PERIODS[k].label}</Link>
         ))}
       </div>
       <p className="muted small">{label}</p>

@@ -26,8 +26,8 @@ export default async function ZemaPage({
       <main className="page">
         <h1 className="title">ዜማ</h1>
         <div className="subtabs">
-          <Link href="/zema" className={`btn sm ${!isWereb ? 'green' : 'secondary'}`}>መዝሙራት</Link>
-          <Link href="/zema?tab=wereb" className={`btn sm ${isWereb ? 'green' : 'secondary'}`}>ወረብ</Link>
+          <Link scroll={false} href="/zema" className={`btn sm ${!isWereb ? 'green' : 'secondary'}`}>መዝሙራት</Link>
+          <Link scroll={false} href="/zema?tab=wereb" className={`btn sm ${isWereb ? 'green' : 'secondary'}`}>ወረብ</Link>
         </div>
         {!isWereb && <CategoryTabs base="/zema" active={category} />}
         <SongList items={items} kind={isWereb ? 'wereb' : 'song'} showCategory={!isWereb && !category} />

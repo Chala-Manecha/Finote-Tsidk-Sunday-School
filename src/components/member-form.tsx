@@ -2,6 +2,7 @@
 import { useActionState, useState, startTransition, useRef } from 'react';
 import { saveMember, type MemberFormState } from '@/app/staff/members/actions';
 import { createClient } from '@/lib/supabase/client';
+import { resizeImage } from '@/lib/client/upload';
 import { EcDatePicker } from './ec-date-picker';
 import { ageFromIso } from '@/lib/ethiopian-calendar';
 import {
@@ -20,7 +21,10 @@ export type MemberInitial = {
   email?: string | null;
   telegram_username?: string | null;
   sub_city?: string | null;
-  language?: string | null;
+  languages?: string[] | null;
+  photo_path?: string | null;
+  photo_url?: string | null;
+  reg_no?: string | null;
   geez_level?: string;
   is_ethiopian?: boolean;
   nationality?: string | null;
@@ -31,10 +35,10 @@ export type MemberInitial = {
 
 const MAX_FILE = 10 * 1024 * 1024;
 
-async function uploadEvidence(file: File): Promise<string> {
+async function uploadEvidence(file: File | Blob, name = 'file'): Promise<string> {
   if (file.size > MAX_FILE) throw new Error('ፋይሉ ከ10MB በላይ ነው።');
   const supabase = createClient();
-  const safe = file.name.replace(/[^\w.\-]+/g, '_').slice(-60);
+  const safe = name.replace(/[^\w.\-]+/g, '_').slice(-60);
   const path = `members/${crypto.randomUUID()}-${safe}`;
   const { error } = await supabase.storage.from('member-docs').upload(path, file, {
     contentType: file.type || undefined,
@@ -51,8 +55,11 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
   const [hasPrior, setHasPrior] = useState(!!initial.prior_school);
   const [hasSecular, setHasSecular] = useState(!!initial.secular_school);
   const [isEthiopian, setIsEthiopian] = useState(initial.is_ethiopian ?? true);
-  const knownLang = !initial.language || (LANGUAGES as readonly string[]).includes(initial.language);
-  const [language, setLanguage] = useState(knownLang ? initial.language ?? '' : 'ሌላ');
+  const initLangs = initial.languages ?? [];
+  const otherLangs = initLangs.filter((l) => !(LANGUAGES as readonly string[]).includes(l));
+  const [langOther, setLangOther] = useState(otherLangs.length > 0);
+  const [depts, setDepts] = useState<string[]>(initial.depts ?? []);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(initial.photo_url ?? null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const age = ageFromIso(dob);
@@ -63,11 +70,19 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
     const fd = new FormData(e.currentTarget);
     try {
       setUploading(true);
+      const photo = fd.get('photo_file');
+      fd.delete('photo_file');
+      if (photo instanceof File && photo.size > 0) {
+        const blob = await resizeImage(photo, 1600, 0.85);
+        fd.set('photo_path', await uploadEvidence(blob, 'photo.jpg'));
+      } else if (!initial.photo_path) {
+        throw new Error('ፎቶ ያስገቡ።');
+      }
       for (const key of ['prior_school', 'secular_school'] as const) {
         const file = fd.get(`${key}_file`);
         fd.delete(`${key}_file`);
         if (file instanceof File && file.size > 0) {
-          fd.set(`${key}_evidence`, await uploadEvidence(file));
+          fd.set(`${key}_evidence`, await uploadEvidence(file, file.name));
         }
       }
     } catch (err) {
@@ -85,7 +100,17 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
     <form ref={formRef} onSubmit={onSubmit} className="card">
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
 
-      <div className="form-section">ግላዊ መረጃ</div>
+      <div className="form-section">ግላዊ መረጃ {initial.reg_no && <span className="pill" style={{ marginInlineStart: 8 }}>{initial.reg_no}</span>}</div>
+      <div className="photo-field">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {photoPreview ? <img src={photoPreview} alt="" /> : <div className="photo-placeholder">ፎቶ</div>}
+        <div className="field" style={{ margin: 0 }}>
+          <label htmlFor="photo_file">ፎቶ {!initial.photo_path && <span className="req">*</span>}</label>
+          <input id="photo_file" name="photo_file" type="file" accept="image/*" capture="environment"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) setPhotoPreview(URL.createObjectURL(f)); }} />
+          <span className="hint">ሙሉ ቁመት የሚያሳይ ፎቶ ቢሆን ይመረጣል።</span>
+        </div>
+      </div>
       <div className="form-grid">
         <div className="field">
           <label htmlFor="full_name">ሙሉ ስም <span className="req">*</span></label>
@@ -189,19 +214,22 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
             {SUB_CITIES.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="language">ቋንቋ</label>
-          <select id="language" name="language" value={language} onChange={(e) => setLanguage(e.target.value)}>
-            <option value="">—</option>
-            {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
-          </select>
-        </div>
-        {language === 'ሌላ' && (
-          <div className="field">
-            <label htmlFor="language_other">ሌላ ቋንቋ</label>
-            <input id="language_other" name="language_other" defaultValue={knownLang ? '' : initial.language ?? ''} />
+        <div className="field" style={{ gridColumn: '1 / -1' }}>
+          <span className="label">ቋንቋ (ብዙ መምረጥ ይቻላል)</span>
+          <div className="check-grid">
+            {LANGUAGES.filter((l) => l !== 'ሌላ').map((l) => (
+              <label key={l} className="check" style={{ margin: 0 }}>
+                <input type="checkbox" name="languages" value={l} defaultChecked={initLangs.includes(l)} /> {l}
+              </label>
+            ))}
+            <label className="check" style={{ margin: 0 }}>
+              <input type="checkbox" checked={langOther} onChange={(e) => setLangOther(e.target.checked)} /> ሌላ
+            </label>
           </div>
-        )}
+          {langOther && (
+            <input name="language_other" placeholder="ሌላ ቋንቋ (በኮማ ይለዩ)" defaultValue={otherLangs.join(', ')} />
+          )}
+        </div>
         <div className="field">
           <label htmlFor="geez_level">የግዕዝ ችሎታ</label>
           <select id="geez_level" name="geez_level" defaultValue={initial.geez_level ?? 'none'}>
@@ -225,12 +253,17 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
 
       <div className="form-section">ክፍል/ዝግጅት መረጣ</div>
       <p className="hint muted small" style={{ marginTop: 0 }}>
-        የተመረጡት ክፍሎች የአባሉ ንዑስ-አባልነት ናቸው። ክትትል ግን ለሁሉም አባላት ይያዛል።
+        በየትኛው ክፍል ስር በንዑስ አባልነት ማገልገል ይፈልጋሉ? (ቢበዛ 2)
       </p>
       <div className="check-grid">
         {DEPARTMENTS.map((d) => (
           <label key={d.code} className="check">
-            <input type="checkbox" name="depts" value={d.code} defaultChecked={initial.depts?.includes(d.code)} />
+            <input
+              type="checkbox" name="depts" value={d.code}
+              checked={depts.includes(d.code)}
+              disabled={!depts.includes(d.code) && depts.length >= 2}
+              onChange={(e) => setDepts(e.target.checked ? [...depts, d.code] : depts.filter((x) => x !== d.code))}
+            />
             {d.name}
           </label>
         ))}

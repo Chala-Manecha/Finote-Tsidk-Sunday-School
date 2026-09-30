@@ -5,9 +5,9 @@ export function CategoryTabs({ base, active }: { base: string; active?: string }
   const sep = base.includes('?') ? '&' : '?';
   return (
     <nav className="cat-tabs">
-      <Link href={base} className={!active ? 'active' : ''}>ሁሉም</Link>
+      <Link scroll={false} href={base} className={!active ? 'active' : ''}>ሁሉም</Link>
       {SONG_CATEGORIES.map((c) => (
-        <Link key={c.key} href={`${base}${sep}cat=${c.key}`} className={active === c.key ? 'active' : ''}>
+        <Link scroll={false} key={c.key} href={`${base}${sep}cat=${c.key}`} className={active === c.key ? 'active' : ''}>
           {c.label}
         </Link>
       ))}

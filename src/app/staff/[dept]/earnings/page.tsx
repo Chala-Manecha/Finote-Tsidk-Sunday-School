@@ -7,7 +7,7 @@ import { decideEarning } from '@/lib/actions/money';
 
 type E = {
   id: string; dept: string; amount: number; source: string; earned_on: string;
-  status: EarningStatus; submitted_at: string; decided_at: string | null;
+  status: EarningStatus; submitted_at: string; decided_at: string | null; sale_item_id: string | null;
 };
 
 export default async function FinanceEarnings({ params }: { params: Promise<{ dept: string }> }) {
@@ -16,7 +16,7 @@ export default async function FinanceEarnings({ params }: { params: Promise<{ de
   const supabase = await createClient();
   const { data } = await supabase
     .from('earnings')
-    .select('id, dept, amount, source, earned_on, status, submitted_at, decided_at')
+    .select('id, dept, amount, source, earned_on, status, submitted_at, decided_at, sale_item_id')
     .order('status')
     .order('submitted_at', { ascending: false });
   const rows = (data ?? []) as E[];
@@ -35,7 +35,7 @@ export default async function FinanceEarnings({ params }: { params: Promise<{ de
               <tr key={e.id}>
                 <td>{DEPT_NAME[e.dept]}</td>
                 <td className="num">{formatBirr(e.amount)}</td>
-                <td>{e.source}</td>
+                <td>{e.source}{e.sale_item_id && <> <span className="pill half" title="ሲጸድቅ ክምችቱ ይቀንሳል">ሽያጭ</span></>}</td>
                 <td>{formatEc(e.earned_on)}</td>
                 <td>{formatEc(e.submitted_at)}</td>
                 <td>{e.decided_at ? formatEc(e.decided_at) : '—'}</td>

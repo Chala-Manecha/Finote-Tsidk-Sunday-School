@@ -135,8 +135,13 @@ update public.events set status = 'approved' where id = '30000000-0000-0000-0000
 reset role;
 set role anon;
 select pg_temp.must_equal((select count(*) from public.events), 1, 'anon sees approved event');
-select pg_temp.must_equal((select count(*) from public.public_member_names()), 3, 'anon member names');
-insert into public.feedback (member_id, dept, message) values ('10000000-0000-0000-0000-000000000001', 'mezmur', 'ጥሩ ነው');
+select pg_temp.must_fail('select * from public.public_member_names()');
+select pg_temp.must_fail($q$insert into public.feedback (member_id, dept, message) values ('10000000-0000-0000-0000-000000000001', 'mezmur', 'x y z')$q$);
+do $$ begin
+  if public.submit_feedback('ፍጽ-9999', '', 'mezmur', 'ሰላም ነው') <> 'not_found' then raise exception 'feedback not_found'; end if;
+  if public.submit_feedback('ፍጽ-0001', '@someone', 'mezmur', 'ሰላም ነው') <> 'mismatch' then raise exception 'feedback mismatch'; end if;
+  if public.submit_feedback('0001', '', 'mezmur', 'ጥሩ ነው') <> 'ok' then raise exception 'feedback ok'; end if;
+end $$;
 select pg_temp.must_fail($q$insert into public.feedback (member_id, dept, message, status) values ('10000000-0000-0000-0000-000000000001', 'mezmur', 'x', 'seen')$q$);
 reset role;
 
@@ -283,7 +288,64 @@ select pg_temp.must_equal((select count(*) from public.edu_plan), 1, 'anon reads
 select pg_temp.must_equal((select count(*) from public.mahiberat), 1, 'anon reads mahiberat');
 select pg_temp.must_equal((select count(*) from public.event_photos), 1, 'anon reads photos');
 select pg_temp.must_fail('select * from public.dept_property');
-select pg_temp.must_fail('select * from public.sale_items');
+select pg_temp.must_equal((select count(*) from public.sale_items), 0, 'anon can read the shop');
+reset role;
+
+-- ---------- round 1: terms, reg IDs, names, depts, spend approval, shop, property log ----------
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+insert into public.leadership_terms (id, name, team_no) values ('50000000-0000-0000-0000-000000000001', 'አትናቴዎስ', 11);
+select public.set_active_term('50000000-0000-0000-0000-000000000001');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select pg_temp.must_fail($q$select public.set_active_term('50000000-0000-0000-0000-000000000001')$q$);
+-- duplicate name (case/space-insensitive) rejected
+select pg_temp.must_fail($q$select public.save_member(null, '{"full_name":"አበበ   ከበደ","sex":"male","work_status":"student"}', '{}')$q$);
+-- more than two departments rejected
+select pg_temp.must_fail($q$select public.save_member(null, '{"full_name":"ቤተልሔም አለሙ","sex":"female","work_status":"student"}', '{hr,mezmur,education}')$q$);
+select public.save_member(null, '{"full_name":"ቤተልሔም አለሙ","sex":"female","work_status":"student","languages":["አማርኛ","ኦሮምኛ"],"telegram_username":"betty"}', '{hr,mezmur}');
+select pg_temp.must_equal((select count(*) from public.members where full_name = 'ቤተልሔም አለሙ'
+  and reg_no like 'ፍጽ-%' and cardinality(languages) = 2 and term_id = '50000000-0000-0000-0000-000000000001'), 1, 'reg_no, languages, term tag');
+reset role;
+do $$ declare r text; begin
+  select reg_no into r from public.members where full_name = 'ቤተልሔም አለሙ';
+  if public.submit_feedback(r, '@Betty', 'hr', 'ሰላም ሰላም') <> 'ok' then raise exception 'telegram match should be case-insensitive'; end if;
+  if public.submit_feedback(r, '', 'hr', 'ሰላም ሰላም') <> 'mismatch' then raise exception 'empty telegram must mismatch when member has one'; end if;
+end $$;
+
+-- spend approval locks expense lines (request 20..01 is paid, mezmur)
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+select pg_temp.must_fail($q$update public.money_requests set spend_approved_at = now() where id = '20000000-0000-0000-0000-000000000001'$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+update public.money_requests set spend_approved_at = now() where id = '20000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail($q$insert into public.expense_lines (request_id, amount, reason, spent_on) values ('20000000-0000-0000-0000-000000000001', 5, 'x', '2026-09-30')$q$);
+delete from public.expense_lines where request_id = '20000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select count(*) from public.expense_lines where request_id = '20000000-0000-0000-0000-000000000001'), 2, 'approved spend lines are locked');
+
+-- shop: sale → earning → approval reduces stock
+reset role;
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000a9', 'dev@x');
+insert into public.staff_profiles (user_id, username, full_name) values ('00000000-0000-0000-0000-0000000000a9', 'dev1', 'Dev One');
+insert into public.staff_departments values ('00000000-0000-0000-0000-0000000000a9', 'development');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a9', false);
+insert into public.sale_items (id, name, qty, price) values ('60000000-0000-0000-0000-000000000001', 'መስቀል', 3, 150);
+update public.shop_settings set phone = '0911000000', telegram = 'finote_shop';
+insert into public.earnings (dept, amount, source, earned_on, submitted_by, sale_item_id, sale_qty)
+  values ('development', 450, 'ሽያጭ፦ መስቀል ×3', '2026-10-01', '00000000-0000-0000-0000-0000000000a9', '60000000-0000-0000-0000-000000000001', 3);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail($q$insert into public.earnings (dept, amount, source, earned_on, submitted_by, sale_item_id, sale_qty) values ('mezmur', 1, 'x', '2026-10-01', '00000000-0000-0000-0000-0000000000a2', '60000000-0000-0000-0000-000000000001', 1)$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+update public.earnings set status = 'approved' where sale_item_id = '60000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select qty::bigint from public.sale_items where id = '60000000-0000-0000-0000-000000000001'), 0, 'approved sale empties stock');
+-- property log + wallet: finance only
+insert into public.property_log (dept, kind, item_name, value, log_date) values ('mezmur', 'added', 'ከበሮ', 2000, '2026-10-01');
+update public.wallet_settings set opening_balance = 10000, as_of = '2026-09-11';
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+select pg_temp.must_fail($q$insert into public.property_log (dept, kind, item_name, value, log_date) values ('mezmur', 'lost', 'x', 1, '2026-10-01')$q$);
+update public.wallet_settings set opening_balance = 1;
+select pg_temp.must_equal((select opening_balance::bigint from public.wallet_settings), 10000, 'only finance sets the opening balance');
 reset role;
 
 \echo ALL RLS TESTS PASSED

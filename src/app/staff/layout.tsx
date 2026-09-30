@@ -1,6 +1,6 @@
 import Link from 'next/link';
+import { Brand } from '@/components/brand';
 import { requireStaff } from '@/lib/auth';
-import { SCHOOL_NAME } from '@/lib/constants';
 import { logout } from '@/app/login/actions';
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
@@ -8,7 +8,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   return (
     <>
       <header className="topbar">
-        <Link href="/" className="brand">{SCHOOL_NAME}</Link>
+        <Brand />
         <span className="spacer" />
         <nav>
           <Link href="/staff">ሁሉም ክፍሎች</Link>

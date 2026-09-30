@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import { MemberTable } from '@/components/member-table';
-import { requireStaff, canAccess } from '@/lib/auth';
 import { isDeptCode } from '@/lib/constants';
 
 export default async function SubMembersPage({
@@ -12,10 +11,8 @@ export default async function SubMembersPage({
 }) {
   const { dept } = await params;
   if (!isDeptCode(dept)) notFound();
-  const staff = await requireStaff();
   const filters = await searchParams;
   const isHr = dept === 'hr';
-  const canOpen = canAccess(staff, 'hr') || canAccess(staff, 'office');
 
   return (
     <>
@@ -26,7 +23,7 @@ export default async function SubMembersPage({
         basePath={`/staff/${dept}/members`}
         filters={filters}
         fixedDept={isHr ? undefined : dept}
-        linkToDetail={canOpen}
+        linkToDetail={false}
       />
     </>
   );

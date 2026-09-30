@@ -24,9 +24,9 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
         <h1 className="title">ታሪካችን</h1>
         <div className="history-layout">
           <nav className="dept-tab-nav">
-            <Link href="/history" className={!category ? 'active' : ''}>ሁሉም</Link>
+            <Link scroll={false} href="/history" className={!category ? 'active' : ''}>ሁሉም</Link>
             {SONG_CATEGORIES.map((c) => (
-              <Link key={c.key} href={`/history?cat=${c.key}`} className={category === c.key ? 'active' : ''}>{c.label}</Link>
+              <Link scroll={false} key={c.key} href={`/history?cat=${c.key}`} className={category === c.key ? 'active' : ''}>{c.label}</Link>
             ))}
           </nav>
           <div className="photo-grid" style={{ flex: 1, alignContent: 'start' }}>

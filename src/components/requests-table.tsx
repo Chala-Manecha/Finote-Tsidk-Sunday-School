@@ -3,7 +3,7 @@ import { formatEc } from '@/lib/ethiopian-calendar';
 import type { RequestRow } from '@/lib/money-data';
 import { ActionButton } from './action-button';
 import { FlagForm } from './money-forms';
-import { decideRequest, markPaid } from '@/lib/actions/money';
+import { approveSpend, decideRequest, markPaid } from '@/lib/actions/money';
 
 /**
  * Cross-department money request list.
@@ -41,7 +41,12 @@ export function RequestsTable({ rows, mode }: { rows: RequestRow[]; mode: 'offic
                 <span className={`pill ${STATUS_PILL[r.status]}`}>{MONEY_STATUS[r.status]}</span>
                 {r.paid_at && <div className="small muted">{formatEc(r.paid_at)}</div>}
               </td>
-              {mode !== 'office' && <td className="num">{formatBirr(r.spent)}</td>}
+              {mode !== 'office' && (
+                <td className="num">
+                  {formatBirr(r.spent)}
+                  {r.spend_approved_at && <div className="small" style={{ color: 'var(--green)' }}>✓ ወጪ ሪፖርት ጸድቋል</div>}
+                </td>
+              )}
               <td className="no-print">
                 <div className="btn-row">
                   {mode === 'office' && r.status === 'pending' && (
@@ -54,6 +59,10 @@ export function RequestsTable({ rows, mode }: { rows: RequestRow[]; mode: 'offic
                   {mode === 'finance' && r.status === 'approved' && (
                     <ActionButton action={markPaid.bind(null, r.id)} label="ገንዘብ ተከፈለ" className="btn sm green"
                       confirmText={`${formatBirr(r.amount)} ለ${DEPT_NAME[r.dept]} ተከፍሏል?`} />
+                  )}
+                  {mode === 'finance' && (r.status === 'approved' || r.status === 'paid') && !r.spend_approved_at && r.lines.length > 0 && (
+                    <ActionButton action={approveSpend.bind(null, r.id)} label="ወጪ ሪፖርት አጽድቅ" className="btn sm secondary"
+                      confirmText={`የ${DEPT_NAME[r.dept]} ወጪ ሪፖርት (${formatBirr(r.spent)}) ይጽደቅ? ከጸደቀ በኋላ መቀየር አይቻልም።`} />
                   )}
                   {mode === 'audit' && <FlagForm id={r.id} flagged={r.audit_flag} note={r.audit_note} />}
                 </div>

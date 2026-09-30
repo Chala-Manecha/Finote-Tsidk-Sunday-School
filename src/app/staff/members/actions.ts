@@ -39,7 +39,12 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
 
   const hasPrior = fd.get('has_prior_school') === 'on';
   const hasSecular = fd.get('has_secular_school') === 'on';
-  const language = str(fd, 'language') === 'ሌላ' ? str(fd, 'language_other') ?? 'ሌላ' : str(fd, 'language');
+  const languages = [
+    ...fd.getAll('languages').map(String),
+    ...(str(fd, 'language_other') ?? '').split(/[,،፣]/).map((l) => l.trim()),
+  ].filter((l, i, a) => l && a.indexOf(l) === i);
+  const photoPath = docPath(str(fd, 'photo_path'));
+  if (!id && !photoPath) return { error: 'ፎቶ ያስገቡ።' };
 
   const member = {
     full_name: fullName,
@@ -52,7 +57,8 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
     email: str(fd, 'email'),
     telegram_username: str(fd, 'telegram_username')?.replace(/^@/, '') ?? null,
     sub_city: str(fd, 'sub_city'),
-    language,
+    languages,
+    photo_path: photoPath,
     geez_level: oneOf(str(fd, 'geez_level'), GEEZ_LEVEL) ?? 'none',
     is_ethiopian: isEthiopian,
     nationality,
@@ -71,6 +77,7 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
       : null,
   };
   const depts = fd.getAll('depts').map(String).filter(isDeptCode);
+  if (depts.length > 2) return { error: 'ቢበዛ 2 ክፍሎች ብቻ መምረጥ ይቻላል።' };
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('save_member', {
@@ -78,7 +85,11 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
     p_member: member,
     p_depts: depts,
   });
-  if (error) return { error: `ማስቀመጥ አልተቻለም፦ ${error.message}` };
+  if (error) {
+    if (error.message.includes('duplicate_name')) return { error: 'ይህ ሙሉ ስም ቀደም ብሎ ተመዝግቧል። እባክዎ ሙሉ ስሙን (ከአያት ስም ጋር) ያረጋግጡ።' };
+    if (error.message.includes('max_two_departments')) return { error: 'ቢበዛ 2 ክፍሎች ብቻ መምረጥ ይቻላል።' };
+    return { error: `ማስቀመጥ አልተቻለም፦ ${error.message}` };
+  }
 
   revalidatePath('/staff', 'layout');
   redirect(`/staff/members/${data}?saved=1`);

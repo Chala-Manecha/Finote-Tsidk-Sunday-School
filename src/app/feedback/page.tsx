@@ -1,20 +1,18 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
 import { FeedbackForm } from '@/components/feedback-form';
 import { PublicHeader, PublicFooter } from '@/components/public-header';
 
 export const metadata: Metadata = { title: 'አስተያየት ለመስጠት' };
+export const revalidate = 86400; // keeps the anniversary year in the header current
 
-export default async function FeedbackPage() {
-  const supabase = await createClient();
-  const { data } = await supabase.rpc('public_member_names');
+export default function FeedbackPage() {
   return (
     <>
       <PublicHeader />
       <main className="page">
         <h1 className="title">አስተያየት ለመስጠት</h1>
-        <p className="muted small">አስተያየት መስጠት የሚችሉት የተመዘገቡ አባላት ብቻ ናቸው።</p>
-        <FeedbackForm members={(data ?? []) as { id: string; full_name: string }[]} />
+        <p className="muted small">አስተያየት መስጠት የሚችሉት የተመዘገቡ አባላት ብቻ ናቸው። ሲመዘገቡ የተሰጠዎትን የመመዝገቢያ ቁጥር (ፍጽ-…) እና Telegram username ያስገቡ።</p>
+        <FeedbackForm />
         <PublicFooter />
       </main>
     </>
