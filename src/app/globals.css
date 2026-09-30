@@ -159,7 +159,7 @@ td a.link, a.link { color: var(--maroon); border-bottom: 1px dotted var(--maroon
 .roster-row.present td { background: rgba(31, 75, 60, .08); }
 .roster-row.half td { background: rgba(200, 155, 60, .12); }
 .sticky-actions {
-  position: sticky; bottom: 0; background: var(--cream);
+  position: sticky; bottom: 104px; background: var(--cream);
   padding: 12px 0; border-top: 1px solid var(--cream-2); margin-top: 12px;
 }
 
@@ -211,3 +211,29 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--maroon); }
 @media (prefers-reduced-motion: reduce) { .marquee .track { animation: none; } }
 a.stat-card { display: block; cursor: pointer; }
 a.stat-card:hover, a.stat-card.active { background: var(--gold-light); }
+
+/* ---------- site footer (fixed, every page) ---------- */
+body { padding-bottom: 104px; }
+.site-footer {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+  background: var(--green); color: #F1E6C8;
+  border-top: 3px solid var(--gold);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.site-footer .ticker { overflow: hidden; white-space: nowrap; padding: 7px 0; font-family: 'Noto Serif Ethiopic', serif; font-size: .88rem; }
+.site-footer .ticker span { display: inline-block; padding-inline-start: 100%; animation: ticker 32s linear infinite; }
+.site-footer .ticker i { font-style: normal; color: var(--gold); margin: 0 2.5em; }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+.site-footer .footer-info {
+  border-top: 1px solid rgba(255, 255, 255, .15); padding: 6px 14px;
+  font-size: .74rem; opacity: .95; text-align: center; line-height: 1.55;
+  display: flex; flex-direction: column; align-items: center;
+}
+.site-footer .footer-info .sep { margin: 0 8px; opacity: .5; }
+.site-footer a { color: var(--gold-light); }
+@media (max-width: 640px) {
+  .site-footer .footer-en, .site-footer .footer-social, .site-footer .footer-social + .sep { display: none; }
+  body { padding-bottom: 118px; }
+}
+@media (prefers-reduced-motion: reduce) { .site-footer .ticker span { animation: none; padding-inline-start: 14px; } }
+@media print { .site-footer { display: none; } body { padding-bottom: 0; } }

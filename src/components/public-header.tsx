@@ -26,10 +26,7 @@ export function PublicHeader() {
   );
 }
 
+/** Kept for the pages that render it; the address now lives in the fixed SiteFooter. */
 export function PublicFooter() {
-  return (
-    <p className="muted small" style={{ marginTop: 40 }}>
-      አቃቂ ቃሊቲ, ወረዳ-1, ደብረ ጽጌ ቅዱስ ሩፋኤል ቤተክርስቲያን, ኢትዮጵያ · Telegram @make_living
-    </p>
-  );
+  return null;
 }
