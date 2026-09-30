@@ -23,17 +23,16 @@ Spec: see the project's *System Requirements* and *Tables, Movement & Dashboards
 
 ## Setup
 
-### 1. Run the migrations (once)
+### 1. Apply the database migrations
 
-Supabase dashboard → **SQL Editor** → paste and run each file in `supabase/migrations/` **in order**:
+**Option A: Supabase GitHub integration (recommended).** Supabase dashboard → **Project Settings → Integrations → GitHub** → connect this repo:
+- Working directory: `.` (the repo root, where the `supabase/` folder is)
+- Production branch: `main`
+- Turn on **Deploy to production**
 
-1. `20260930000001_schema.sql`
-2. `20260930000002_auth_helpers.sql`
-3. `20260930000003_rls.sql`
-4. `20260930000004_functions.sql`
-5. `20260930000005_storage.sql`
+Every push/merge to `main` then applies any new files in `supabase/migrations/` automatically, in filename order.
 
-(Or with the Supabase CLI: `supabase link --project-ref dhdnvqsqmfzxkrwbkbxc && supabase db push`.)
+**Option B: by hand.** SQL Editor → run each file in `supabase/migrations/` in order. Use **either** A or B, not both. If you ran the SQL by hand, Supabase's migration history won't know about it, and the integration will try to run the files again and fail.
 
 ### 2. Environment variables
 
@@ -95,4 +94,4 @@ npm run build
 PGHOST=localhost PGUSER=postgres npm run test:db
 ```
 
-`supabase/tests/rls_test.sql` checks the permission matrix: anon vs staff, cross-department writes, the money approval chain, feedback visibility, the attendance RPCs, and save_member.
+`db-tests/rls_test.sql` checks the permission matrix: anon vs staff, cross-department writes, the money approval chain, feedback visibility, the attendance RPCs, and save_member.

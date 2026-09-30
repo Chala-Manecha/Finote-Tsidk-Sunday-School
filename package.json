@@ -9,7 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "create-admin": "node --env-file=.env.local scripts/create-admin.mjs",
-    "test:db": "supabase/tests/run.sh"
+    "test:db": "db-tests/run.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

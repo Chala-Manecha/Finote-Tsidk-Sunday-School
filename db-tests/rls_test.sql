@@ -1,5 +1,5 @@
 -- RLS smoke test. Runs against a scratch DB with Supabase-like auth stubs
--- (see supabase/tests/README.md). Every block either succeeds or raises.
+-- (see README → Tests). Every block either succeeds or raises.
 \set ON_ERROR_STOP 1
 
 -- helper: expect the statement in `sql` to fail
