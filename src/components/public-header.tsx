@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { Brand } from '@/components/brand';
+import { createClient } from '@/lib/supabase/server';
+import { termLabel, type Term } from '@/lib/periods';
 
 // Public top nav. Items appear here as each public page is built.
 const NAV = [
@@ -15,14 +17,18 @@ const NAV = [
   { href: '/feedback', label: 'አስተያየት ለመስጠት' },
 ];
 
-export function PublicHeader() {
+/** Staff-entry button shows the active leadership team; changes when ጽሕፈት ቤት activates a new one. */
+export async function PublicHeader() {
+  const supabase = await createClient();
+  const { data } = await supabase.from('leadership_terms').select('name, team_no').eq('is_active', true).maybeSingle();
+  const team = data as Pick<Term, 'name' | 'team_no'> | null;
   return (
     <header className="topbar">
       <Brand />
       <span className="spacer" />
       <nav>
         {NAV.map((n) => <Link key={n.href} href={n.href}>{n.label}</Link>)}
-        <Link href="/staff" className="staff-link">ሁሉም ክፍሎች (9)</Link>
+        <Link href="/staff" className="staff-link">{team ? `አመራሮች (${termLabel(team)})` : 'አመራሮች'}</Link>
       </nav>
     </header>
   );
