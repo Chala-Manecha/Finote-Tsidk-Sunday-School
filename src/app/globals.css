@@ -173,3 +173,15 @@ details > summary { list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
 .num { text-align: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
 tfoot td { font-weight: 700; border-top: 2px solid var(--maroon); }
+.staff-link { background: var(--gold); color: var(--maroon-deep) !important; border-radius: 4px; font-weight: 700; margin-inline-start: 6px; }
+
+.song-list { display: flex; flex-direction: column; gap: 8px; }
+.song-row { background: var(--cream-2); border-radius: 4px; }
+.song-row > summary { display: flex; gap: 10px; align-items: center; padding: 11px 15px; cursor: pointer; }
+.song-row > summary > span:first-child { flex: 1; font-weight: 500; }
+.song-row[open] > summary { border-bottom: 1px solid var(--field-border); }
+.song-body { padding: 12px 15px; }
+.song-cat { font-size: .72rem; color: var(--maroon); font-weight: 600; }
+.cat-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.cat-tabs a { padding: 5px 12px; border-radius: 14px; border: 1.5px solid var(--maroon); font-size: .82rem; }
+.cat-tabs a.active { background: var(--maroon); color: var(--cream); }

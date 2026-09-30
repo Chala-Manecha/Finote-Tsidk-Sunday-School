@@ -26,16 +26,16 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   mezmur: [
     { slug: 'attendance', label: 'ክትትል መያዝ', ready: true },
-    { slug: 'songs', label: 'መዝሙራት', ready: false },
-    { slug: 'wereb', label: 'ወረብ', ready: false },
-    { slug: 'duty', label: 'አባል መድብ', ready: false },
+    { slug: 'songs', label: 'መዝሙራት', ready: true },
+    { slug: 'wereb', label: 'ወረብ', ready: true },
+    { slug: 'duty', label: 'አባል መድብ', ready: true },
   ],
   hr: [
     { slug: 'register', label: 'ምዝገባ (+ አባል መዝግብ)', ready: true },
     { slug: 'overview', label: 'የተዋሃደ ክትትል', ready: true },
     { slug: 'attendance', label: 'ስብሰባ ክትትል መያዝ', ready: true },
-    { slug: 'duty', label: 'አባል መድብ', ready: false },
-    { slug: 'all-duties', label: 'ሁሉም ምደባዎች', ready: false },
+    { slug: 'duty', label: 'አባል መድብ', ready: true },
+    { slug: 'all-duties', label: 'ሁሉም ምደባዎች', ready: true },
   ],
   schedule: [{ slug: 'events', label: 'ቀጠሮዎች', ready: true }],
   finance: [
@@ -45,7 +45,7 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   development: [
     { slug: 'sale-items', label: 'የሽያጭ ዕቃዎች', ready: false },
-    { slug: 'duty', label: 'አባል መድብ', ready: false },
+    { slug: 'duty', label: 'አባል መድብ', ready: true },
   ],
   audit: [
     { slug: 'contributions', label: 'የክፍላት አስተዋጽኦ', ready: true },
@@ -56,8 +56,8 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'attendance', label: 'ክትትል መያዝ', ready: true },
     { slug: 'plan', label: 'ኮርስ እቅድ', ready: false },
     { slug: 'abnet', label: 'አብነት', ready: false },
-    { slug: 'wereb-admin', label: 'ወረብ አስተዳደር', ready: false },
-    { slug: 'duty', label: 'አባል መድብ', ready: false },
+    { slug: 'wereb-admin', label: 'ወረብ አስተዳደር', ready: true },
+    { slug: 'duty', label: 'አባል መድብ', ready: true },
   ],
   internal_comm: [],
 };

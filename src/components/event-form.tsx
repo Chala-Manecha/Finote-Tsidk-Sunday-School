@@ -2,6 +2,7 @@
 import { useActionState } from 'react';
 import { EcDatePicker } from './ec-date-picker';
 import { proposeEvent, updateEvent, type FormState } from '@/lib/actions/events';
+import { todayIsoAddis } from '@/lib/ethiopian-calendar';
 
 type Initial = { id: string; title: string; event_date: string; event_time: string };
 
@@ -29,7 +30,7 @@ export function EventForm({ dept, initial }: { dept: string; initial?: Initial }
         </div>
         <div className="field">
           <span className="label">ቀን (ዓ.ም) <span className="req">*</span></span>
-          <EcDatePicker key={resetKey} name="event_date" defaultIso={initial?.event_date} yearsBack={1} yearsForward={2} required />
+          <EcDatePicker key={resetKey} name="event_date" defaultIso={initial?.event_date ?? todayIsoAddis()} yearsBack={1} yearsForward={2} required />
         </div>
         <div className="field">
           <label htmlFor={`time-${initial?.id ?? 'new'}`}>ሰዓት <span className="req">*</span></label>

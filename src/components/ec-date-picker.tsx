@@ -26,9 +26,12 @@ export function EcDatePicker({
   const [year, setYear] = useState<number | ''>(init?.year ?? '');
 
   const thisYear = todayEc().year;
+  // Current year first, then future years, then past years (newest first) —
+  // so the obvious choice is at the top.
   const years = useMemo(() => {
-    const ys: number[] = [];
-    for (let y = thisYear + yearsForward; y >= thisYear - yearsBack; y--) ys.push(y);
+    const ys: number[] = [thisYear];
+    for (let y = thisYear + 1; y <= thisYear + yearsForward; y++) ys.push(y);
+    for (let y = thisYear - 1; y >= thisYear - yearsBack; y--) ys.push(y);
     return ys;
   }, [thisYear, yearsBack, yearsForward]);
 

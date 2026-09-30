@@ -87,3 +87,35 @@ export const STATUS_PILL: Record<string, string> = {
 
 export const formatBirr = (n: number | string | null | undefined) =>
   n == null ? '—' : `${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ብር`;
+
+// ---------- Duty roster (የአባላት ምደባ) ----------
+export const DUTY_DEPTS = ['mezmur', 'hr', 'development', 'education'] as const;
+export const DUTIES = [
+  'ጸበል አስተባባሪ', 'ሰልፍ አስተባባሪ', 'መዝሙር መሪ', 'ሳር ማጨድ', 'ባንዲራ መዘርጋት', 'ልብስ ማጠብ', 'ማብሰል',
+  'መሸመት/መግዛት', 'ምዕመናንን ማስተባበር', 'ዘማሪ', 'ወረብ አቅራቢ', 'ከበሮ መቺ', 'ውሃ አሳላፊ', 'ምግብ አሳላፊ',
+  'ልብስ መልቀም', 'Postcard መስጠት', 'ሙዳየ ምጽዋት ማዞር', 'ጸሎት ከፋች', 'መድረክ መሪ', 'ፈታኝ',
+  'Print ማድረግ', 'ደረጃ/ካርድ መስራት', 'አስተባባሪ',
+] as const;
+export const OCCASIONS = [
+  'በዓለ አርሴማ', 'በዓለ ሩፋኤል', 'መስቀል', 'ልደት', 'ፍልሰታ', 'ነነዌ', 'ጷጉሜ ጸበል',
+  'የዘወትር ስራ', 'ባዛር', 'ነዳያን ጥየቃ', 'ሱቅ', 'አመታዊ በዓል',
+] as const;
+
+// ---------- Songs (ዜማ) ----------
+export const SONG_CATEGORIES = [
+  { key: 'newyear', label: 'የአዲስ አመት' },
+  { key: 'meskel', label: 'የመስቀል' },
+  { key: 'timket', label: 'የጥምቀት' },
+  { key: 'lidet', label: 'የልደት' },
+  { key: 'debretabor', label: 'የደብረ ታቦር' },
+  { key: 'mariam', label: 'የማርያም' },
+  { key: 'melaekt', label: 'የመላእክት' },
+  { key: 'semaetat', label: 'የሰማዕታት' },
+  { key: 'atswamat', label: 'የአጽዋማት' },
+  { key: 'tinsae', label: 'ትንሣኤ' },
+  { key: 'hamsa', label: 'በዓለ ሐምሳ' },
+  { key: 'zewetir', label: 'የዘወትር' },
+] as const;
+export const SONG_CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
+  SONG_CATEGORIES.map((c) => [c.key, c.label]),
+);

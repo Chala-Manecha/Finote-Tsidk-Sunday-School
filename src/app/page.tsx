@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { SCHOOL_NAME } from '@/lib/constants';
+import { PublicHeader, PublicFooter } from '@/components/public-header';
 import { createClient } from '@/lib/supabase/server';
 import { formatEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 
@@ -24,13 +24,7 @@ export default async function Home() {
 
   return (
     <>
-      <header className="topbar">
-        <span className="brand">{SCHOOL_NAME}</span>
-        <span className="spacer" />
-        <nav>
-          <Link href="/staff">ሁሉም ክፍሎች (9)</Link>
-        </nav>
-      </header>
+      <PublicHeader />
       <main className="page">
         <div className="card" style={{ marginTop: 30 }}>
           <h1 className="title">እንኳን ወደ {SCHOOL_NAME} በሰላም መጡ።</h1>
@@ -56,9 +50,7 @@ export default async function Home() {
           <p className="muted">በሚቀጥሉት 7 ቀናት የተያዘ መርሓ ግብር የለም።</p>
         )}
 
-        <p className="muted small" style={{ marginTop: 30 }}>
-          አቃቂ ቃሊቲ, ወረዳ-1, ደብረ ጽጌ ቅዱስ ሩፋኤል ቤተክርስቲያን, ኢትዮጵያ · Telegram @make_living
-        </p>
+        <PublicFooter />
       </main>
     </>
   );

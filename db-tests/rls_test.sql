@@ -223,4 +223,33 @@ update public.earnings set status = 'approved' where id = '40000000-0000-0000-00
 select pg_temp.must_equal((select count(*) from public.earnings where status = 'approved' and decided_by is not null), 1, 'finance approves earning');
 reset role;
 
+-- ---------- phase 3: duty roster + songs ----------
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000a8', 'edu@x');
+insert into public.staff_profiles (user_id, username, full_name) values ('00000000-0000-0000-0000-0000000000a8', 'edu1', 'Edu One');
+insert into public.staff_departments values ('00000000-0000-0000-0000-0000000000a8', 'education');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+insert into public.duty_assignments (member_id, dept, duty, duty_date, occasion)
+  values ('10000000-0000-0000-0000-000000000001', 'mezmur', 'ዘማሪ', '2026-10-10', 'በዓለ ሩፋኤል');
+select pg_temp.must_fail($q$insert into public.duty_assignments (member_id, dept, duty, duty_date, occasion) values ('10000000-0000-0000-0000-000000000001', 'hr', 'ዘማሪ', '2026-10-10', 'መስቀል')$q$);
+insert into public.songs (title, category) values ('እግዚአብሔር እረኛዬ ነው', 'zewetir');
+select pg_temp.must_fail($q$insert into public.wereb_items (title) values ('x')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+select pg_temp.must_fail($q$insert into public.duty_assignments (member_id, dept, duty, duty_date, occasion) values ('10000000-0000-0000-0000-000000000001', 'office', 'ዘማሪ', '2026-10-10', 'መስቀል')$q$);
+select pg_temp.must_fail($q$insert into public.songs (title, category) values ('x', 'zewetir')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+insert into public.wereb_items (title) values ('ወረብ ዘመስቀል');
+select pg_temp.must_fail($q$insert into public.songs (title, category) values ('x', 'zewetir')$q$);
+-- mezmur's duty row is not editable by education
+update public.duty_assignments set duty = 'ፈታኝ' where dept = 'mezmur';
+select pg_temp.must_equal((select count(*) from public.duty_assignments where duty = 'ፈታኝ'), 0, 'education cannot edit mezmur duty');
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select pg_temp.must_equal((select count(*) from public.public_duty_roster('2026-10-01')), 1, 'public roster');
+select pg_temp.must_equal((select count(*) from public.songs), 1, 'anon reads songs');
+select pg_temp.must_equal((select count(*) from public.wereb_items), 1, 'anon reads wereb');
+select pg_temp.must_fail('select * from public.duty_assignments');
+reset role;
+
 \echo ALL RLS TESTS PASSED

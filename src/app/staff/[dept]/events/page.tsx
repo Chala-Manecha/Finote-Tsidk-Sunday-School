@@ -28,7 +28,8 @@ export default async function ScheduleEventsPage({
     .select('id, title, event_date, event_time, status, dept')
     .order('event_date')
     .order('event_time');
-  if (!sp.past) q = q.gte('event_date', today);
+  // Upcoming events, plus every pending one whatever its date, so nothing waits unseen.
+  if (!sp.past) q = q.or(`event_date.gte.${today},status.eq.pending`);
   if (sp.status) q = q.eq('status', sp.status);
   const { data: events } = await q.returns<Ev[]>();
 
