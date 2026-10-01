@@ -9,6 +9,7 @@ import { fetchRequests } from '@/lib/money-data';
 import { ActionButton } from '@/components/action-button';
 import { RequestMoneyForm, ExpenseForm, EarningForm } from '@/components/money-forms';
 import { withdrawRequest, deleteExpense, deleteEarning } from '@/lib/actions/money';
+import { ReceiveForm } from '@/components/pay-form';
 
 const VIEWS = {
   request: 'ገንዘብ ለመጠየቅ',
@@ -80,6 +81,14 @@ async function RequestView({ dept, supabase }: { dept: string; supabase: Sb }) {
                   {r.status === 'pending' && (
                     <ActionButton action={withdrawRequest.bind(null, r.id)} label="ሰርዝ" className="btn sm danger"
                       confirmText="ጥያቄውን መሰረዝ ይፈልጋሉ?" />
+                  )}
+                  {r.status === 'paid' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <Link className="link small" href={`/staff/vouchers/${r.id}`}>የወጪ ማዘዣ {r.voucher_no}</Link>
+                      {r.received_at
+                        ? <span className="small" style={{ color: 'var(--green)' }}>✓ ተረክቧል — {r.received_name}</span>
+                        : <ReceiveForm id={r.id} />}
+                    </div>
                   )}
                 </td>
               </tr>
@@ -155,17 +164,19 @@ async function SpendView({ dept, supabase }: { dept: string; supabase: Sb }) {
 async function EarnView({ dept, supabase }: { dept: string; supabase: Sb }) {
   const { data } = await supabase
     .from('earnings')
-    .select('id, amount, source, earned_on, status, submitted_at, decided_at')
+    .select('id, amount, source, earned_on, status, submitted_at, decided_at, receipts(id, code, voided_at)')
     .eq('dept', dept)
     .order('submitted_at', { ascending: false });
   const rows = (data ?? []) as {
     id: string; amount: number; source: string; earned_on: string; status: EarningStatus;
     submitted_at: string; decided_at: string | null;
+    receipts: { id: string; code: string; voided_at: string | null }[];
   }[];
   return (
     <>
       <EarningForm dept={dept} />
       <h3 className="section">የተላኩ የገቢ ሪፖርቶች</h3>
+      <p className="muted small">ሒሳብና ንብረት ሲያጸድቅ ደረሰኝ ይዘጋጃል፤ አትመው ለማኅተም ወደ ሒሳብና ንብረት ይሂዱ።</p>
       <div className="table-wrap">
         <table>
           <thead><tr><th>ቀን</th><th>መጠን</th><th>ምንጭ</th><th>ሁኔታ</th><th>የጸደቀበት ቀን</th><th></th></tr></thead>
@@ -178,6 +189,9 @@ async function EarnView({ dept, supabase }: { dept: string; supabase: Sb }) {
                 <td><span className={`pill ${STATUS_PILL[e.status]}`}>{EARNING_STATUS[e.status]}</span></td>
                 <td>{e.decided_at ? formatEc(e.decided_at) : '—'}</td>
                 <td>
+                  {e.receipts?.filter((x) => !x.voided_at).map((x) => (
+                    <Link key={x.id} className="btn sm secondary" href={`/staff/receipts/${x.id}`}>🧾 ደረሰኝ</Link>
+                  ))}
                   {e.status === 'pending' && (
                     <ActionButton action={deleteEarning.bind(null, e.id)} label="ሰርዝ" className="btn sm danger"
                       confirmText="ይህን ሪፖርት መሰረዝ ይፈልጋሉ?" />

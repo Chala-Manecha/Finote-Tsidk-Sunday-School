@@ -25,6 +25,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'feedback-tracker', label: 'የአስተያየት ክትትል', ready: true },
     { slug: 'dept-docs', label: 'የክፍላት መግለጫ (PDF)', ready: true },
     { slug: 'terms', label: 'የአመራር ቡድን', ready: true },
+    { slug: 'departures', label: 'የመልቀቂያ ጥያቄዎች', ready: true },
   ],
   mezmur: [
     { slug: 'attendance', label: 'ክትትል መያዝ', ready: true },
@@ -38,11 +39,16 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'attendance', label: 'ስብሰባ ክትትል መያዝ', ready: true },
     { slug: 'duty', label: 'አባል መድብ', ready: true },
     { slug: 'all-duties', label: 'ሁሉም ምደባዎች', ready: true },
+    { slug: 'departures', label: 'መልቀቂያ', ready: true },
+    { slug: 'leadership', label: 'የክፍላት አመራሮች', ready: true },
+    { slug: 'lost-members', label: 'የጠፉ አባላት', ready: true },
   ],
   schedule: [{ slug: 'events', label: 'ቀጠሮዎች', ready: true }],
   finance: [
-    { slug: 'requests', label: 'የገንዘብ ጥያቄዎች', ready: true },
+    { slug: 'requests', label: 'የገንዘብ ጥያቄዎች ክትትል', ready: true },
     { slug: 'earnings', label: 'የተገኘ ገንዘብ ለማጸደቅ', ready: true },
+    { slug: 'donations', label: 'እርዳታዎች', ready: true },
+    { slug: 'receipts', label: 'ደረሰኞች', ready: true },
     { slug: 'tracking', label: 'የገንዘብ ክትትል', ready: true },
     { slug: 'ledger', label: 'የገንዘብ መዝገብ', ready: true },
     { slug: 'property-log', label: 'የንብረት መዝገብ', ready: true },
@@ -55,6 +61,10 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'contributions', label: 'የክፍላት ደረጃ', ready: true },
     { slug: 'ledger', label: 'የገንዘብ መዝገብ', ready: true },
     { slug: 'money-review', label: 'የገንዘብ ጥያቄዎች ክትትል', ready: true },
+    { slug: 'receipts', label: 'ደረሰኞች', ready: true },
+    { slug: 'donations', label: 'የእርዳታ መዝገብ', ready: true },
+    { slug: 'lost-members', label: 'የጠፉ አባላት', ready: true },
+    { slug: 'departures', label: 'መልቀቂያዎች', ready: true },
     { slug: 'reports', label: 'ሪፖርቶች', ready: true },
   ],
   education: [
@@ -69,7 +79,7 @@ const specific: Record<DeptCode, Tab[]> = {
 
 // ጽሕፈት ቤት has many tabs, so they are grouped (order of groups = order shown).
 const OFFICE_GROUPS: [string, string[]][] = [
-  ['አባላት', ['roster', 'members']],
+  ['አባላት', ['roster', 'departures', 'members']],
   ['ገንዘብና ንብረት', ['money-approvals', 'dept-property', 'money', 'property']],
   ['የድረ-ገጽ ይዘት', ['photos', 'history', 'assignees', 'dept-docs']],
   ['መርሐ ግብሮች', ['mahiberat', 'prayer', 'request-event']],

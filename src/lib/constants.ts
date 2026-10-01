@@ -152,3 +152,33 @@ export const PROPERTY_LOG_KIND: Record<PropertyLogKind, string> = {
  * the running anniversary year ("16ኛ ምሥረታ አመት") is computed from it.
  */
 export const FOUNDED_EC = { year: 2003, month: 9, day: 13 } as const; // ግንቦት 13, 2003 ዓ.ም
+
+// ---------- Round 2: payments, donations, leaving, roles ----------
+export type PayMethod = 'cash' | 'telebirr' | 'cbe' | 'other';
+export const PAY_METHOD: Record<PayMethod, string> = {
+  cash: 'በጥሬ ገንዘብ', telebirr: 'Telebirr', cbe: 'CBE (ባንክ ዝውውር)', other: 'ሌላ',
+};
+export type DonationMethod = 'telebirr' | 'cbe';
+export const DONATION_METHOD: Record<DonationMethod, string> = { telebirr: 'Telebirr', cbe: 'CBE (የኢትዮጵያ ንግድ ባንክ)' };
+export type DonationStatus = 'pending' | 'verified' | 'rejected';
+export const DONATION_STATUS: Record<DonationStatus, string> = {
+  pending: 'በማረጋገጥ ላይ', verified: 'ተረጋግጧል', rejected: 'ተቀባይነት አላገኘም',
+};
+export const GENERAL_DONATIONS = 'አጠቃላይ እርዳታ';
+
+export type LeaveReason = 'moved' | 'marriage' | 'study' | 'work' | 'other_church' | 'other';
+export const LEAVE_REASON: Record<LeaveReason, string> = {
+  moved: 'የመኖሪያ ቦታ መቀየር', marriage: 'ትዳር', study: 'ትምህርት', work: 'ሥራ',
+  other_church: 'ወደ ሌላ ሰንበት ት/ቤት', other: 'ሌላ',
+};
+export type DepartureStatus = 'pending' | 'approved' | 'rejected';
+export const DEPARTURE_STATUS: Record<DepartureStatus, string> = {
+  pending: 'ጽሕፈት ቤት በመጠባበቅ ላይ', approved: 'ጸድቋል', rejected: 'ተከልክሏል',
+};
+
+export type LeaderRole = 'head' | 'deputy' | 'secretary';
+export const LEADER_ROLE: Record<LeaderRole, string> = { head: 'ኃላፊ', deputy: 'ምክትል ኃላፊ', secretary: 'ጸሐፊ' };
+export const LEADER_ROLES: LeaderRole[] = ['head', 'deputy', 'secretary'];
+
+export const CHURCH_NAME = 'ደብረ ጽጌ ቅዱስ ሩፋኤል ቤተክርስቲያን';
+export const SCHOOL_ADDRESS = 'አቃቂ ቃሊቲ፣ ወረዳ-1';

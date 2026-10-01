@@ -51,8 +51,9 @@ export async function MemberTable({
 
   if (dept) query = query.eq('f.dept', dept);
   if (filters.q) {
-    const digits = filters.q.replace(/\D/g, '');
-    query = digits ? query.ilike('reg_no', `%${digits}%`) : query.ilike('full_name', `%${filters.q}%`);
+    // A registration code (letters+digits, e.g. 7K3M or ፍጽ-7K3M-Q9XD) → search reg_key; otherwise the name.
+    const code = filters.q.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    query = /\d/.test(code) && code.length >= 3 ? query.ilike('reg_key', `%${code}%`) : query.ilike('full_name', `%${filters.q}%`);
   }
   if (filters.status) query = query.eq('member_status', filters.status);
   if (filters.work) query = query.eq('work_status', filters.work);

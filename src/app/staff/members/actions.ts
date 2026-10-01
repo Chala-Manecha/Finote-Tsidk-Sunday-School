@@ -45,6 +45,11 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
   ].filter((l, i, a) => l && a.indexOf(l) === i);
   const photoPath = docPath(str(fd, 'photo_path'));
   if (!id && !photoPath) return { error: 'ፎቶ ያስገቡ።' };
+  const joinedRaw = str(fd, 'joined_year');
+  const joinedYear = joinedRaw ? Number(joinedRaw) : null;
+  if (joinedYear !== null && (!Number.isInteger(joinedYear) || joinedYear < 1980 || joinedYear > 2100)) {
+    return { error: 'የተቀላቀሉበት ዓመት ትክክል አይደለም።' };
+  }
 
   const member = {
     full_name: fullName,
@@ -59,6 +64,7 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
     sub_city: str(fd, 'sub_city'),
     languages,
     photo_path: photoPath,
+    joined_year: joinedYear,
     geez_level: oneOf(str(fd, 'geez_level'), GEEZ_LEVEL) ?? 'none',
     is_ethiopian: isEthiopian,
     nationality,

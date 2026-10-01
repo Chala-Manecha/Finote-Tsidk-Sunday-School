@@ -116,7 +116,8 @@ select pg_temp.must_equal((select count(*) from public.money_requests where deci
 -- ---------- finance pays, audit flags ----------
 set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
-update public.money_requests set status = 'paid' where id = '20000000-0000-0000-0000-000000000001';
+select pg_temp.must_fail($q$update public.money_requests set status = 'paid' where id = '20000000-0000-0000-0000-000000000001'$q$); -- no method
+update public.money_requests set status = 'paid', pay_method = 'cash' where id = '20000000-0000-0000-0000-000000000001';
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a5', false);
 update public.money_requests set audit_flag = true, audit_note = 'ደረሰኝ ይቅረብ' where id = '20000000-0000-0000-0000-000000000001';
 -- mezmur logs spend > approved → ከራስ ወጪ
@@ -133,15 +134,14 @@ set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a6', false);
 update public.events set status = 'approved' where id = '30000000-0000-0000-0000-000000000001';
 reset role;
+select reg_no as m1 from public.members where id = '10000000-0000-0000-0000-000000000001' \gset
 set role anon;
 select pg_temp.must_equal((select count(*) from public.events), 1, 'anon sees approved event');
 select pg_temp.must_fail('select * from public.public_member_names()');
 select pg_temp.must_fail($q$insert into public.feedback (member_id, dept, message) values ('10000000-0000-0000-0000-000000000001', 'mezmur', 'x y z')$q$);
-do $$ begin
-  if public.submit_feedback('ፍጽ-9999', '', 'mezmur', 'ሰላም ነው') <> 'not_found' then raise exception 'feedback not_found'; end if;
-  if public.submit_feedback('ፍጽ-0001', '@someone', 'mezmur', 'ሰላም ነው') <> 'mismatch' then raise exception 'feedback mismatch'; end if;
-  if public.submit_feedback('0001', '', 'mezmur', 'ጥሩ ነው') <> 'ok' then raise exception 'feedback ok'; end if;
-end $$;
+select pg_temp.must_equal((public.submit_feedback('ፍጽ-0001', '', 'mezmur', 'ሰላም ነው') = 'not_found')::int, 1, 'old-style ID not found');
+select pg_temp.must_equal((public.submit_feedback(:'m1', '@someone', 'mezmur', 'ሰላም ነው') = 'mismatch')::int, 1, 'feedback mismatch');
+select pg_temp.must_equal((public.submit_feedback(lower(replace(:'m1', 'ፍጽ-', '')), '', 'mezmur', 'ጥሩ ነው') = 'ok')::int, 1, 'feedback ok (lowercase, no prefix)');
 select pg_temp.must_fail($q$insert into public.feedback (member_id, dept, message, status) values ('10000000-0000-0000-0000-000000000001', 'mezmur', 'x', 'seen')$q$);
 reset role;
 
@@ -304,7 +304,7 @@ select pg_temp.must_fail($q$select public.save_member(null, '{"full_name":"አ�
 select pg_temp.must_fail($q$select public.save_member(null, '{"full_name":"ቤተልሔም አለሙ","sex":"female","work_status":"student"}', '{hr,mezmur,education}')$q$);
 select public.save_member(null, '{"full_name":"ቤተልሔም አለሙ","sex":"female","work_status":"student","languages":["አማርኛ","ኦሮምኛ"],"telegram_username":"betty"}', '{hr,mezmur}');
 select pg_temp.must_equal((select count(*) from public.members where full_name = 'ቤተልሔም አለሙ'
-  and reg_no like 'ፍጽ-%' and cardinality(languages) = 2 and term_id = '50000000-0000-0000-0000-000000000001'), 1, 'reg_no, languages, term tag');
+  and reg_no ~ '^ፍጽ-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$' and cardinality(languages) = 2 and term_id = '50000000-0000-0000-0000-000000000001'), 1, 'reg_no, languages, term tag');
 reset role;
 do $$ declare r text; begin
   select reg_no into r from public.members where full_name = 'ቤተልሔም አለሙ';
@@ -346,6 +346,125 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3
 select pg_temp.must_fail($q$insert into public.property_log (dept, kind, item_name, value, log_date) values ('mezmur', 'lost', 'x', 1, '2026-10-01')$q$);
 update public.wallet_settings set opening_balance = 1;
 select pg_temp.must_equal((select opening_balance::bigint from public.wallet_settings), 10000, 'only finance sets the opening balance');
+reset role;
+
+
+-- =================== ROUND 2 ===================
+-- money out: voucher → department signs → ኦዲት
+set role authenticated;
+select pg_temp.must_equal((select count(*) from public.money_requests where id = '20000000-0000-0000-0000-000000000001'
+  and voucher_no ~ '^ፍጽ-ወ-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$' and pay_method = 'cash'), 1, 'voucher issued on payment');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a5', false);
+select pg_temp.must_fail($q$update public.money_requests set audited_at = now() where id = '20000000-0000-0000-0000-000000000001'$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+select pg_temp.must_fail($q$update public.money_requests set received_at = now(), received_name = 'x' where id = '20000000-0000-0000-0000-000000000001'$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail($q$update public.money_requests set received_at = now() where id = '20000000-0000-0000-0000-000000000001'$q$);
+update public.money_requests set received_at = now(), received_name = 'ዮሐንስ' where id = '20000000-0000-0000-0000-000000000001';
+update public.money_requests set pay_reference = 'changed' where id = '20000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select count(*) from public.money_requests where id = '20000000-0000-0000-0000-000000000001' and pay_reference is null), 1, 'payment details are fixed after payment');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a5', false);
+update public.money_requests set audited_at = now() where id = '20000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select count(*) from public.money_requests where audited_by = '00000000-0000-0000-0000-0000000000a5'), 1, 'ኦዲት reviewed after signature');
+select pg_temp.must_fail($q$update public.money_requests set audited_at = now() + interval '1 day' where id = '20000000-0000-0000-0000-000000000001'$q$);
+
+-- receipts: issued on income approval, immutable, scoped, voidable by finance only
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a9', false);
+select pg_temp.must_equal((select count(*) from public.receipts where kind = 'income' and dept = 'development'
+  and code ~ '^ፍጽ-ደ-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$'), 1, 'department sees its income receipt');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_equal((select count(*) from public.receipts where dept = 'development'), 0, 'other departments do not see it');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+select pg_temp.must_fail('select serial from public.receipts');
+select pg_temp.must_fail($q$update public.receipts set amount = 1 where dept = 'development'$q$);
+select pg_temp.must_fail($q$update public.receipts set voided_at = now() where dept = 'development'$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a5', false);
+select pg_temp.must_fail($q$update public.receipts set voided_at = now(), void_reason = 'x' where dept = 'development'$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+update public.receipts set voided_at = now(), void_reason = 'የተሳሳተ ህትመት' where dept = 'development';
+select public.reissue_receipt((select id from public.receipts where dept = 'development' and voided_at is not null));
+select pg_temp.must_equal((select count(*) from public.receipts where dept = 'development' and voided_at is null), 1, 'reissued receipt is live');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a5', false);
+select pg_temp.must_equal((select count(*) from public.receipt_serial_gaps()), 0, 'receipt serials have no gaps');
+select pg_temp.must_equal(((public.receipt_audit((select code from public.receipts where dept = 'development' and voided_at is null)) ->> 'serial')::bigint > 1)::int, 1, 'audit lookup shows serial');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+select pg_temp.must_fail($q$select public.receipt_audit('x')$q$);
+update public.donation_accounts set account_name = 'ፍኖተ ጽድቅ ሰ/ት/ቤት', telebirr_number = '0911223344', cbe_account = '1000123456789';
+reset role;
+
+-- donations: public claim → finance verifies → receipt → public tracking + verify
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((public.submit_donation('ሰላማዊት', '0911000000', 1500, 'telebirr', 'CH12AB34CD', 'ለበዓል') = 'ok')::int, 1, 'donation claimed');
+select pg_temp.must_equal((public.submit_donation('ሌላ', null, 10, 'cbe', 'ch12-ab34-cd', null) = 'duplicate')::int, 1, 'same transaction twice is rejected');
+select pg_temp.must_equal((public.donation_status('ch12ab34cd') = 'pending')::int, 1, 'donor sees pending');
+select pg_temp.must_fail('select * from public.donations');
+reset role;
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_equal((select count(*) from public.donations), 0, 'departments do not see donations');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+select pg_temp.must_fail($q$update public.donations set status = 'rejected' where txn_key = 'CH12AB34CD'$q$);
+update public.donations set status = 'verified' where txn_key = 'CH12AB34CD';
+select pg_temp.must_equal((select count(*) from public.receipts where kind = 'donation' and amount = 1500 and payer_name = 'ሰላማዊት'
+  and account_label like '%Telebirr 0911223344%'), 1, 'donation receipt issued');
+select code as donation_code from public.receipts where kind = 'donation' \gset
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((public.donation_status('CH12AB34CD') = 'ready')::int, 1, 'donor sees receipt ready');
+select pg_temp.must_equal((public.verify_code(:'donation_code') ->> 'type' = 'receipt')::int, 1, 'public can verify a receipt');
+select pg_temp.must_equal((public.verify_code('ZZZZ-ZZZZ') ->> 'type' is null)::int, 1, 'unknown code is not valid');
+reset role;
+
+-- leaving certificate: HR requests → office approves → member frozen → reinstate
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail($q$insert into public.member_departures (member_id, leave_date, reason_text, reason_category) values ('10000000-0000-0000-0000-000000000001', '2026-10-01', 'ወደ ሌላ ከተማ', 'moved')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+insert into public.member_departures (id, member_id, leave_date, reason_text, reason_category)
+  values ('70000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '2026-10-01', 'ወደ ሌላ ከተማ ተዛውሬያለሁ', 'moved');
+select pg_temp.must_fail($q$insert into public.member_departures (member_id, leave_date, reason_text, reason_category) values ('10000000-0000-0000-0000-000000000001', '2026-10-01', 'again', 'other')$q$);
+select pg_temp.must_fail($q$update public.member_departures set status = 'approved' where id = '70000000-0000-0000-0000-000000000001'$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+update public.member_departures set status = 'approved', commendation = 'በታማኝነት አገልግለዋል' where id = '70000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select count(*) from public.members where id = '10000000-0000-0000-0000-000000000001' and not is_active), 1, 'approved departure freezes member');
+select pg_temp.must_equal((select count(*) from public.member_departures where cert_no ~ '^ፍጽ-መ-'), 1, 'certificate code issued');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a5', false);
+select pg_temp.must_equal((select count(*) from public.member_departures), 1, 'ኦዲት sees departures');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+update public.member_departures set reinstated_at = now() where id = '70000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select count(*) from public.members where id = '10000000-0000-0000-0000-000000000001' and is_active), 1, 'reinstated member is active');
+
+-- leadership roles: HR only
+insert into public.leadership_roles (term_id, dept, role, member_id)
+  values ('50000000-0000-0000-0000-000000000001', 'mezmur', 'head', '10000000-0000-0000-0000-000000000001');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail($q$insert into public.leadership_roles (term_id, dept, role, member_id) values ('50000000-0000-0000-0000-000000000001', 'mezmur', 'deputy', '10000000-0000-0000-0000-000000000001')$q$);
+reset role;
+
+-- lost members: absent from both መዝሙር and ኮርስ
+insert into public.members (id, full_name, sex, work_status, created_at)
+  values ('10000000-0000-0000-0000-0000000000f1', 'የሚጠፋ አባል', 'male', 'student', '2026-08-01');
+insert into public.attendance_sessions (id, session_type, session_date) values
+  ('80000000-0000-0000-0000-000000000001', 'mezmur', '2026-08-09'),
+  ('80000000-0000-0000-0000-000000000002', 'course', '2026-08-16'),
+  ('80000000-0000-0000-0000-000000000003', 'mezmur', '2026-09-20');
+insert into public.attendance (session_id, member_id, status) values
+  ('80000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000f1', 'present'),
+  ('80000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-0000000000f1', 'absent'),
+  ('80000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-0000000000f1', 'absent');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a5', false);
+select pg_temp.must_equal((select count(*) from public.member_absence_watch()
+  where member_id = '10000000-0000-0000-0000-0000000000f1' and level = 'lost' and last_seen = '2026-08-09'), 1, 'member absent 30+ days is lost');
+insert into public.lost_followups (member_id, contacted_on, note) values ('10000000-0000-0000-0000-0000000000f1', '2026-10-01', 'ስልክ ተደውሏል፤ በሚቀጥለው እሁድ ይመጣል');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail($q$insert into public.lost_followups (member_id, contacted_on, note) values ('10000000-0000-0000-0000-0000000000f1', '2026-10-01', 'x')$q$);
 reset role;
 
 \echo ALL RLS TESTS PASSED

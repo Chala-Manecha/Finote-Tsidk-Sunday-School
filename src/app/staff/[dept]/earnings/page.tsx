@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DEPT_NAME, EARNING_STATUS, STATUS_PILL, formatBirr, type EarningStatus } from '@/lib/constants';
@@ -8,6 +9,7 @@ import { decideEarning } from '@/lib/actions/money';
 type E = {
   id: string; dept: string; amount: number; source: string; earned_on: string;
   status: EarningStatus; submitted_at: string; decided_at: string | null; sale_item_id: string | null;
+  receipts: { id: string; code: string; voided_at: string | null }[];
 };
 
 export default async function FinanceEarnings({ params }: { params: Promise<{ dept: string }> }) {
@@ -16,7 +18,7 @@ export default async function FinanceEarnings({ params }: { params: Promise<{ de
   const supabase = await createClient();
   const { data } = await supabase
     .from('earnings')
-    .select('id, dept, amount, source, earned_on, status, submitted_at, decided_at, sale_item_id')
+    .select('id, dept, amount, source, earned_on, status, submitted_at, decided_at, sale_item_id, receipts(id, code, voided_at)')
     .order('status')
     .order('submitted_at', { ascending: false });
   const rows = (data ?? []) as E[];
@@ -39,7 +41,12 @@ export default async function FinanceEarnings({ params }: { params: Promise<{ de
                 <td>{formatEc(e.earned_on)}</td>
                 <td>{formatEc(e.submitted_at)}</td>
                 <td>{e.decided_at ? formatEc(e.decided_at) : '—'}</td>
-                <td><span className={`pill ${STATUS_PILL[e.status]}`}>{EARNING_STATUS[e.status]}</span></td>
+                <td>
+                  <span className={`pill ${STATUS_PILL[e.status]}`}>{EARNING_STATUS[e.status]}</span>
+                  {e.receipts?.filter((x) => !x.voided_at).map((x) => (
+                    <div key={x.id}><Link className="link small" href={`/staff/receipts/${x.id}`}>{x.code}</Link></div>
+                  ))}
+                </td>
                 <td>
                   {e.status === 'pending' && (
                     <div className="btn-row">

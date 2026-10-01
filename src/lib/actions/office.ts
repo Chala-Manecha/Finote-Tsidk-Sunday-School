@@ -93,8 +93,14 @@ export async function saveAssignee(_: FormState, fd: FormData): Promise<FormStat
   const newPath = pathIn(fd, 'photo', 'assignees');
   const supabase = await createClient();
   const { data: old } = await supabase.from('dept_assignees').select('photo_path').eq('dept', dept).maybeSingle();
+  // HR's leadership list (active term) is the source of the head's name.
+  const { data: term } = await supabase.from('leadership_terms').select('id').eq('is_active', true).maybeSingle();
+  const { data: head } = term
+    ? await supabase.from('leadership_roles').select('members(full_name, sex)').eq('term_id', term.id).eq('dept', dept).eq('role', 'head').maybeSingle()
+    : { data: null };
+  const hm = (head as unknown as { members: { full_name: string; sex: string } | null } | null)?.members;
   const row = {
-    dept, full_name, sex,
+    dept, full_name: hm?.full_name ?? full_name, sex: hm?.sex ?? sex,
     user_id: text(fd, 'user_id') || null,
     photo_path: newPath ?? old?.photo_path ?? null,
   };

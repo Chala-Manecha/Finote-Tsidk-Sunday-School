@@ -16,7 +16,7 @@ export function FeedbackForm() {
       <div className="form-grid">
         <div className="field">
           <label htmlFor="fb-reg">የመመዝገቢያ ቁጥር <span className="req">*</span></label>
-          <input id="fb-reg" name="reg_no" required dir="ltr" placeholder="ፍጽ-0001" autoComplete="off" />
+          <input id="fb-reg" name="reg_no" required dir="ltr" placeholder="ፍጽ-XXXX-XXXX" autoComplete="off" />
         </div>
         <div className="field">
           <label htmlFor="fb-tg">Telegram username</label>

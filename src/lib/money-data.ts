@@ -16,6 +16,12 @@ export type RequestRow = {
   paid_at: string | null;
   spend_approved_at: string | null;
   term_id: string | null;
+  pay_method: string | null;
+  pay_reference: string | null;
+  voucher_no: string | null;
+  received_at: string | null;
+  received_name: string | null;
+  audited_at: string | null;
   spent: number;
   refund: number;          // ተመላሽ
   self_contributed: number; // ከራስ ወጪ
@@ -29,7 +35,7 @@ export async function fetchRequests(
 ): Promise<RequestRow[]> {
   let q = supabase
     .from('money_requests')
-    .select('id, dept, amount, reason, needed_by, status, audit_flag, audit_note, requested_at, decided_at, paid_at, spend_approved_at, term_id, expense_lines(id, amount, reason, spent_on)')
+    .select('id, dept, amount, reason, needed_by, status, audit_flag, audit_note, requested_at, decided_at, paid_at, spend_approved_at, term_id, pay_method, pay_reference, voucher_no, received_at, received_name, audited_at, expense_lines(id, amount, reason, spent_on)')
     .order('requested_at', { ascending: false });
   if (opts.dept) q = q.eq('dept', opts.dept);
   if (opts.statuses) q = q.in('status', opts.statuses);
@@ -52,6 +58,17 @@ export async function fetchRequests(
       self_contributed: Math.max(spent - amount, 0),
     } as RequestRow;
   });
+}
+
+/** Where a request stands in the out-money flow (ሒሳብና ንብረት's tracker). */
+export function requestStage(r: RequestRow): { label: string; tone: string } {
+  if (r.status === 'pending') return { label: 'ጽሕፈት ቤት በመጠባበቅ ላይ', tone: 'half' };
+  if (r.status === 'rejected') return { label: 'ተከልክሏል', tone: 'absent' };
+  if (r.status === 'withdrawn') return { label: 'ተሰርዟል', tone: '' };
+  if (r.status === 'approved') return { label: 'ጸድቋል — ክፍያ በመጠባበቅ ላይ', tone: 'half' };
+  if (!r.received_at) return { label: 'ተከፍሏል — የክፍሉ ፊርማ በመጠባበቅ ላይ', tone: 'half' };
+  if (!r.spend_approved_at) return { label: 'ተረክቧል — ወጪ ሪፖርት በመጠባበቅ ላይ', tone: 'half' };
+  return { label: 'ተዘግቷል', tone: 'present' };
 }
 
 export type DeptMoneySummary = {

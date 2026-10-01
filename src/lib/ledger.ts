@@ -21,15 +21,20 @@ export type Movement = {
 };
 
 export async function loadWallet(supabase: SupabaseClient) {
-  const [{ data: w }, { data: earnings }, requests] = await Promise.all([
+  const [{ data: w }, { data: earnings }, { data: gifts }, requests] = await Promise.all([
     supabase.from('wallet_settings').select('opening_balance, as_of').maybeSingle(),
     supabase.from('earnings').select('dept, amount, source, earned_on').eq('status', 'approved'),
+    // Verified donations with a live receipt; dept 'general' keeps them out of the department ranking.
+    supabase.from('receipts').select('amount, payer_name, received_on, code').eq('kind', 'donation').is('voided_at', null),
     fetchRequests(supabase, { statuses: ['approved', 'paid'] }),
   ]);
 
   const movements: Movement[] = [];
   for (const e of earnings ?? []) {
     movements.push({ date: e.earned_on, dept: e.dept, kind: 'income', description: e.source, amount: Number(e.amount) });
+  }
+  for (const g of gifts ?? []) {
+    movements.push({ date: g.received_on, dept: 'general', kind: 'income', description: `እርዳታ፦ ${g.payer_name} (${g.code})`, amount: Number(g.amount) });
   }
   for (const r of requests) {
     if (r.paid_at) {

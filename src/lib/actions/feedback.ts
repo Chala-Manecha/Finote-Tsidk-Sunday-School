@@ -12,7 +12,7 @@ export async function submitFeedback(_: FormState, fd: FormData): Promise<FormSt
   const telegram = String(fd.get('telegram') ?? '').trim();
   const dept = String(fd.get('dept') ?? '');
   const message = String(fd.get('message') ?? '').trim();
-  if (!/\d/.test(reg_no)) return { error: 'የመመዝገቢያ ቁጥርዎን ያስገቡ (ለምሳሌ ፍጽ-0001)።' };
+  if (reg_no.replace(/[^A-Za-z0-9]/g, '').length < 8) return { error: 'የመመዝገቢያ ቁጥርዎን ሙሉ ያስገቡ (ለምሳሌ ፍጽ-7K3M-Q9XD)።' };
   if (!isDeptCode(dept)) return { error: 'ክፍል ይምረጡ።' };
   if (message.length < 3) return { error: 'አስተያየትዎትን ይጻፉ።' };
   if (message.length > 4000) return { error: 'አስተያየቱ በጣም ረጅም ነው።' };

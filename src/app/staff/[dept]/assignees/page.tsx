@@ -12,17 +12,24 @@ export default async function OfficeAssignees({ params }: { params: Promise<{ de
   const { dept } = await params;
   if (dept !== 'office') notFound();
   const supabase = await createClient();
-  const [{ data: rows }, { data: staff }] = await Promise.all([
+  const [{ data: rows }, { data: staff }, { data: term }] = await Promise.all([
     supabase.from('dept_assignees').select('dept, full_name, sex, photo_path, user_id'),
     supabase.from('staff_profiles').select('user_id, username, full_name').eq('is_active', true).order('full_name'),
+    supabase.from('leadership_terms').select('id').eq('is_active', true).maybeSingle(),
   ]);
   const byDept = new Map(((rows ?? []) as A[]).map((r) => [r.dept, r]));
+  // HR's leadership list is the source of who the head is; this tab adds the photo and login.
+  const { data: heads } = term
+    ? await supabase.from('leadership_roles').select('dept, members(full_name, sex)').eq('term_id', term.id).eq('role', 'head')
+    : { data: [] };
+  const headOf = new Map(((heads ?? []) as unknown as { dept: string; members: { full_name: string; sex: 'male' | 'female' } | null }[])
+    .map((h) => [h.dept, h.members]));
 
   return (
     <>
       <h2 className="section" style={{ marginTop: 0 }}>ክፍል ኃላፊዎች</h2>
       <p className="muted small">
-        ኃላፊው ከሠራተኛ መለያ ጋር ሲያያዝ፣ ያ ሰው ሲገባ በክፍሉ ገጽ ላይ ፎቶው እና &quot;ውድ … እንኳን በሰላም መጣህ/ሽ&quot; ይታያል።
+        ስሙ ከHR “የክፍላት አመራሮች” ዝርዝር (ንቁው ቡድን) ይወሰዳል፤ እዚህ ፎቶ እና የሠራተኛ መለያ ብቻ ይጨመራል። ኃላፊው ከሠራተኛ መለያ ጋር ሲያያዝ፣ ያ ሰው ሲገባ በክፍሉ ገጽ ላይ ፎቶው እና &quot;ውድ … እንኳን በሰላም መጣህ/ሽ&quot; ይታያል።
       </p>
       <div className="table-wrap">
         <table>
@@ -30,14 +37,15 @@ export default async function OfficeAssignees({ params }: { params: Promise<{ de
           <tbody>
             {DEPARTMENTS.map((d) => {
               const a = byDept.get(d.code);
+              const head = headOf.get(d.code);
               const photo = mediaUrl(supabase, a?.photo_path);
               return (
                 <tr key={d.code}>
                   <td>{d.name}</td>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <td>{photo ? <img src={photo} alt="" className="avatar" /> : '—'}</td>
-                  <td>{a?.full_name ?? <span className="muted">አልተመደበም</span>}</td>
-                  <td>{a ? SEX[a.sex] : ''}</td>
+                  <td>{head?.full_name ?? a?.full_name ?? <span className="muted">አልተመደበም</span>}{head && a && head.full_name !== a.full_name && <div className="small muted">ለማዘመን “አርም” ይጫኑ</div>}</td>
+                  <td>{head ? SEX[head.sex] : a ? SEX[a.sex] : ''}</td>
                   <td>
                     <div className="btn-row">
                       <details>
@@ -47,11 +55,12 @@ export default async function OfficeAssignees({ params }: { params: Promise<{ de
                             <input type="hidden" name="dept" value={d.code} />
                             <div className="field">
                               <label>ሙሉ ስም</label>
-                              <input name="full_name" required defaultValue={a?.full_name} />
+                              <input name="full_name" required defaultValue={head?.full_name ?? a?.full_name} readOnly={!!head} />
+                              {head && <span className="hint">ከHR ዝርዝር</span>}
                             </div>
                             <div className="field">
                               <label>ፆታ</label>
-                              <select name="sex" required defaultValue={a?.sex ?? ''}>
+                              <select name="sex" required defaultValue={head?.sex ?? a?.sex ?? ''}>
                                 <option value="" disabled>ይምረጡ</option>
                                 {Object.entries(SEX).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                               </select>

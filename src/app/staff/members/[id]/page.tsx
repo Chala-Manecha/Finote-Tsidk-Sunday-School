@@ -56,6 +56,8 @@ export default async function MemberDetail({
 
   const rows: [string, React.ReactNode][] = [
     ['የምዝገባ መለያ ቁጥር', <b key="r">{m.reg_no}</b>],
+    ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
+    ...(m.is_active ? [] : [['ሁኔታ (መልቀቂያ)', <span key="l" className="pill absent">መልቀቂያ ወስደዋል</span>] as [string, React.ReactNode]]),
     ['ፆታ', SEX[m.sex as keyof typeof SEX]],
     ['ማዕረግ', m.title ? TITLES[m.title as keyof typeof TITLES] : '—'],
     ['ሁኔታ', WORK_STATUS[m.work_status as keyof typeof WORK_STATUS]],

@@ -116,12 +116,45 @@ export async function decideRequest(id: string, status: 'approved' | 'rejected')
   refresh();
 }
 
-/** ሒሳብና ንብረት */
-export async function markPaid(id: string) {
+/** ሒሳብና ንብረት hands over the money: records how, and the voucher is issued. */
+export async function payRequest(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const id = text(fd, 'id');
+  const pay_method = text(fd, 'pay_method');
+  const pay_reference = text(fd, 'pay_reference') || null;
+  if (!['cash', 'telebirr', 'cbe', 'other'].includes(pay_method)) return { error: 'የአከፋፈል መንገድ ይምረጡ።' };
+  if (pay_method !== 'cash' && !pay_reference) return { error: 'የዝውውር ቁጥር ያስገቡ።' };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('money_requests')
+    .update({ status: 'paid', pay_method, pay_reference }, { count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message.includes('only') ? 'ፈቃድ የለዎትም።' : error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+  return { ok: 'ተከፍሏል፤ የወጪ ማዘዣ ተዘጋጅቷል።' };
+}
+
+/** Requesting department confirms it received the cash (signs the voucher). */
+export async function confirmReceived(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const id = text(fd, 'id');
+  const received_name = text(fd, 'received_name');
+  if (received_name.length < 3) return { error: 'ገንዘቡን የተረከበውን ሰው ሙሉ ስም ያስገቡ።' };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('money_requests')
+    .update({ received_at: new Date().toISOString(), received_name }, { count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message.includes('only') ? 'ፈቃድ የለዎትም።' : error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+  return { ok: 'ተረክበዋል። የወጪ ማዘዣውን አትመው ይፈርሙ።' };
+}
+
+/** ኦዲት marks a signed payment as reviewed. */
+export async function auditPayment(id: string) {
   await requireStaff();
   const supabase = await createClient();
-  const { error, count } = await supabase.from('money_requests').update({ status: 'paid' }, { count: 'exact' }).eq('id', id);
-  if (error) return { error: error.message };
+  const { error, count } = await supabase.from('money_requests')
+    .update({ audited_at: new Date().toISOString() }, { count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message.includes('ኦዲት') ? 'ክፍሉ ገንዘቡን መረከቡን ገና አላረጋገጠም።' : error.message };
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
   refresh();
 }

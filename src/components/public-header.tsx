@@ -14,6 +14,7 @@ const NAV = [
   { href: '/prayer', label: 'የጸሎት መርኀ ግብራት' },
   { href: '/departments', label: 'ክፍሎቻችን' },
   { href: '/shop', label: 'ለመግዛት' },
+  { href: '/donate', label: 'ለመርዳት' },
   { href: '/feedback', label: 'አስተያየት ለመስጠት' },
 ];
 

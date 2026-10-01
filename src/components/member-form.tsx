@@ -25,6 +25,7 @@ export type MemberInitial = {
   photo_path?: string | null;
   photo_url?: string | null;
   reg_no?: string | null;
+  joined_year?: number | null;
   geez_level?: string;
   is_ethiopian?: boolean;
   nationality?: string | null;
@@ -143,6 +144,11 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
           <span className="hint">
             {dob ? `ዕድሜ፦ ${age} · እ.ኤ.አ ${dob}` : 'ቀን፣ ወር እና ዓ.ም ይምረጡ'}
           </span>
+        </div>
+        <div className="field">
+          <label htmlFor="joined_year">ሰንበት ት/ቤቱን የተቀላቀሉበት ዓመት (ዓ.ም)</label>
+          <input id="joined_year" name="joined_year" type="number" min={1980} max={2100} step={1} defaultValue={initial.joined_year ?? ''} placeholder="ለምሳሌ 2010" />
+          <span className="hint">በመልቀቂያ ምስክር ወረቀት ላይ ለአባልነት ዘመን ይውላል።</span>
         </div>
         <div className="field">
           <label htmlFor="member_status">የአባልነት ሁኔታ <span className="req">*</span></label>

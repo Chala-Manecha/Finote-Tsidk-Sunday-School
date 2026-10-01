@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { DEPARTMENTS, DEPT_NAME, formatBirr } from '@/lib/constants';
+import { DEPARTMENTS, DEPT_NAME, GENERAL_DONATIONS, formatBirr } from '@/lib/constants';
 import { formatEc } from '@/lib/ethiopian-calendar';
 import { isPeriod, resolveRange } from '@/lib/periods';
 import { loadWallet, signed } from '@/lib/ledger';
@@ -18,7 +18,7 @@ export default async function AuditLedger({
   if (dept !== 'audit' && dept !== 'finance') notFound();
   const sp = await searchParams;
   const period = isPeriod(sp.p) ? sp.p : 'month';
-  const filterDept = sp.d && sp.d in DEPT_NAME ? sp.d : undefined;
+  const filterDept = sp.d && (sp.d in DEPT_NAME || sp.d === 'general') ? sp.d : undefined;
   const supabase = await createClient();
   const range = await resolveRange(supabase, period);
   const wallet = await loadWallet(supabase);
@@ -47,12 +47,13 @@ export default async function AuditLedger({
           <select id="d" name="d" defaultValue={filterDept ?? ''}>
             <option value="">ሁሉም ክፍሎች</option>
             {DEPARTMENTS.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
+            <option value="general">{GENERAL_DONATIONS}</option>
           </select>
         </div>
         <button className="btn sm">አጣራ</button>
       </form>
 
-      <StatementHeader title="የገንዘብ እንቅስቃሴ መግለጫ" subtitle={`${range.label}${filterDept ? ` · ${DEPT_NAME[filterDept]}` : ''}`} />
+      <StatementHeader title="የገንዘብ እንቅስቃሴ መግለጫ" subtitle={`${range.label}${filterDept ? ` · ${DEPT_NAME[filterDept] ?? GENERAL_DONATIONS}` : ''}`} />
 
       <div className="summary-grid">
         <div><span>የጊዜው መነሻ ቀሪ ሂሳብ</span><b>{formatBirr(openingForPeriod)}</b></div>
@@ -73,7 +74,7 @@ export default async function AuditLedger({
             {rows.map((m, i) => (
               <tr key={i}>
                 <td>{formatEc(m.date)}</td>
-                <td>{DEPT_NAME[m.dept]}</td>
+                <td>{DEPT_NAME[m.dept] ?? GENERAL_DONATIONS}</td>
                 <td>{m.description}</td>
                 <td className="small">{KIND[m.kind]}</td>
                 <td className="num pos">{m.kind !== 'paid' ? formatBirr(m.amount) : ''}</td>
