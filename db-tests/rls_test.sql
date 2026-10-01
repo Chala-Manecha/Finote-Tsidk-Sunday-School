@@ -491,4 +491,99 @@ select set_config('request.jwt.claim.sub', '', false);
 select pg_temp.must_equal((select count(*) from public.social_links), 1, 'public sees social links');
 reset role;
 
+-- =================== ROUND 3b: education ===================
+reset role;
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-0000000000c1', 'student@member'),
+  ('00000000-0000-0000-0000-0000000000c2', 'teacher@member');
+insert into public.members (id, full_name, sex, work_status, phone) values
+  ('10000000-0000-0000-0000-0000000000e1', 'ተማሪ አንድ', 'female', 'student', '0911111111'),
+  ('10000000-0000-0000-0000-0000000000e2', 'መምህር ተማሪ', 'male', 'student', '0922222222');
+insert into public.member_accounts (member_id, user_id) values
+  ('10000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000000c1'),
+  ('10000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-0000000000c2');
+-- server-only helpers (run as the backend: no JWT)
+select set_config('request.jwt.claim.role', '', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((select count(*) from public.member_identify((select reg_no from public.members where id = '10000000-0000-0000-0000-0000000000e1'), '+251 911 111 111')), 1, 'identify by ID + phone');
+select pg_temp.must_equal((select count(*) from public.member_identify((select reg_no from public.members where id = '10000000-0000-0000-0000-0000000000e1'), '0900000000')), 0, 'wrong phone is not identified');
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_fail($q$select public.member_password('X', '123456')$q$);
+select pg_temp.must_fail($q$select * from public.member_identify('x', '0911111111')$q$);
+
+-- ትምህርት ክፍል sets up the year
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+insert into public.academic_years (id, ec_year, is_active) values ('90000000-0000-0000-0000-000000000001', 2019, true);
+select pg_temp.must_fail($q$insert into public.semesters (year_id, no, w_quiz) values ('90000000-0000-0000-0000-000000000001', 2, 50)$q$);
+insert into public.semesters (id, year_id, no, is_active) values ('91000000-0000-0000-0000-000000000001', '90000000-0000-0000-0000-000000000001', 1, true);
+insert into public.course_offerings (id, semester_id, class_level, name) values
+  ('92000000-0000-0000-0000-000000000003', '91000000-0000-0000-0000-000000000001', '3', 'ዶግማ'),
+  ('92000000-0000-0000-0000-000000000005', '91000000-0000-0000-0000-000000000001', '5', 'ሥርዓተ ቤተክርስቲያን');
+insert into public.offering_teachers values ('92000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-0000000000e2');
+insert into public.enrollments (year_id, member_id, class_level) values
+  ('90000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e2', '5');
+select pg_temp.must_fail($q$insert into public.offering_teachers values ('92000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-0000000000e2')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail($q$insert into public.academic_years (ec_year) values (2020)$q$);
+
+-- student self-enrolls; ትምህርት ክፍል assigns the class
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select public.enroll_self();
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+update public.enrollments set class_level = '3' where member_id = '10000000-0000-0000-0000-0000000000e1';
+select pg_temp.must_fail($q$update public.enrollments set class_level = '3' where member_id = '10000000-0000-0000-0000-0000000000e2'$q$);
+
+-- teacher enters marks for their class only
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+select pg_temp.must_fail($q$insert into public.marks (offering_id, member_id, quiz) values ('92000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-0000000000e1', 11)$q$);
+insert into public.marks (offering_id, member_id, quiz, notebook, participation, mid) values
+  ('92000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-0000000000e1', 9, 8, 10, 25);
+select pg_temp.must_fail($q$insert into public.marks (offering_id, member_id, quiz) values ('92000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-0000000000e2', 5)$q$);
+select pg_temp.must_fail($q$update public.course_offerings set status = 'submitted' where id = '92000000-0000-0000-0000-000000000003'$q$);
+update public.marks set final = 36 where offering_id = '92000000-0000-0000-0000-000000000003';
+insert into public.class_sessions (id, offering_id, session_date) values ('93000000-0000-0000-0000-000000000001', '92000000-0000-0000-0000-000000000003', '2026-09-27');
+insert into public.class_attendance values ('93000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e1', 'present');
+update public.course_offerings set status = 'submitted' where id = '92000000-0000-0000-0000-000000000003';
+select pg_temp.must_fail($q$update public.marks set final = 40 where offering_id = '92000000-0000-0000-0000-000000000003'$q$);
+select pg_temp.must_fail($q$update public.course_offerings set status = 'approved' where id = '92000000-0000-0000-0000-000000000003'$q$);
+select pg_temp.must_equal((select count(*) from public.marks where offering_id = '92000000-0000-0000-0000-000000000005'), 0, 'teacher does not see other classes');
+
+-- student sees nothing before approval, own marks after
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*) from public.marks), 0, 'no marks before approval');
+select pg_temp.must_fail($q$insert into public.marks (offering_id, member_id, quiz) values ('92000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-0000000000e1', 10)$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+update public.course_offerings set status = 'approved' where id = '92000000-0000-0000-0000-000000000003';
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*) from public.marks), 1, 'student sees own marks after approval');
+select pg_temp.must_equal((select count(*) from public.semester_results('91000000-0000-0000-0000-000000000001', '3')
+  where total = 88 and rank = 1 and ready and attended = 1 and sessions = 1), 1, 'results: total, rank, attendance, ready');
+select pg_temp.must_fail($q$select * from public.semester_results('91000000-0000-0000-0000-000000000001', '5')$q$);
+
+-- unlock needs a written reason
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+select pg_temp.must_fail($q$update public.course_offerings set status = 'draft' where id = '92000000-0000-0000-0000-000000000003'$q$);
+insert into public.offering_unlocks (offering_id, from_status, reason) values ('92000000-0000-0000-0000-000000000003', 'approved', 'የተሳሳተ ውጤት ተገኝቷል');
+update public.course_offerings set status = 'draft' where id = '92000000-0000-0000-0000-000000000003';
+update public.course_offerings set status = 'submitted' where id = '92000000-0000-0000-0000-000000000003';
+update public.course_offerings set status = 'approved' where id = '92000000-0000-0000-0000-000000000003';
+select public.issue_transcript('91000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e1');
+select code as transcript_code from public.transcripts \gset
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((public.verify_code(:'transcript_code') ->> 'type' = 'transcript')::int, 1, 'public can verify a transcript');
+select pg_temp.must_fail('select * from public.marks');
+reset role;
+-- a locked account is no longer a member login
+update public.member_accounts set locked_at = now() where member_id = '10000000-0000-0000-0000-0000000000e1';
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*) from public.marks), 0, 'locked account sees nothing');
+reset role;
+
 \echo ALL RLS TESTS PASSED

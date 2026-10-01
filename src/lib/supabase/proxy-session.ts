@@ -31,6 +31,12 @@ export async function updateSession(request: NextRequest) {
     url.searchParams.set('next', path);
     return NextResponse.redirect(url);
   }
+  if (!signedIn && path.startsWith('/student') && !['/student/login', '/student/register'].includes(path)) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/student/login';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
   if (signedIn && path === '/login' && !request.nextUrl.searchParams.has('reason')) {
     const url = request.nextUrl.clone();
     url.pathname = '/staff';

@@ -1,6 +1,6 @@
 'use client';
 import { useActionState, useState, startTransition } from 'react';
-import { uploadMedia, resizeImage } from '@/lib/client/upload';
+import { uploadTo, resizeImage } from '@/lib/client/upload';
 
 export type FormState = { error?: string; ok?: string };
 type Action = (s: FormState, fd: FormData) => Promise<FormState>;
@@ -11,11 +11,12 @@ type Action = (s: FormState, fd: FormData) => Promise<FormState>;
  * Fields are passed as children. Remounts (clears) after a successful add.
  */
 export function MediaForm({
-  action, fileField, folder, resize = false, submitLabel, card = true, resetOnSuccess = true, children,
+  action, fileField, folder, bucket = 'media', resize = false, submitLabel, card = true, resetOnSuccess = true, children,
 }: {
   action: Action;
   fileField?: string;
   folder?: string;
+  bucket?: string;
   resize?: boolean;
   submitLabel: string;
   card?: boolean;
@@ -43,7 +44,8 @@ export function MediaForm({
         try {
           setUploading(true);
           const blob = resize && f.type.startsWith('image/') ? await resizeImage(f) : f;
-          fd.set(`${fileField}_path`, await uploadMedia(folder, blob, f.name));
+          fd.set(`${fileField}_path`, await uploadTo(bucket, folder, blob, f.name));
+          fd.set(`${fileField}_name`, f.name);
         } catch (x) {
           setErr((x as Error).message);
           return;

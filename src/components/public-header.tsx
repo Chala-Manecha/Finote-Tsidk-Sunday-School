@@ -29,6 +29,7 @@ export async function PublicHeader() {
       <span className="spacer" />
       <nav>
         {NAV.map((n) => <Link key={n.href} href={n.href}>{n.label}</Link>)}
+        <Link href="/student">የተማሪ መግቢያ</Link>
         <Link href="/staff" className="staff-link">{team ? `አመራሮች (${termLabel(team)})` : 'አመራሮች'}</Link>
       </nav>
     </header>

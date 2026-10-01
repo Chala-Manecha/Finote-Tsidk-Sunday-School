@@ -346,3 +346,4 @@ img.thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; di
 .social-btn.s-tiktok { background: #111; }
 .social-btn.s-instagram { background: #C13584; }
 .social-btn.s-x { background: #000; }
+.doc-foot .statement-signs { flex: 1; margin-top: 0; }
