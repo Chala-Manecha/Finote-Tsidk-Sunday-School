@@ -35,7 +35,7 @@ function Fields({ m }: { m?: M }) {
 
 export default async function OfficeMahiberat({ params }: { params: Promise<{ dept: string }> }) {
   const { dept } = await params;
-  if (dept !== 'office') notFound();
+  if (dept !== 'internal_comm') notFound();
   const supabase = await createClient();
   const { data } = await supabase.from('mahiberat').select('*').order('event_date', { ascending: false });
   const rows = (data ?? []) as M[];

@@ -7,7 +7,7 @@ import { addPhoto, deletePhoto } from '@/lib/actions/office';
 
 export default async function OfficePhotos({ params }: { params: Promise<{ dept: string }> }) {
   const { dept } = await params;
-  if (dept !== 'office') notFound();
+  if (dept !== 'internal_comm') notFound();
   const supabase = await createClient();
   const { data } = await supabase.from('event_photos').select('id, caption, image_path').order('created_at', { ascending: false });
 

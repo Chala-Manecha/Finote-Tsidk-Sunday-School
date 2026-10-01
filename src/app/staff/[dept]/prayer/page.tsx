@@ -31,7 +31,7 @@ function Fields({ p }: { p?: P }) {
 
 export default async function OfficePrayer({ params }: { params: Promise<{ dept: string }> }) {
   const { dept } = await params;
-  if (dept !== 'office') notFound();
+  if (dept !== 'internal_comm') notFound();
   const supabase = await createClient();
   const { data } = await supabase.from('prayer_schedule').select('id, program, days, times').order('created_at');
   const rows = (data ?? []) as P[];

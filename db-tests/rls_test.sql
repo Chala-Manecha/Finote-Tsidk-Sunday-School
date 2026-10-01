@@ -27,6 +27,7 @@ insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000a4', 'fin@x'),
   ('00000000-0000-0000-0000-0000000000a5', 'audit@x'),
   ('00000000-0000-0000-0000-0000000000a6', 'sched@x'),
+  ('00000000-0000-0000-0000-0000000000b1', 'ic@x'),
   ('00000000-0000-0000-0000-0000000000a7', 'nobody@x');
 insert into public.staff_profiles (user_id, username, full_name, is_admin) values
   ('00000000-0000-0000-0000-00000000000a', 'admin',  'Admin', true),
@@ -35,14 +36,16 @@ insert into public.staff_profiles (user_id, username, full_name, is_admin) value
   ('00000000-0000-0000-0000-0000000000a3', 'office1','Office One', false),
   ('00000000-0000-0000-0000-0000000000a4', 'fin1',   'Fin One', false),
   ('00000000-0000-0000-0000-0000000000a5', 'audit1', 'Audit One', false),
-  ('00000000-0000-0000-0000-0000000000a6', 'sched1', 'Sched One', false);
+  ('00000000-0000-0000-0000-0000000000a6', 'sched1', 'Sched One', false),
+  ('00000000-0000-0000-0000-0000000000b1', 'ic1',    'IC One', false);
 insert into public.staff_departments values
   ('00000000-0000-0000-0000-0000000000a1', 'hr'),
   ('00000000-0000-0000-0000-0000000000a2', 'mezmur'),
   ('00000000-0000-0000-0000-0000000000a3', 'office'),
   ('00000000-0000-0000-0000-0000000000a4', 'finance'),
   ('00000000-0000-0000-0000-0000000000a5', 'audit'),
-  ('00000000-0000-0000-0000-0000000000a6', 'schedule');
+  ('00000000-0000-0000-0000-0000000000a6', 'schedule'),
+  ('00000000-0000-0000-0000-0000000000b1', 'internal_comm');
 
 -- ---------- anon ----------
 set role anon;
@@ -259,13 +262,14 @@ reset role;
 
 -- ---------- phase 4: office content, feedback, property, education ----------
 set role authenticated;
-select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
 insert into public.event_photos (image_path, caption) values ('photos/x.jpg', 'x');
 insert into public.history_items (category, media_type, media_path) values ('meskel', 'photo', 'history/x.jpg');
-insert into public.dept_assignees (dept, full_name, sex) values ('mezmur', 'ሀ', 'male')
-  on conflict (dept) do update set full_name = excluded.full_name;
 insert into public.mahiberat (association_name, event_date) values ('የማርያም ማኅበር', '2026-10-20');
 insert into public.prayer_schedule (program, days, times) values ('ምዕራፍ', '{1,3}', '{ማታ 11:00}');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+insert into public.dept_assignees (dept, full_name, sex) values ('mezmur', 'ሀ', 'male')
+  on conflict (dept) do update set full_name = excluded.full_name;
 insert into public.dept_property (name, qty, condition, owner_dept) values ('ከበሮ', 3, 'old', 'mezmur');
 select pg_temp.must_fail($q$insert into public.abnet_sessions (subjects, days, times, teacher) values ('{ቅኔ}', '{1}', '{x}', 'y')$q$);
 select pg_temp.must_fail($q$insert into public.sale_items (name, qty) values ('x', 1)$q$);
@@ -465,6 +469,26 @@ select pg_temp.must_equal((select count(*) from public.member_absence_watch()
 insert into public.lost_followups (member_id, contacted_on, note) values ('10000000-0000-0000-0000-0000000000f1', '2026-10-01', 'ስልክ ተደውሏል፤ በሚቀጥለው እሁድ ይመጣል');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
 select pg_temp.must_fail($q$insert into public.lost_followups (member_id, contacted_on, note) values ('10000000-0000-0000-0000-0000000000f1', '2026-10-01', 'x')$q$);
+reset role;
+
+-- =================== ROUND 3a: የውስጥ ግንኙነት ===================
+reset role;
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
+update public.site_settings set welcome_title = 'እንኳን ደህና መጡ', announcement = 'ነገ ጉባኤ አለ', announcement_active = true;
+insert into public.social_links (platform, url) values ('telegram', 'https://t.me/finote_tsidk');
+select pg_temp.must_fail($q$insert into public.social_links (platform, url) values ('facebook', 'http://insecure')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+select pg_temp.must_fail($q$insert into public.social_links (platform, url) values ('youtube', 'https://youtube.com/x')$q$);
+select pg_temp.must_fail($q$insert into public.mahiberat (association_name, event_date) values ('x', '2026-10-21')$q$);
+update public.site_settings set announcement = 'office cannot';
+select pg_temp.must_equal((select count(*) from public.site_settings where announcement = 'ነገ ጉባኤ አለ'), 1, 'only የውስጥ ግንኙነት edits the home page');
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((select count(*) from public.social_links), 1, 'public sees social links');
 reset role;
 
 \echo ALL RLS TESTS PASSED

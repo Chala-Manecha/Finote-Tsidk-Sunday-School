@@ -17,13 +17,8 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'roster', label: 'የአባላት ዝርዝር', ready: true },
     { slug: 'money-approvals', label: 'የገንዘብ ጥያቄ ማጸደቂያ', ready: true },
     { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: true },
-    { slug: 'photos', label: 'ዝግጅት ፎቶዎች', ready: true },
-    { slug: 'history', label: 'ታሪካችን', ready: true },
     { slug: 'assignees', label: 'ክፍል ኃላፊዎች', ready: true },
-    { slug: 'mahiberat', label: 'ማኀበራት አስተዳደር', ready: true },
-    { slug: 'prayer', label: 'የጸሎት መርኀ ግብር አስተዳደር', ready: true },
     { slug: 'feedback-tracker', label: 'የአስተያየት ክትትል', ready: true },
-    { slug: 'dept-docs', label: 'የክፍላት መግለጫ (PDF)', ready: true },
     { slug: 'terms', label: 'የአመራር ቡድን', ready: true },
     { slug: 'departures', label: 'የመልቀቂያ ጥያቄዎች', ready: true },
   ],
@@ -74,15 +69,23 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'wereb-admin', label: 'ወረብ አስተዳደር', ready: true },
     { slug: 'duty', label: 'አባል መድብ', ready: true },
   ],
-  internal_comm: [],
+  internal_comm: [
+    { slug: 'home-page', label: 'የመነሻ ገጽ', ready: true },
+    { slug: 'photos', label: 'ተንቀሳቃሽ ምስሎች (ዝግጅት ፎቶዎች)', ready: true },
+    { slug: 'social', label: 'ማኅበራዊ ሚዲያ', ready: true },
+    { slug: 'history', label: 'ታሪካችን', ready: true },
+    { slug: 'mahiberat', label: 'ማኅበራት', ready: true },
+    { slug: 'prayer', label: 'የጸሎት መርኀ ግብራት', ready: true },
+    { slug: 'dept-docs', label: 'ክፍሎቻችን (PDF)', ready: true },
+  ],
 };
 
 // ጽሕፈት ቤት has many tabs, so they are grouped (order of groups = order shown).
 const OFFICE_GROUPS: [string, string[]][] = [
   ['አባላት', ['roster', 'departures', 'members']],
   ['ገንዘብና ንብረት', ['money-approvals', 'dept-property', 'money', 'property']],
-  ['የድረ-ገጽ ይዘት', ['photos', 'history', 'assignees', 'dept-docs']],
-  ['መርሐ ግብሮች', ['mahiberat', 'prayer', 'request-event']],
+  ['ክፍል ኃላፊዎች', ['assignees']],
+  ['መርሐ ግብሮች', ['request-event']],
   ['አስተዳደር', ['terms', 'feedback-tracker', 'feedback']],
 ];
 

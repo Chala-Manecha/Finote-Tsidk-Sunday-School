@@ -11,7 +11,7 @@ type D = { dept: string; file_path: string; updated_at: string };
 
 export default async function DeptDocs({ params }: { params: Promise<{ dept: string }> }) {
   const { dept } = await params;
-  if (dept !== 'office') notFound();
+  if (dept !== 'internal_comm') notFound();
   const supabase = await createClient();
   const { data } = await supabase.from('dept_documents').select('dept, file_path, updated_at');
   const docs = new Map(((data ?? []) as D[]).map((d) => [d.dept, d]));

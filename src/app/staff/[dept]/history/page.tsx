@@ -49,7 +49,7 @@ function HistoryFields({ item }: { item?: Item }) {
 
 export default async function OfficeHistory({ params }: { params: Promise<{ dept: string }> }) {
   const { dept } = await params;
-  if (dept !== 'office') notFound();
+  if (dept !== 'internal_comm') notFound();
   const supabase = await createClient();
   const { data } = await supabase.from('history_items')
     .select('id, category, media_type, media_path, caption, item_date')
