@@ -85,7 +85,7 @@ export function ExpenseForm({ requestId }: { requestId: string }) {
   );
 }
 
-export function EarningForm({ dept }: { dept: string }) {
+export function EarningForm({ dept, amount, source }: { dept: string; amount?: string; source?: string }) {
   const [state, action, pending] = useCountedAction(reportEarning);
   const key = state.n ?? 0;
   return (
@@ -94,11 +94,11 @@ export function EarningForm({ dept }: { dept: string }) {
       <div className="form-grid">
         <div className="field">
           <label htmlFor="er-amount">መጠን (ብር) <span className="req">*</span></label>
-          <input id="er-amount" name="amount" type="number" min="0.01" step="0.01" required dir="ltr" />
+          <input id="er-amount" name="amount" type="number" min="0.01" step="0.01" required dir="ltr" defaultValue={key === 0 ? amount : undefined} />
         </div>
         <div className="field">
           <label htmlFor="er-source">የገቢው ምንጭ <span className="req">*</span></label>
-          <input id="er-source" name="source" required placeholder="ለምሳሌ፦ የሱቅ ሽያጭ፣ ስጦታ…" />
+          <input id="er-source" name="source" required placeholder="ለምሳሌ፦ የሱቅ ሽያጭ፣ ስጦታ…" defaultValue={key === 0 ? source : undefined} />
         </div>
         <div className="field">
           <span className="label">ቀን (ዓ.ም) <span className="req">*</span></span>

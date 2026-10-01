@@ -8,19 +8,22 @@ import type { FormState } from '@/components/media-form';
 type Student = { id: string; full_name: string; reg_no: string };
 type Marks = Partial<Record<ComponentKey, number | null>>;
 
-export function MarksGrid({ offeringId, students, marks, weights, locked }: {
+export function MarksGrid({ offeringId, students, marks, weights, locked, attendance = {}, barred = [], makeup = [] }: {
   offeringId: string; students: Student[]; marks: Record<string, Marks>;
   weights: Record<ComponentKey, number>; locked: boolean;
+  attendance?: Record<string, number | null>; barred?: string[]; makeup?: string[];
 }) {
+  const makeupMode = locked && makeup.length > 0;
   const [state, action, pending] = useActionState<FormState, FormData>(saveMarks, {});
   return (
     <form action={action}>
       <input type="hidden" name="offering_id" value={offeringId} />
+      {makeupMode && <input type="hidden" name="makeup_only" value="1" />}
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>ተማሪ</th>
+              <th>ተማሪ</th><th className="num">ክትትል</th>
               {COMPONENTS.map((c) => <th key={c.key} className="num">{c.label}<div className="small muted">/{weights[c.key]}</div></th>)}
               <th className="num">ድምር</th>
             </tr>
@@ -31,22 +34,32 @@ export function MarksGrid({ offeringId, students, marks, weights, locked }: {
               const total = COMPONENTS.reduce((t, c) => t + Number(m[c.key] ?? 0), 0);
               return (
                 <tr key={s.id}>
-                  <td>{s.full_name}<input type="hidden" name="member_id" value={s.id} /><div className="small muted">{s.reg_no}</div></td>
-                  {COMPONENTS.map((c) => (
-                    <td key={c.key} className="num">
-                      <input name={`${c.key}_${s.id}`} type="number" min={0} max={weights[c.key]} step="0.25"
-                        defaultValue={m[c.key] ?? ''} disabled={locked} style={{ width: 72 }} aria-label={`${s.full_name} ${c.label}`} />
-                    </td>
-                  ))}
+                  <td>
+                    {s.full_name}<input type="hidden" name="member_id" value={s.id} /><div className="small muted">{s.reg_no}</div>
+                    {barred.includes(s.id) && <div className="small neg">ክትትል ዝቅተኛ — ዋና ፈተና በትምህርት ክፍል ፈቃድ ብቻ</div>}
+                    {makeup.includes(s.id) && <div className="small" style={{ color: 'var(--green)' }}>ድጋሚ ፈተና ተፈቅዷል</div>}
+                  </td>
+                  <td className="num">{attendance[s.id] == null ? '—' : `${attendance[s.id]}%`}</td>
+                  {COMPONENTS.map((c) => {
+                    const open = makeupMode ? c.key === 'final' && makeup.includes(s.id) : !locked;
+                    return (
+                      <td key={c.key} className="num">
+                        <input name={`${c.key}_${s.id}`} type="number" min={0} max={weights[c.key]} step="0.25"
+                          defaultValue={m[c.key] ?? ''} disabled={!open}
+                          readOnly={c.key === 'final' && barred.includes(s.id)}
+                          style={{ width: 72 }} aria-label={`${s.full_name} ${c.label}`} />
+                      </td>
+                    );
+                  })}
                   <td className="num"><b>{total || '—'}</b></td>
                 </tr>
               );
             })}
-            {students.length === 0 && <tr><td colSpan={COMPONENTS.length + 2} className="muted">በዚህ ክፍል የተመደበ ተማሪ የለም።</td></tr>}
+            {students.length === 0 && <tr><td colSpan={COMPONENTS.length + 3} className="muted">በዚህ ክፍል የተመደበ ተማሪ የለም።</td></tr>}
           </tbody>
         </table>
       </div>
-      {!locked && students.length > 0 && (
+      {(!locked || makeupMode) && students.length > 0 && (
         <div className="btn-row" style={{ marginTop: 10 }}>
           <button className="btn" disabled={pending}>{pending ? '…' : 'ውጤት አስቀምጥ'}</button>
           {state.error && <span className="alert error" style={{ margin: 0 }}>{state.error}</span>}

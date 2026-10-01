@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { requireMember } from '@/lib/member-auth';
 import {
-  COMPONENTS, READY_MESSAGE, THANKSGIVING, classLabel, gradeOf, semesterLabel,
-  type AcademicYear, type ResultRow, type Semester,
+  COMPONENTS, DECISION, READY_MESSAGE, THANKSGIVING, classLabel, gradeOf, semesterLabel,
+  type AcademicYear, type ResultRow, type Semester, type YearRow,
 } from '@/lib/education';
 import { ActionButton } from '@/components/action-button';
 import { enrollSelf } from '@/lib/actions/student-auth';
@@ -28,6 +28,10 @@ export default async function StudentHome() {
         return { s, rows: (data ?? []) as ResultRow[] };
       }))
     : [];
+
+  const yearRow = classLevel && year
+    ? (((await supabase.rpc('year_results', { p_year: year.id, p_class: classLevel })).data ?? []) as YearRow[])[0]
+    : undefined;
 
   type T = { course_offerings: { id: string; name: string; class_level: string; status: string;
     semesters: { no: number; academic_years: { ec_year: number; is_active: boolean } } } | null };
@@ -65,6 +69,20 @@ export default async function StudentHome() {
       )}
 
       {classLevel && <p><b>{classLabel(classLevel)}</b> · {year?.ec_year} ዓ.ም</p>}
+      {yearRow?.ready && (
+        <section className="card" style={{ marginBottom: 16, borderColor: 'var(--gold)' }}>
+          <h3 style={{ marginTop: 0 }}>የ{year?.ec_year} ዓ.ም የዓመት ውጤት</h3>
+          <div className="alert ok">
+            <div><b>{READY_MESSAGE}</b></div>
+            <div className="serif">{THANKSGIVING}</div>
+          </div>
+          <p>
+            የዓመት አማካይ፦ <b>{yearRow.year_average}</b> · ደረጃ በክፍል፦ <b>{yearRow.rank} ከ{yearRow.class_size}</b> · ውሳኔ፦{' '}
+            <b className={yearRow.decision === 'repeat' ? 'neg' : 'pos'}>{yearRow.decision ? DECISION[yearRow.decision] : '—'}</b>
+            {yearRow.rank !== null && yearRow.rank <= 3 && ' 🏅'}
+          </p>
+        </section>
+      )}
       {results.map(({ s, rows }) => (
         <section key={s.id} className="card" style={{ marginBottom: 16 }}>
           <h3 style={{ marginTop: 0 }}>{semesterLabel(s.no)}</h3>

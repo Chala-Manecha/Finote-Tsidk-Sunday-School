@@ -61,16 +61,18 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'lost-members', label: 'የጠፉ አባላት', ready: true },
     { slug: 'departures', label: 'መልቀቂያዎች', ready: true },
     { slug: 'results', label: 'የትምህርት ውጤቶች', ready: true },
+    { slug: 'year-end', label: 'የዓመት ማጠቃለያ', ready: true },
     { slug: 'reports', label: 'ሪፖርቶች', ready: true },
   ],
   education: [
     { slug: 'academic', label: 'የትምህርት ዘመን', ready: true },
     { slug: 'classes', label: 'ክፍሎችና ተማሪዎች', ready: true },
     { slug: 'courses', label: 'ኮርሶችና መምህራን', ready: true },
-    { slug: 'results', label: 'ውጤቶችና ትራንስክሪፕት', ready: true },
+    { slug: 'results', label: 'የወሰነ ትምህርት ውጤቶች', ready: true },
+    { slug: 'year-end', label: 'የዓመት ማጠቃለያ', ready: true },
+    { slug: 'exams', label: 'የፈተና ፈቃድና ድጋሚ ፈተና', ready: true },
     { slug: 'student-accounts', label: 'የተማሪ መለያዎች', ready: true },
-    { slug: 'attendance', label: 'ክትትል መያዝ', ready: true },
-    { slug: 'plan', label: 'ኮርስ እቅድ', ready: true },
+    { slug: 'attendance', label: 'ክትትል መያዝ (አብነት)', ready: true },
     { slug: 'abnet', label: 'አብነት', ready: true },
     { slug: 'wereb-admin', label: 'ወረብ አስተዳደር', ready: true },
     { slug: 'duty', label: 'አባል መድብ', ready: true },
@@ -95,11 +97,20 @@ const OFFICE_GROUPS: [string, string[]][] = [
   ['አስተዳደር', ['terms', 'feedback-tracker', 'feedback']],
 ];
 
+const EDUCATION_GROUPS: [string, string[]][] = [
+  ['የትምህርት ዘመን', ['academic', 'classes', 'courses']],
+  ['ውጤቶች', ['results', 'exams', 'year-end', 'student-accounts']],
+  ['አብነትና ወረብ', ['attendance', 'abnet', 'wereb-admin']],
+  ['የክፍሉ', ['members', 'duty', 'property', 'money', 'request-event', 'feedback']],
+];
+const GROUPS: Partial<Record<DeptCode, [string, string[]][]>> = { office: OFFICE_GROUPS, education: EDUCATION_GROUPS };
+
 export function tabsFor(dept: DeptCode): Tab[] {
   const all = [...specific[dept], ...shared(dept)];
-  if (dept !== 'office') return all;
+  const groups = GROUPS[dept];
+  if (!groups) return all;
   const bySlug = new Map(all.map((t) => [t.slug, t]));
-  const grouped = OFFICE_GROUPS.flatMap(([group, slugs]) =>
+  const grouped = groups.flatMap(([group, slugs]) =>
     slugs.filter((s) => bySlug.has(s)).map((s) => ({ ...bySlug.get(s)!, group })));
   const seen = new Set(grouped.map((t) => t.slug));
   return [...grouped, ...all.filter((t) => !seen.has(t.slug)).map((t) => ({ ...t, group: 'ሌሎች' }))];

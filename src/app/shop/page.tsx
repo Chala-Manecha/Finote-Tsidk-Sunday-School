@@ -6,15 +6,16 @@ import { PublicHeader } from '@/components/public-header';
 
 export const metadata: Metadata = { title: 'ለመግዛት' };
 
-type S = { id: string; name: string; qty: number; price: number | null; description: string | null; image_path: string | null };
+type S = { id: string; name: string; qty: number; sold_qty: number; price: number | null; description: string | null; image_path: string | null };
 
 export default async function ShopPage() {
   const supabase = await createClient();
   const [{ data }, { data: shop }] = await Promise.all([
-    supabase.from('sale_items').select('id, name, qty, price, description, image_path').order('qty', { ascending: false }).order('name'),
+    supabase.from('sale_items').select('id, name, qty, sold_qty, price, description, image_path').order('name'),
     supabase.from('shop_settings').select('phone, telegram').maybeSingle(),
   ]);
-  const items = (data ?? []) as S[];
+  // In stock first, sold-out last
+  const items = ((data ?? []) as S[]).sort((a, b) => Number(a.qty - a.sold_qty <= 0) - Number(b.qty - b.sold_qty <= 0));
   const tg = shop?.telegram ? `https://t.me/${shop.telegram}` : null;
 
   return (
@@ -31,7 +32,8 @@ export default async function ShopPage() {
         )}
         <div className="shop-grid">
           {items.map((s) => {
-            const sold = s.qty <= 0;
+            const left = s.qty - s.sold_qty;
+            const sold = left <= 0;
             const img = mediaUrl(supabase, s.image_path);
             return (
               <article key={s.id} className={`shop-card ${sold ? 'sold' : ''}`}>
@@ -45,7 +47,7 @@ export default async function ShopPage() {
                   <b>{s.name}</b>
                   {s.description && <span className="small muted">{s.description}</span>}
                   <span className="price">{s.price == null ? 'ዋጋ ይጠይቁ' : formatBirr(s.price)}</span>
-                  {!sold && <span className="small muted">በክምችት፦ {s.qty}</span>}
+                  {!sold && <span className="small muted">በክምችት፦ {left}</span>}
                   {!sold && tg && (
                     <a className="btn sm telegram" style={{ marginTop: 'auto', alignSelf: 'flex-start' }} href={tg} target="_blank" rel="noopener noreferrer">
                       Telegram ላይ ይዘዙ

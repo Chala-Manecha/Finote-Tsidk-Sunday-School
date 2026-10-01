@@ -31,10 +31,23 @@ export default async function TeachPage({ params }: { params: Promise<{ id: stri
   const { data: names } = ids.length ? await supabase.rpc('member_names', { p_ids: ids }) : { data: [] };
   const students = ((names ?? []) as { id: string; full_name: string; reg_no: string }[]).sort((a, b) => a.full_name.localeCompare(b.full_name));
   const marks = Object.fromEntries((mk ?? []).map((m) => [m.member_id, m]));
+  const [{ data: grants }, attendanceList] = await Promise.all([
+    supabase.from('makeup_grants').select('member_id, used_at').eq('offering_id', id),
+    Promise.all(students.map(async (x) => {
+      const [{ data: pct }, { data: barred }] = await Promise.all([
+        supabase.rpc('attendance_pct', { p_offering: id, p_member: x.id }),
+        supabase.rpc('final_barred', { p_offering: id, p_member: x.id }),
+      ]);
+      return { id: x.id, pct: pct as number | null, barred: !!barred };
+    })),
+  ]);
+  const attendance = Object.fromEntries(attendanceList.map((a) => [a.id, a.pct]));
+  const barredIds = attendanceList.filter((a) => a.barred).map((a) => a.id);
+  const makeupIds = (grants ?? []).filter((g) => !g.used_at).map((g) => g.member_id as string);
   const book = offering.book_path ? (await supabase.storage.from('edu-books').createSignedUrl(offering.book_path, 3600)).data?.signedUrl : null;
   const weights: Record<ComponentKey, number> = { quiz: s.w_quiz, notebook: s.w_notebook, participation: s.w_participation, mid: s.w_mid, final: s.w_final };
   const locked = offering.status !== 'draft';
-  const finalsDone = students.length > 0 && students.every((x) => marks[x.id]?.final != null);
+  const finalsDone = students.length > 0 && students.every((x) => marks[x.id]?.final != null || barredIds.includes(x.id) || makeupIds.includes(x.id));
 
   return (
     <>
@@ -50,8 +63,9 @@ export default async function TeachPage({ params }: { params: Promise<{ id: stri
 
       <section className="card" style={{ marginBottom: 16 }}>
         <h2 className="section" style={{ marginTop: 0 }}>ውጤት</h2>
-        <p className="small muted">ነጥቦቹ የሚገቡት ከእያንዳንዱ ክፍል ከፍተኛ ነጥብ ውስጥ ነው። ማለፊያ፦ {s.pass_mark}/100።</p>
-        <MarksGrid offeringId={id} students={students} marks={marks} weights={weights} locked={locked} />
+        <p className="small muted">ነጥቦቹ የሚገቡት ከእያንዳንዱ ክፍል ከፍተኛ ነጥብ ውስጥ ነው። ማለፊያ፦ {s.pass_mark}/100።{s.min_attendance > 0 && ` ለዋና ፈተና ዝቅተኛ ክትትል፦ ${s.min_attendance}%።`}</p>
+        <MarksGrid offeringId={id} students={students} marks={marks} weights={weights} locked={locked}
+          attendance={attendance} barred={barredIds} makeup={makeupIds} />
         {offering.status === 'draft' && (
           <div style={{ marginTop: 12 }}>
             {finalsDone

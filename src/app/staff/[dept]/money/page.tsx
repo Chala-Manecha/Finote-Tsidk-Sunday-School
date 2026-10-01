@@ -23,11 +23,11 @@ export default async function DeptMoneyPage({
   searchParams,
 }: {
   params: Promise<{ dept: string }>;
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; amount?: string; source?: string }>;
 }) {
   const { dept } = await params;
   if (!isDeptCode(dept) || dept === 'finance') notFound();
-  const { view: v } = await searchParams;
+  const { view: v, amount, source } = await searchParams;
   const view: View = v && v in VIEWS ? (v as View) : 'request';
   const supabase = await createClient();
 
@@ -43,7 +43,7 @@ export default async function DeptMoneyPage({
       </div>
       {view === 'request' && <RequestView dept={dept} supabase={supabase} />}
       {view === 'spend' && <SpendView dept={dept} supabase={supabase} />}
-      {view === 'earn' && <EarnView dept={dept} supabase={supabase} />}
+      {view === 'earn' && <EarnView dept={dept} supabase={supabase} amount={amount} source={source} />}
     </>
   );
 }
@@ -161,7 +161,7 @@ async function SpendView({ dept, supabase }: { dept: string; supabase: Sb }) {
   );
 }
 
-async function EarnView({ dept, supabase }: { dept: string; supabase: Sb }) {
+async function EarnView({ dept, supabase, amount, source }: { dept: string; supabase: Sb; amount?: string; source?: string }) {
   const { data } = await supabase
     .from('earnings')
     .select('id, amount, source, earned_on, status, submitted_at, decided_at, receipts(id, code, voided_at)')
@@ -174,7 +174,7 @@ async function EarnView({ dept, supabase }: { dept: string; supabase: Sb }) {
   }[];
   return (
     <>
-      <EarningForm dept={dept} />
+      <EarningForm dept={dept} amount={amount && Number(amount) > 0 ? amount : undefined} source={source?.slice(0, 80)} />
       <h3 className="section">የተላኩ የገቢ ሪፖርቶች</h3>
       <p className="muted small">ሒሳብና ንብረት ሲያጸድቅ ደረሰኝ ይዘጋጃል፤ አትመው ለማኅተም ወደ ሒሳብና ንብረት ይሂዱ።</p>
       <div className="table-wrap">

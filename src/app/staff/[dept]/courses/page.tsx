@@ -7,11 +7,13 @@ import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { ReasonForm } from '@/components/reason-form';
 import {
-  addCourse, deleteCourse, assignTeacher, removeTeacher, saveBook, approveCourse, unlockCourse,
+  addCourse, deleteCourse, assignTeacher, removeTeacher, saveBook, approveCourse, unlockCourse, saveCourseSchedule,
 } from '@/lib/actions/education-admin';
+import { DayChecks } from '@/components/day-checks';
 
 type O = {
   id: string; name: string; class_level: string; status: OfferingStatus; book_name: string | null; book_path: string | null;
+  days: number[]; time_text: string | null;
   offering_teachers: { member_id: string; members: { full_name: string } | null }[];
 };
 
@@ -28,7 +30,7 @@ export default async function Courses({ params, searchParams }: {
   const cls = sp.c && isClassLevel(sp.c) ? sp.c : undefined;
 
   let q = supabase.from('course_offerings')
-    .select('id, name, class_level, status, book_name, book_path, offering_teachers(member_id, members(full_name))')
+    .select('id, name, class_level, status, book_name, book_path, days, time_text, offering_teachers(member_id, members(full_name))')
     .eq('semester_id', semester.id).order('class_level').order('name');
   if (cls) q = q.eq('class_level', cls);
   const [{ data }, { data: members }] = await Promise.all([
@@ -85,6 +87,14 @@ export default async function Courses({ params, searchParams }: {
                   <option value="" disabled>አባል ይምረጡ</option>
                   {(members ?? []).map((m) => <option key={m.id} value={m.id}>{m.full_name} · {m.reg_no}</option>)}
                 </select>
+              </MediaForm>
+            </div>
+            <div>
+              <div className="small muted">የትምህርት ቀንና ሰዓት (በ“ኮርስ” ገጽ ላይ ይታያል)</div>
+              <MediaForm action={saveCourseSchedule} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false}>
+                <input type="hidden" name="id" value={o.id} />
+                <DayChecks name="days" selected={o.days} />
+                <input name="time_text" defaultValue={o.time_text ?? ''} placeholder="ለምሳሌ፦ ጠዋት 3:00–4:30" aria-label="ሰዓት" style={{ marginTop: 6 }} />
               </MediaForm>
             </div>
             <div>

@@ -14,6 +14,7 @@ const ERR: Record<string, string> = {
   own_marks: 'የራስዎን ውጤት መሙላት አይችሉም።',
   not_in_class: 'ተማሪው በዚህ ክፍል አልተመዘገበም።',
   finals_missing: 'ለሁሉም ተማሪዎች የዋና ፈተና ውጤት መሞላት አለበት።',
+  low_attendance: 'ክትትላቸው ዝቅተኛ የሆነ ተማሪ ያለ ትምህርት ክፍል ፈቃድ ዋና ፈተና አይመዘገብለትም።',
 };
 const explain = (m: string) => Object.entries(ERR).find(([k]) => m.includes(k))?.[1] ?? (m.includes('row-level') ? 'ፈቃድ የለዎትም።' : m);
 
@@ -24,6 +25,22 @@ export async function saveMarks(_: FormState, fd: FormData): Promise<FormState> 
   if (!UUID_RE.test(offering_id)) return { error: 'ኮርስ አልተገኘም።' };
   const ids = fd.getAll('member_id').map(String).filter((x) => UUID_RE.test(x));
   const rows = [];
+  if (fd.get('makeup_only') === '1') {
+    // after submission: only granted make-up finals
+    for (const member_id of ids) {
+      const raw = text(fd, `final_${member_id}`);
+      if (raw === '') continue;
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n < 0) return { error: `ትክክል ያልሆነ ቁጥር፦ ${raw}` };
+      rows.push({ offering_id, member_id, final: Math.round(n * 100) / 100 });
+    }
+    if (rows.length === 0) return { error: 'የድጋሚ ፈተና ውጤት አልገባም።' };
+    const supabase = await createClient();
+    const { error } = await supabase.from('marks').upsert(rows, { onConflict: 'offering_id,member_id' });
+    if (error) return { error: explain(error.message) };
+    revalidatePath(`/student/teach/${offering_id}`);
+    return { ok: 'የድጋሚ ፈተና ውጤት ተቀምጧል።' };
+  }
   for (const member_id of ids) {
     const row: Record<string, string | number | null> = { offering_id, member_id };
     let any = false;

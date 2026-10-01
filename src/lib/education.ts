@@ -19,8 +19,16 @@ export type Semester = {
   id: string; year_id: string; no: number; starts_on: string | null; ends_on: string | null;
   w_quiz: number; w_notebook: number; w_participation: number; w_mid: number; w_final: number;
   pass_mark: number; is_active: boolean;
+  mid_exam_on: string | null; final_exam_on: string | null; min_attendance: number;
 };
-export type AcademicYear = { id: string; ec_year: number; is_active: boolean };
+export type AcademicYear = { id: string; ec_year: number; is_active: boolean; promote_min_average: number; max_failed_courses: number };
+export const DECISION = { promoted: 'ተዛውረዋል', repeat: 'ይደግማሉ' } as const;
+export type Decision = keyof typeof DECISION;
+export type YearRow = {
+  member_id: string; full_name: string; reg_no: string; sem1_average: number | null; sem2_average: number | null;
+  year_average: number | null; failed_courses: number | null; rank: number | null; class_size: number;
+  auto_decision: Decision; decision: Decision | null; remark: string | null; ready: boolean;
+};
 export const semesterLabel = (no: number) => (no === 1 ? '1ኛ ወሰነ ትምህርት' : '2ኛ ወሰነ ትምህርት');
 
 /** ደረጃ for a total out of 100. */
@@ -41,7 +49,7 @@ export type OfferingStatus = keyof typeof OFFERING_STATUS;
 export type ResultRow = {
   member_id: string; full_name: string; reg_no: string; offering_id: string; course: string;
   quiz: number | null; notebook: number | null; participation: number | null; mid: number | null; final: number | null;
-  total: number; attended: number; sessions: number; status: OfferingStatus;
+  total: number; attended: number; sessions: number; status: OfferingStatus; makeup?: boolean;
   average: number; rank: number; class_size: number; ready: boolean;
 };
 

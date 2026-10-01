@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { requireStaff } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { ITEM_CONDITION, isDeptCode } from '@/lib/constants';
+import { todayIsoAddis } from '@/lib/ethiopian-calendar';
 import type { FormState } from '@/components/media-form';
 
 const text = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
@@ -47,28 +48,53 @@ export async function deleteProperty(id: string) {
   refresh();
 }
 
-/** የሽያጭ ዕቃዎች — ልማትና በጎ አድራጎት's shop stock. */
+/** የሽያጭ ዕቃዎች — ልማትና በጎ አድራጎት's stock: what was bought, at what price, and what it sells for. */
 export async function saveSaleItem(_: FormState, fd: FormData): Promise<FormState> {
   await requireStaff();
   const id = text(fd, 'id') || null;
   const name = text(fd, 'name');
   const qty = num(fd, 'qty');
+  const buy_price = num(fd, 'buy_price');
   const price = num(fd, 'price');
+  const bought_on = text(fd, 'bought_on');
   if (!name) return { error: 'የዕቃውን ስም ያስገቡ።' };
-  if (qty === null || Number.isNaN(qty) || !Number.isInteger(qty)) return { error: 'ብዛት ያስገቡ።' };
-  if (Number.isNaN(price)) return { error: 'ዋጋ ትክክል አይደለም።' };
+  if (qty === null || Number.isNaN(qty) || !Number.isInteger(qty) || qty < 1) return { error: 'ብዛት ያስገቡ።' };
+  if (buy_price === null || Number.isNaN(buy_price)) return { error: 'የተገዛበትን ዋጋ ያስገቡ።' };
+  if (price === null || Number.isNaN(price)) return { error: 'የመሸጫ ዋጋ ያስገቡ።' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(bought_on)) return { error: 'የተገዛበትን ቀን ይምረጡ።' };
   const supabase = await createClient();
   const rawImg = text(fd, 'image_path');
   const image_path = rawImg.startsWith('shop/') ? rawImg : undefined;
-  const row = { name, qty, price, description: text(fd, 'description') || null, ...(image_path ? { image_path } : {}) };
+  const row = { name, qty, buy_price, price, bought_on, description: text(fd, 'description') || null, ...(image_path ? { image_path } : {}) };
   const { error, count } = id
     ? await supabase.from('sale_items').update(row, { count: 'exact' }).eq('id', id)
     : await supabase.from('sale_items').insert(row, { count: 'exact' });
-  if (error) return { error: error.message.includes('row-level') ? 'ፈቃድ የለዎትም።' : error.message };
+  if (error) return { error: error.message.includes('sold_le_qty') ? 'ከተሸጠው ያነሰ ብዛት ማስገባት አይቻልም።' : error.message.includes('row-level') ? 'ፈቃድ የለዎትም።' : error.message };
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
   refresh();
-  return { ok: id ? 'ተቀይሯል።' : 'ተጨምሯል።' };
+  revalidatePath('/shop');
+  return { ok: id ? 'ተቀይሯል።' : 'ተመዝግቧል።' };
 }
+
+/** Sold button: add the sold quantity (default: all that remain) and stamp today's date. */
+export async function markSold(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const id = text(fd, 'id');
+  const n = num(fd, 'sold');
+  if (n === null || Number.isNaN(n) || !Number.isInteger(n) || n < 1) return { error: 'ብዛት ያስገቡ።' };
+  const supabase = await createClient();
+  const { data: item } = await supabase.from('sale_items').select('qty, sold_qty').eq('id', id).maybeSingle();
+  if (!item) return { error: 'ዕቃው አልተገኘም።' };
+  if (item.sold_qty + n > item.qty) return { error: `የቀረው ${item.qty - item.sold_qty} ብቻ ነው።` };
+  const { error, count } = await supabase.from('sale_items')
+    .update({ sold_qty: item.sold_qty + n, sold_on: todayIsoAddis() }, { count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+  revalidatePath('/shop');
+  return { ok: 'ተሽጧል።' };
+}
+
 export async function deleteSaleItem(id: string) {
   await requireStaff();
   const supabase = await createClient();
@@ -92,29 +118,4 @@ export async function saveShopSettings(_: FormState, fd: FormData): Promise<Form
   refresh();
   revalidatePath('/shop');
   return { ok: 'ተቀምጧል።' };
-}
-
-/** A sale becomes a ገቢ report; stock drops when ሒሳብና ንብረት approves it. */
-export async function recordSale(_: FormState, fd: FormData): Promise<FormState> {
-  const staff = await requireStaff();
-  const sale_item_id = text(fd, 'sale_item_id');
-  const sale_qty = Number(text(fd, 'sale_qty'));
-  const earned_on = text(fd, 'earned_on');
-  if (!/^[0-9a-f-]{36}$/i.test(sale_item_id)) return { error: 'ዕቃ ይምረጡ።' };
-  if (!Number.isInteger(sale_qty) || sale_qty < 1) return { error: 'ብዛት ትክክል አይደለም።' };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(earned_on)) return { error: 'ቀን ይምረጡ።' };
-  const supabase = await createClient();
-  const { data: item } = await supabase.from('sale_items').select('name, qty, price').eq('id', sale_item_id).maybeSingle();
-  if (!item) return { error: 'ዕቃው አልተገኘም።' };
-  if (sale_qty > item.qty) return { error: `በክምችት ያለው ${item.qty} ብቻ ነው።` };
-  const typed = Number(text(fd, 'amount').replace(/,/g, ''));
-  const amount = typed > 0 ? typed : Number(item.price ?? 0) * sale_qty;
-  if (!(amount > 0)) return { error: 'ጠቅላላ የሽያጭ ገንዘብ ያስገቡ።' };
-  const { error } = await supabase.from('earnings').insert({
-    dept: 'development', amount, earned_on, submitted_by: staff.userId,
-    source: `ሽያጭ፦ ${item.name} × ${sale_qty}`, sale_item_id, sale_qty,
-  });
-  if (error) return { error: error.message.includes('row-level') ? 'ፈቃድ የለዎትም።' : error.message };
-  refresh();
-  return { ok: 'ሽያጩ እንደ ገቢ ለሒሳብና ንብረት ተልኳል። ሲጸድቅ ክምችቱ ይቀንሳል።' };
 }

@@ -55,11 +55,14 @@ export async function saveSemester(_: FormState, fd: FormData): Promise<FormStat
     w_mid: n('w_mid'), w_final: n('w_final'), pass_mark: n('pass_mark'),
     starts_on: DATE_RE.test(text(fd, 'starts_on')) ? text(fd, 'starts_on') : null,
     ends_on: DATE_RE.test(text(fd, 'ends_on')) ? text(fd, 'ends_on') : null,
+    mid_exam_on: DATE_RE.test(text(fd, 'mid_exam_on')) ? text(fd, 'mid_exam_on') : null,
+    final_exam_on: DATE_RE.test(text(fd, 'final_exam_on')) ? text(fd, 'final_exam_on') : null,
+    min_attendance: n('min_attendance'),
   };
   const sum = row.w_quiz + row.w_notebook + row.w_participation + row.w_mid + row.w_final;
   if (Object.values(row).some((v) => typeof v === 'number' && (!Number.isInteger(v) || v < 0))) return { error: 'ሙሉ ቁጥሮች ያስገቡ።' };
   if (sum !== 100) return { error: `የነጥቦቹ ድምር 100 መሆን አለበት (አሁን ${sum})።` };
-  if (row.pass_mark > 100) return { error: 'ማለፊያ ከ100 መብለጥ የለበትም።' };
+  if (row.pass_mark > 100 || row.min_attendance > 100) return { error: 'ከ100 መብለጥ የለበትም።' };
   const supabase = await createClient();
   const { error, count } = await supabase.from('semesters').update(row, { count: 'exact' }).eq('id', id);
   if (error) return { error: explain(error.message) };
@@ -245,4 +248,95 @@ export async function resetAccount(memberId: string) {
   const { data } = await admin.from('member_accounts').select('user_id').eq('member_id', memberId).maybeSingle();
   if (data?.user_id) await admin.auth.admin.deleteUser(data.user_id);   // cascades to member_accounts
   refresh();
+}
+
+/** Year-end promotion rule. */
+export async function saveYearRules(_: FormState, fd: FormData): Promise<FormState> {
+  await requireDept('education');
+  const avg = Number(text(fd, 'promote_min_average'));
+  const failed = Number(text(fd, 'max_failed_courses'));
+  if (!Number.isInteger(avg) || avg < 0 || avg > 100) return { error: 'አማካይ ከ0 እስከ 100።' };
+  if (!Number.isInteger(failed) || failed < 0) return { error: 'ቁጥር ያስገቡ።' };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('academic_years')
+    .update({ promote_min_average: avg, max_failed_courses: failed }, { count: 'exact' }).eq('id', text(fd, 'id'));
+  if (error) return { error: explain(error.message) };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+  return { ok: 'ተቀምጧል።' };
+}
+
+export async function saveCourseSchedule(_: FormState, fd: FormData): Promise<FormState> {
+  await requireDept('education');
+  const days = fd.getAll('days').map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('course_offerings')
+    .update({ days, time_text: text(fd, 'time_text') || null }, { count: 'exact' }).eq('id', text(fd, 'id'));
+  if (error) return { error: explain(error.message) };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+  revalidatePath('/course');
+  return { ok: '✓' };
+}
+
+// ---------- exam permissions ----------
+
+export async function grantExemption(_: FormState, fd: FormData): Promise<FormState> {
+  await requireDept('education');
+  const reason = text(fd, 'reason');
+  if (reason.length < 3) return { error: 'ምክንያት ይጻፉ።' };
+  const supabase = await createClient();
+  const { error } = await supabase.from('final_exemptions').insert({ offering_id: text(fd, 'offering_id'), member_id: text(fd, 'member_id'), reason });
+  if (error) return { error: explain(error.message) };
+  refresh();
+  return { ok: '✓' };
+}
+
+export async function grantMakeup(_: FormState, fd: FormData): Promise<FormState> {
+  await requireDept('education');
+  const reason = text(fd, 'reason');
+  if (reason.length < 3) return { error: 'ምክንያት ይጻፉ።' };
+  const supabase = await createClient();
+  const { error } = await supabase.from('makeup_grants').insert({ offering_id: text(fd, 'offering_id'), member_id: text(fd, 'member_id'), reason });
+  if (error) return { error: explain(error.message) };
+  refresh();
+  return { ok: '✓' };
+}
+
+export async function revokeMakeup(offeringId: string, memberId: string) {
+  await requireDept('education');
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('makeup_grants').delete({ count: 'exact' }).eq('offering_id', offeringId).eq('member_id', memberId);
+  if (error) return { error: explain(error.message) };
+  if (!count) return { error: 'ጥቅም ላይ የዋለ ፈቃድ መሰረዝ አይቻልም።' };
+  refresh();
+}
+
+// ---------- year end ----------
+
+export async function setYearDecision(_: FormState, fd: FormData): Promise<FormState> {
+  await requireDept('education');
+  const year_id = text(fd, 'year_id');
+  const member_id = text(fd, 'member_id');
+  const decision = text(fd, 'decision');
+  const supabase = await createClient();
+  if (decision === 'auto') {
+    const { error } = await supabase.from('year_decisions').delete().eq('year_id', year_id).eq('member_id', member_id);
+    if (error) return { error: explain(error.message) };
+  } else {
+    if (decision !== 'promoted' && decision !== 'repeat') return { error: 'ውሳኔ ይምረጡ።' };
+    const { error } = await supabase.from('year_decisions')
+      .upsert({ year_id, member_id, decision, remark: text(fd, 'remark') || null }, { onConflict: 'year_id,member_id' });
+    if (error) return { error: explain(error.message) };
+  }
+  refresh();
+  return { ok: '✓' };
+}
+
+export async function openYearTranscript(yearId: string, memberId: string) {
+  await requireDept('education');
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('issue_year_transcript', { p_year: yearId, p_member: memberId });
+  if (error || !data) return { error: explain(error?.message ?? 'አልተቻለም።') };
+  redirect(`/staff/transcripts/${data}`);
 }

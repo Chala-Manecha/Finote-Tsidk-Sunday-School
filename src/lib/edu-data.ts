@@ -5,7 +5,7 @@ import type { AcademicYear, Semester } from '@/lib/education';
 /** Years (newest first) with their semesters; picks the requested or active semester. */
 export async function loadTerms(supabase: SupabaseClient, semesterId?: string) {
   const [{ data: y }, { data: s }] = await Promise.all([
-    supabase.from('academic_years').select('id, ec_year, is_active').order('ec_year', { ascending: false }),
+    supabase.from('academic_years').select('id, ec_year, is_active, promote_min_average, max_failed_courses').order('ec_year', { ascending: false }),
     supabase.from('semesters').select('*').order('no'),
   ]);
   const years = (y ?? []) as AcademicYear[];

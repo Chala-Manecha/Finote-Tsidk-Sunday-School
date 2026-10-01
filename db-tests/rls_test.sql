@@ -586,4 +586,85 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1
 select pg_temp.must_equal((select count(*) from public.marks), 0, 'locked account sees nothing');
 reset role;
 
+-- =================== ROUND 4: year-end + extras ===================
+reset role;
+update public.member_accounts set locked_at = null where member_id = '10000000-0000-0000-0000-0000000000e1';
+insert into public.members (id, full_name, sex, work_status) values ('10000000-0000-0000-0000-0000000000e3', 'ዘግይቶ የመጣ', 'male', 'student');
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+insert into public.semesters (id, year_id, no) values ('91000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000001', 2);
+insert into public.course_offerings (id, semester_id, class_level, name, days, time_text) values
+  ('92000000-0000-0000-0000-000000000007', '91000000-0000-0000-0000-000000000002', '3', 'ዶግማ 2', '{0}', 'ጠዋት 3:00');
+insert into public.offering_teachers values ('92000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-0000000000e2');
+
+-- minimum attendance: 1 of 4 meetings = 25% < 75% → no final until exempted
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+insert into public.class_sessions (id, offering_id, session_date) values
+  ('93000000-0000-0000-0000-000000000011', '92000000-0000-0000-0000-000000000007', '2026-09-06'),
+  ('93000000-0000-0000-0000-000000000012', '92000000-0000-0000-0000-000000000007', '2026-09-13'),
+  ('93000000-0000-0000-0000-000000000013', '92000000-0000-0000-0000-000000000007', '2026-09-20'),
+  ('93000000-0000-0000-0000-000000000014', '92000000-0000-0000-0000-000000000007', '2026-09-27');
+insert into public.class_attendance values
+  ('93000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-0000000000e1', 'present'),
+  ('93000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-0000000000e1', 'absent'),
+  ('93000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-0000000000e1', 'absent'),
+  ('93000000-0000-0000-0000-000000000014', '10000000-0000-0000-0000-0000000000e1', 'absent');
+insert into public.marks (offering_id, member_id, quiz, notebook, participation, mid) values
+  ('92000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-0000000000e1', 8, 8, 8, 20);
+select pg_temp.must_fail($q$update public.marks set final = 30 where offering_id = '92000000-0000-0000-0000-000000000007'$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+insert into public.final_exemptions (offering_id, member_id, reason) values ('92000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-0000000000e1', 'በሕመም ምክንያት');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+update public.marks set final = 30 where offering_id = '92000000-0000-0000-0000-000000000007';
+update public.course_offerings set status = 'submitted' where id = '92000000-0000-0000-0000-000000000007';
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+update public.course_offerings set status = 'approved' where id = '92000000-0000-0000-0000-000000000007';
+
+-- make-up exam on an approved course: only with a grant, only once
+insert into public.enrollments (year_id, member_id, class_level) values ('90000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e3', '3');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+select pg_temp.must_fail($q$insert into public.marks (offering_id, member_id, final) values ('92000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-0000000000e3', 30)$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+insert into public.makeup_grants (offering_id, member_id, reason) values ('92000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-0000000000e3', 'ዘግይቶ ተመዝግቧል');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+insert into public.marks (offering_id, member_id, final) values ('92000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-0000000000e3', 30);
+select pg_temp.must_equal((select count(*) from public.marks where member_id = '10000000-0000-0000-0000-0000000000e3' and makeup), 1, 'make-up final recorded');
+select pg_temp.must_fail($q$update public.marks set final = 40 where member_id = '10000000-0000-0000-0000-0000000000e3'$q$);
+
+-- year-end: both semesters approved → averages, rank, promotion
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+select pg_temp.must_equal((select count(*) from public.year_results('90000000-0000-0000-0000-000000000001', '3')
+  where member_id = '10000000-0000-0000-0000-0000000000e1' and ready and decision = 'promoted' and rank = 1), 1, 'year results: promoted, rank 1');
+select pg_temp.must_equal((select count(*) from public.year_results('90000000-0000-0000-0000-000000000001', '3')
+  where member_id = '10000000-0000-0000-0000-0000000000e3' and decision = 'repeat'), 1, 'low average repeats');
+insert into public.year_decisions (year_id, member_id, decision, remark) values ('90000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e3', 'promoted', 'በጉባኤ ውሳኔ');
+select pg_temp.must_equal((select count(*) from public.year_results('90000000-0000-0000-0000-000000000001', '3')
+  where member_id = '10000000-0000-0000-0000-0000000000e3' and decision = 'promoted' and auto_decision = 'repeat'), 1, 'decision override');
+select public.issue_year_transcript('90000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e1');
+select pg_temp.must_equal((select count(*) from public.student_history('10000000-0000-0000-0000-0000000000e1')), 1, 'history has the year');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*) from public.year_results('90000000-0000-0000-0000-000000000001', '3')), 1, 'student sees only own year row');
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((select count(*) from public.public_course_catalog()), 2, 'catalog shows the active semester only');
+reset role;
+
+-- shop: cannot sell more than bought
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a9', false);
+insert into public.sale_items (id, name, qty, price, buy_price, bought_on) values ('60000000-0000-0000-0000-000000000002', 'ነጠላ', 5, 300, 200, '2026-09-30');
+update public.sale_items set sold_qty = 2, sold_on = '2026-10-01' where id = '60000000-0000-0000-0000-000000000002';
+select pg_temp.must_fail($q$update public.sale_items set sold_qty = 6 where id = '60000000-0000-0000-0000-000000000002'$q$);
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_fail('select buy_price from public.sale_items');
+select pg_temp.must_equal((select count(*) from public.sale_items where qty - sold_qty = 3), 1, 'public sees remaining stock');
+reset role;
+
 \echo ALL RLS TESTS PASSED
