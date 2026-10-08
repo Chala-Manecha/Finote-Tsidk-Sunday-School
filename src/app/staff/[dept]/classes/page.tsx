@@ -1,3 +1,4 @@
+import { STUDY_MODE } from '@/lib/constants';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, classLabel } from '@/lib/education';
@@ -6,7 +7,7 @@ import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { assignClass, enrollAllMembers } from '@/lib/actions/education-admin';
 
-type E = { id: string; member_id: string; class_level: string | null; self_registered: boolean; members: { full_name: string; reg_no: string } | null };
+type E = { id: string; member_id: string; class_level: string | null; study_mode: string; self_registered: boolean; members: { full_name: string; reg_no: string } | null };
 
 /** ትምህርት ክፍል: who is in which class this academic year. */
 export default async function Classes({ params, searchParams }: {
@@ -20,7 +21,7 @@ export default async function Classes({ params, searchParams }: {
   const year = years.find((x) => x.id === sp.y) ?? years.find((x) => x.is_active) ?? years[0];
   if (!year) return <p className="muted">መጀመሪያ “የትምህርት ዘመን” ትር ላይ ዓመቱን ይክፈቱ።</p>;
   const { data } = await supabase.from('enrollments')
-    .select('id, member_id, class_level, self_registered, members(full_name, reg_no)').eq('year_id', year.id);
+    .select('id, member_id, class_level, study_mode, self_registered, members(full_name, reg_no)').eq('year_id', year.id);
   const all = ((data ?? []) as unknown as E[]).sort((a, b) => (a.members?.full_name ?? '').localeCompare(b.members?.full_name ?? ''));
   const filter = sp.c ?? 'none';
   const rows = filter === 'all' ? all : filter === 'none' ? all.filter((e) => !e.class_level) : all.filter((e) => e.class_level === filter);
@@ -29,7 +30,7 @@ export default async function Classes({ params, searchParams }: {
   return (
     <>
       <h2 className="section" style={{ marginTop: 0 }}>ክፍሎችና ተማሪዎች — {year.ec_year} ዓ.ም</h2>
-      <p className="muted small">ተማሪዎች ራሳቸው ይመዘገባሉ፤ ሁሉንም አባላት በአንድ ጊዜ ማስገባትም ይቻላል። ከዚያ ለእያንዳንዱ ክፍል ይመድቡ።</p>
+      <p className="muted small">እያንዳንዱ ተማሪ <b>መደበኛ</b> ወይም <b>የርቀት</b> ነው (የርቀት ተማሪዎች ዝቅተኛ የክትትል ግዴታቸው በ“የትምህርት ዘመን” ይወሰናል)። ተማሪዎች ራሳቸው ይመዘገባሉ፤ ሁሉንም አባላት በአንድ ጊዜ ማስገባትም ይቻላል። ከዚያ ለእያንዳንዱ ክፍል ይመድቡ።</p>
       <div className="btn-row">
         <ActionButton action={enrollAllMembers.bind(null, year.id)} label="ሁሉንም ንቁ አባላት አስገባ" className="btn sm secondary"
           confirmText={`ያልተመዘገቡ ንቁ አባላት ሁሉ ለ${year.ec_year} ዓ.ም ይግቡ?`} />
@@ -43,7 +44,7 @@ export default async function Classes({ params, searchParams }: {
       </div>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>ተማሪ</th><th>ምዝገባ</th><th>ክፍል</th></tr></thead>
+          <thead><tr><th>ተማሪ</th><th>ምዝገባ</th><th>ክፍል · መደበኛ / የርቀት</th></tr></thead>
           <tbody>
             {rows.map((e) => (
               <tr key={e.id}>
@@ -52,10 +53,15 @@ export default async function Classes({ params, searchParams }: {
                 <td>
                   <MediaForm action={assignClass} submitLabel="መድብ" card={false} resetOnSuccess={false}>
                     <input type="hidden" name="id" value={e.id} />
-                    <select name="class_level" defaultValue={e.class_level ?? ''} aria-label="ክፍል">
-                      <option value="">— ያልተመደበ —</option>
-                      {CLASS_LEVELS.map((c) => <option key={c} value={c}>{classLabel(c)}</option>)}
-                    </select>
+                    <div className="btn-row">
+                      <select name="class_level" defaultValue={e.class_level ?? ''} aria-label="ክፍል">
+                        <option value="">— ያልተመደበ —</option>
+                        {CLASS_LEVELS.map((c) => <option key={c} value={c}>{classLabel(c)}</option>)}
+                      </select>
+                      <select name="study_mode" defaultValue={e.study_mode} aria-label="መርሐ ግብር">
+                        {Object.entries(STUDY_MODE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
                   </MediaForm>
                 </td>
               </tr>

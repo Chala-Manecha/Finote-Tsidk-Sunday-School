@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireDept } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { ageFromIso, formatEc } from '@/lib/ethiopian-calendar';
+import { ageFromIso, formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
-  ATTENDANCE_STATUS, DEPT_NAME, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_STATUS, SESSION_TYPES, SEX, TITLES, WORK_STATUS,
+  ATTENDANCE_STATUS, DEPT_NAME, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_STATUS, memberTypeLabel, SESSION_TYPES, SEX, TITLES, WORK_STATUS,
   type AttendanceStatus, type SessionType,
 } from '@/lib/constants';
 import { PrintButton } from '@/components/print-button';
@@ -27,13 +27,14 @@ export default async function MemberDetail({
   const { saved } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: m }, { data: att }] = await Promise.all([
+  const [{ data: m }, { data: att }, { data: ageGroups }] = await Promise.all([
     supabase.from('members').select('*, member_departments(dept)').eq('id', id).maybeSingle(),
     supabase
       .from('attendance')
       .select('status, attendance_sessions!inner(id, session_type, session_date, session_time, dept)')
       .eq('member_id', id)
       .returns<AttRow[]>(),
+    supabase.from('age_groups').select('code, name'),
   ]);
   if (!m) notFound();
 
@@ -63,9 +64,10 @@ export default async function MemberDetail({
     ['የአባልነት መረጃ', [
       ['የምዝገባ መለያ ቁጥር', <b key="r">{m.reg_no}</b>],
       ['የአባልነት ምዝገባ ቀን', m.registered_on ? formatEc(m.registered_on) : formatEc(m.created_at)],
-      ['የዶክመንት ቁጥር', dash(m.doc_no)],
-      ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
-      ['የአባልነት ሁኔታ', MEMBER_STATUS[m.member_status as keyof typeof MEMBER_STATUS]],
+      ['የአባልነት ሁኔታ', memberTypeLabel(m.member_type, m.member_type_other)],
+      ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም (የሰንበት እድሜ ${Math.max(isoToEc(todayIsoAddis()).year - m.joined_year, 0)} ዓመት)` : '—'],
+      ['ክፍል (በዕድሜ)', (ageGroups ?? []).find((g) => g.code === m.age_group)?.name ?? '—'],
+      ['ሁኔታ', MEMBER_STATUS[m.member_status as keyof typeof MEMBER_STATUS]],
       ...(m.is_active ? [] : [['ሁኔታ (መልቀቂያ)', <span key="l" className="pill absent">መልቀቂያ ወስደዋል</span>] as Row]),
       ['የመረጡት ክፍል', m.member_departments.map((d: { dept: string }) => DEPT_NAME[d.dept]).join('፣ ') || '—'],
     ]],

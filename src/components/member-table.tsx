@@ -2,11 +2,11 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { ageFromIso } from '@/lib/ethiopian-calendar';
 import {
-  DEPARTMENTS, DEPT_NAME, MEMBER_STATUS, SEX, WORK_STATUS, TITLES,
+  DEPARTMENTS, DEPT_NAME, MEMBER_STATUS, SEX, WORK_STATUS, TITLES, memberTypeLabel,
 } from '@/lib/constants';
 import { PrintButton } from './print-button';
 
-type Filters = { q?: string; status?: string; work?: string; dept?: string };
+type Filters = { q?: string; status?: string; work?: string; dept?: string; group?: string };
 
 type Row = {
   id: string;
@@ -18,6 +18,9 @@ type Row = {
   phone: string | null;
   work_status: keyof typeof WORK_STATUS;
   member_status: keyof typeof MEMBER_STATUS;
+  member_type: string;
+  member_type_other: string | null;
+  age_group: string | null;
   all_depts: { dept: string }[];
 };
 
@@ -43,8 +46,8 @@ export async function MemberTable({
     .from('members')
     .select(
       dept
-        ? 'id, reg_no, full_name, title, sex, dob, phone, work_status, member_status, all_depts:member_departments(dept), f:member_departments!inner(dept)'
-        : 'id, reg_no, full_name, title, sex, dob, phone, work_status, member_status, all_depts:member_departments(dept)',
+        ? 'id, reg_no, full_name, title, sex, dob, phone, work_status, member_status, member_type, member_type_other, age_group, all_depts:member_departments(dept), f:member_departments!inner(dept)'
+        : 'id, reg_no, full_name, title, sex, dob, phone, work_status, member_status, member_type, member_type_other, age_group, all_depts:member_departments(dept)',
     )
     .eq('is_active', true)
     .order('full_name');
@@ -57,8 +60,13 @@ export async function MemberTable({
   }
   if (filters.status) query = query.eq('member_status', filters.status);
   if (filters.work) query = query.eq('work_status', filters.work);
+  if (filters.group) query = filters.group === 'none' ? query.is('age_group', null) : query.eq('age_group', filters.group);
 
-  const { data, error } = await query.returns<Row[]>();
+  const [{ data, error }, { data: groups }] = await Promise.all([
+    query.returns<Row[]>(),
+    supabase.from('age_groups').select('code, name').order('sort'),
+  ]);
+  const groupName = new Map((groups ?? []).map((g) => [g.code as string, g.name as string]));
 
   return (
     <>
@@ -68,12 +76,20 @@ export async function MemberTable({
           <input id="q" name="q" defaultValue={filters.q} placeholder="ስም ወይም መለያ ቁጥር" />
         </div>
         <div className="field">
-          <label htmlFor="status">የአባልነት ሁኔታ</label>
+          <label htmlFor="status">ሁኔታ</label>
           <select id="status" name="status" defaultValue={filters.status ?? ''}>
             <option value="">ሁሉም</option>
             {Object.entries(MEMBER_STATUS).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="group">ክፍል (በዕድሜ)</label>
+          <select id="group" name="group" defaultValue={filters.group ?? ''}>
+            <option value="">ሁሉም</option>
+            {(groups ?? []).map((g) => <option key={g.code} value={g.code}>{g.name}</option>)}
+            <option value="none">ያልተመደቡ (የትውልድ ቀን የሌላቸው)</option>
           </select>
         </div>
         <div className="field">
@@ -111,9 +127,11 @@ export async function MemberTable({
               <th>ሙሉ ስም</th>
               <th>ፆታ</th>
               <th>ዕድሜ</th>
+              <th>ክፍል</th>
               <th>ስልክ</th>
               <th>የስራ ሁኔታ</th>
               <th>የአባልነት ሁኔታ</th>
+              <th>ሁኔታ</th>
               <th>የመረጡት ክፍል</th>
             </tr>
           </thead>
@@ -131,15 +149,17 @@ export async function MemberTable({
                 </td>
                 <td>{SEX[m.sex]}</td>
                 <td>{ageFromIso(m.dob) ?? '—'}</td>
+                <td className="small">{m.age_group ? groupName.get(m.age_group) ?? '—' : '—'}</td>
                 <td dir="ltr">{m.phone ?? '—'}</td>
                 <td>{WORK_STATUS[m.work_status]}</td>
+                <td>{memberTypeLabel(m.member_type, m.member_type_other)}</td>
                 <td>{MEMBER_STATUS[m.member_status]}</td>
                 <td className="small">{m.all_depts.map((d) => DEPT_NAME[d.dept]).join('፣ ') || '—'}</td>
               </tr>
             ))}
             {data?.length === 0 && (
               <tr>
-                <td colSpan={8} className="muted">ምንም አባል አልተገኘም።</td>
+                <td colSpan={10} className="muted">ምንም አባል አልተገኘም።</td>
               </tr>
             )}
           </tbody>

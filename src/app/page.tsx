@@ -144,7 +144,7 @@ export default async function Home() {
         <h2>{s?.welcome_title || `እንኳን ወደ ${SCHOOL_NAME} በሰላም መጡ።`}</h2>
         <p style={{ whiteSpace: 'pre-line' }}>{s?.welcome_text || 'ለመመዝገብ ወደ ቢሮ ቁጥር 9 በአካል ይሂዱ።'}</p>
         <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <Link href="/student" className="btn">የአባል መግቢያ</Link>
+          <Link href="/login" className="btn">የአባል መግቢያ</Link>
           <Link href="/feedback" className="btn secondary">አስተያየት ይስጡ</Link>
         </div>
       </div>

@@ -19,7 +19,7 @@ export type Semester = {
   id: string; year_id: string; no: number; starts_on: string | null; ends_on: string | null;
   w_quiz: number; w_notebook: number; w_participation: number; w_mid: number; w_final: number;
   pass_mark: number; is_active: boolean;
-  mid_exam_on: string | null; final_exam_on: string | null; min_attendance: number;
+  mid_exam_on: string | null; final_exam_on: string | null; min_attendance: number; min_attendance_distance: number;
 };
 export type AcademicYear = { id: string; ec_year: number; is_active: boolean; promote_min_average: number; max_failed_courses: number };
 export const DECISION = { promoted: 'ተዛውረዋል', repeat: 'ይደግማሉ' } as const;

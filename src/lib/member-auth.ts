@@ -21,6 +21,6 @@ export const getMember = cache(async (): Promise<MemberUser | null> => {
 
 export async function requireMember(): Promise<MemberUser> {
   const m = await getMember();
-  if (!m) redirect('/student/login');
+  if (!m) redirect('/login?next=/student');
   return m;
 }

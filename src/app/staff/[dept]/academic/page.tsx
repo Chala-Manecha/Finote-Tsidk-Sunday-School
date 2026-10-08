@@ -59,9 +59,14 @@ export default async function Academic({ params }: { params: Promise<{ dept: str
                   <div className="field"><span className="label">ዋና ፈተና</span><EcDatePicker name="final_exam_on" defaultIso={x.final_exam_on} yearsBack={1} yearsForward={1} /></div>
                   <div className="field"><span className="label">የሚያበቃበት</span><EcDatePicker name="ends_on" defaultIso={x.ends_on} yearsBack={1} yearsForward={1} /></div>
                   <div className="field">
-                    <label>ለዋና ፈተና የሚያስፈልግ ዝቅተኛ ክትትል (%)</label>
+                    <label>ዝቅተኛ ክትትል ለዋና ፈተና — መደበኛ (%)</label>
                     <input name="min_attendance" type="number" min={0} max={100} defaultValue={x.min_attendance} required />
                     <span className="hint">0 = ገደብ የለም። ከዚህ በታች የሆነ ተማሪ ያለ ፈቃድ ዋና ፈተና አይመዘገብለትም።</span>
+                  </div>
+                  <div className="field">
+                    <label>ዝቅተኛ ክትትል — የርቀት (%)</label>
+                    <input name="min_attendance_distance" type="number" min={0} max={100} defaultValue={x.min_attendance_distance ?? 50} required />
+                    <span className="hint">የርቀት ተማሪዎች መርሐ ግብራቸው አንድ ነው፤ የመገኘት ግዴታቸው ግን ዝቅ ያለ ነው።</span>
                   </div>
                 </div>
               </MediaForm>

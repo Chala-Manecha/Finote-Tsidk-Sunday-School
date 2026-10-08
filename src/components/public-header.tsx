@@ -33,21 +33,22 @@ const NAV: NavEntry[] = [
 /** The staff-entry item shows the active leadership team; changes when ጽሕፈት ቤት activates a new one. */
 export async function PublicHeader() {
   const supabase = await createClient();
-  const { data } = await supabase.from('leadership_terms').select('name, team_no').eq('is_active', true).maybeSingle();
+  const [{ data }, { data: open }] = await Promise.all([
+    supabase.from('leadership_terms').select('name, team_no').eq('is_active', true).maybeSingle(),
+    supabase.rpc('registration_is_open'),
+  ]);
   const team = data as Pick<Term, 'name' | 'team_no'> | null;
-  const login: NavEntry = {
-    label: 'መግቢያ',
-    primary: true,
-    items: [
-      { href: '/student', label: 'የተማሪ / የአባል መግቢያ' },
-      { href: '/staff', label: team ? `አመራሮች (${termLabel(team)})` : 'አመራሮች' },
-    ],
-  };
+  const items: NavEntry[] = open ? [{ href: '/register', label: 'ይመዝገቡ', highlight: true }, ...NAV] : NAV;
   return (
-    <header className="topbar site-header">
-      <Brand />
-      <SiteNav items={NAV} cta={login} />
-    </header>
+    <>
+      <header className="topbar site-header">
+        <Brand />
+        <SiteNav items={items} cta={{ href: '/login', label: 'መግቢያ', title: team ? `አመራሮች፦ ${termLabel(team)}` : undefined }} />
+      </header>
+      {open && (
+        <a href="/register" className="register-strip">📝 የአባልነት ምዝገባ ክፍት ነው — አሁኑኑ ይመዝገቡ →</a>
+      )}
+    </>
   );
 }
 

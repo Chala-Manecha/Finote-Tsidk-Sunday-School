@@ -58,11 +58,12 @@ export async function saveSemester(_: FormState, fd: FormData): Promise<FormStat
     mid_exam_on: DATE_RE.test(text(fd, 'mid_exam_on')) ? text(fd, 'mid_exam_on') : null,
     final_exam_on: DATE_RE.test(text(fd, 'final_exam_on')) ? text(fd, 'final_exam_on') : null,
     min_attendance: n('min_attendance'),
+    min_attendance_distance: n('min_attendance_distance'),
   };
   const sum = row.w_quiz + row.w_notebook + row.w_participation + row.w_mid + row.w_final;
   if (Object.values(row).some((v) => typeof v === 'number' && (!Number.isInteger(v) || v < 0))) return { error: 'ሙሉ ቁጥሮች ያስገቡ።' };
   if (sum !== 100) return { error: `የነጥቦቹ ድምር 100 መሆን አለበት (አሁን ${sum})።` };
-  if (row.pass_mark > 100 || row.min_attendance > 100) return { error: 'ከ100 መብለጥ የለበትም።' };
+  if (row.pass_mark > 100 || row.min_attendance > 100 || row.min_attendance_distance > 100) return { error: 'ከ100 መብለጥ የለበትም።' };
   const supabase = await createClient();
   const { error, count } = await supabase.from('semesters').update(row, { count: 'exact' }).eq('id', id);
   if (error) return { error: explain(error.message) };
@@ -87,8 +88,9 @@ export async function assignClass(_: FormState, fd: FormData): Promise<FormState
   const id = text(fd, 'id');
   const cls = text(fd, 'class_level');
   if (cls && !isClassLevel(cls)) return { error: 'ክፍል ይምረጡ።' };
+  const mode = text(fd, 'study_mode') === 'distance' ? 'distance' : 'regular';
   const supabase = await createClient();
-  const { error, count } = await supabase.from('enrollments').update({ class_level: cls || null }, { count: 'exact' }).eq('id', id);
+  const { error, count } = await supabase.from('enrollments').update({ class_level: cls || null, study_mode: mode }, { count: 'exact' }).eq('id', id);
   if (error) return { error: explain(error.message) };
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
   refresh();

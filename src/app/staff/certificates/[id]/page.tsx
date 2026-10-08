@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { requireDept, canAccess } from '@/lib/auth';
-import { DEPT_NAME, TITLES, LEADER_ROLE, LEAVE_REASON, formatBirr, type LeaderRole, type LeaveReason } from '@/lib/constants';
+import { DEPT_NAME, TITLES, LEADER_ROLE, LEAVE_REASON, STUDY_MODE, formatBirr, memberTypeLabel, type LeaderRole, type LeaveReason, type StudyMode } from '@/lib/constants';
+import { classLabel } from '@/lib/education';
 import { formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import { termLabel, type Term } from '@/lib/periods';
 import { DocHeader, DocSigns, QrCode, verifyUrl } from '@/components/doc-sheet';
@@ -20,10 +21,11 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
     .eq('id', id).maybeSingle();
   if (!d || d.status !== 'approved' || !d.cert_no) notFound();
 
-  const [{ data: m }, { data: depts }, { data: roles }] = await Promise.all([
-    supabase.from('members').select('full_name, reg_no, title, sex, joined_year, created_at, photo_path').eq('id', d.member_id).single(),
+  const [{ data: m }, { data: depts }, { data: roles }, { data: enr }] = await Promise.all([
+    supabase.from('members').select('full_name, reg_no, title, sex, joined_year, created_at, photo_path, christian_name, member_type, member_type_other, age_group, age_groups(name)').eq('id', d.member_id).single(),
     supabase.from('member_departments').select('dept').eq('member_id', d.member_id),
     supabase.from('leadership_roles').select('dept, role, leadership_terms(*)').eq('member_id', d.member_id),
+    supabase.from('enrollments').select('class_level, study_mode, academic_years(ec_year)').eq('member_id', d.member_id),
   ]);
   if (!m) notFound();
   const photo = m.photo_path
@@ -42,6 +44,17 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
 
   const fromYear = m.joined_year ?? isoToEc(m.created_at).year;
   const toYear = isoToEc(d.leave_date).year;
+  const sundayYears = Math.max(toYear - fromYear, 0);
+  type Enr = { class_level: string | null; study_mode: StudyMode; academic_years: { ec_year: number } | null };
+  const lastEnr = ((enr ?? []) as unknown as Enr[]).sort((a, b) => (b.academic_years?.ec_year ?? 0) - (a.academic_years?.ec_year ?? 0))[0];
+  const ageGroup = (m.age_groups as unknown as { name: string } | null)?.name;
+  const facts: [string, string][] = [
+    ['የክርስትና ስም', m.christian_name || '—'],
+    ['የአባልነት ሁኔታ', memberTypeLabel(m.member_type, m.member_type_other)],
+    ['ክፍል', ageGroup ?? '—'],
+    ['የሰንበት እድሜ', `${sundayYears} ዓመት`],
+    ['የትምህርት ክፍል', lastEnr ? `${lastEnr.class_level ? classLabel(lastEnr.class_level) : '—'} · ${STUDY_MODE[lastEnr.study_mode]}${lastEnr.academic_years ? ` (${lastEnr.academic_years.ec_year} ዓ.ም)` : ''}` : '—'],
+  ];
   const mark = d.reinstated_at ? 'ተመልሰው ገብተዋል' : d.print_count > 0 ? 'ቅጂ (COPY)' : null;
 
   return (
@@ -58,6 +71,9 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
               {m.title ? `${TITLES[m.title as keyof typeof TITLES]} ` : ''}<b>{m.full_name}</b> (መለያ ቁ. {m.reg_no}) ከ<b>{fromYear} ዓ.ም</b> እስከ{' '}
               <b>{formatEc(d.leave_date)}</b> ድረስ የፍኖተ ጽድቅ ሰንበት ትምህርት ቤት አባል ሆነው አገልግለዋል።
             </p>
+            <dl className="doc-rows" style={{ margin: '10px 0 14px' }}>
+              {facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+            </dl>
             {(depts ?? []).length > 0 && (
               <p>በንዑስ አባልነት ያገለገሉባቸው ክፍሎች፦ <b>{(depts ?? []).map((x) => DEPT_NAME[x.dept]).join('፣ ')}</b>።</p>
             )}

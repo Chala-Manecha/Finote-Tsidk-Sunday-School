@@ -30,6 +30,10 @@ export default async function Exams({ params, searchParams }: {
         supabase.from('makeup_grants').select('offering_id, member_id, reason, granted_at, used_at').in('offering_id', offeringIds),
       ])
     : [{ data: [] }, { data: [] }];
+  const { data: modes } = await supabase.from('enrollments').select('member_id, study_mode').eq('year_id', year.id)
+    .in('member_id', [...new Set(rows.map((r) => r.member_id))]);
+  const distance = new Set((modes ?? []).filter((m) => m.study_mode === 'distance').map((m) => m.member_id as string));
+  const limitFor = (memberId: string) => (distance.has(memberId) ? semester.min_attendance_distance : semester.min_attendance);
   const exemptions = (ex ?? []) as Grant[];
   const makeups = (mu ?? []) as Grant[];
   const find = (list: Grant[], r: ResultRow) => list.find((g) => g.offering_id === r.offering_id && g.member_id === r.member_id);
@@ -40,7 +44,7 @@ export default async function Exams({ params, searchParams }: {
     <>
       <h2 className="section" style={{ marginTop: 0 }}>የፈተና ፈቃድና ድጋሚ ፈተና</h2>
       <p className="muted small">
-        ክትትላቸው ከ{semester.min_attendance}% በታች የሆኑ ተማሪዎች ያለ ፈቃድ ዋና ፈተና አይመዘገብላቸውም። በቂ ምክንያት ካለ እዚህ ፈቃድ ይስጡ።
+        ክትትላቸው ከ{semester.min_attendance}% (የርቀት፦ {semester.min_attendance_distance}%) በታች የሆኑ ተማሪዎች ያለ ፈቃድ ዋና ፈተና አይመዘገብላቸውም። በቂ ምክንያት ካለ እዚህ ፈቃድ ይስጡ።
         ዋና ፈተና ያመለጣቸው ተማሪዎች ደግሞ ድጋሚ ፈተና ሊፈቀድላቸው ይችላል — ውጤቱ ከጸደቀ በኋላም መምህሩ አንድ ጊዜ ማስገባት ይችላል።
       </p>
       <EduPicker action="/staff/education/exams" years={years} semesters={semesters} semesterId={semester.id} classLevel={cls} />
@@ -56,12 +60,13 @@ export default async function Exams({ params, searchParams }: {
                 <tbody>
                   {list.map((r) => {
                     const p = pct(r);
-                    const low = semester.min_attendance > 0 && p !== null && p < semester.min_attendance;
+                    const lim = limitFor(r.member_id);
+                    const low = lim > 0 && p !== null && p < lim;
                     const e = find(exemptions, r);
                     const m = find(makeups, r);
                     return (
                       <tr key={r.member_id}>
-                        <td>{r.full_name}<div className="small muted">{r.reg_no}</div></td>
+                        <td>{r.full_name}<div className="small muted">{r.reg_no}{distance.has(r.member_id) && ' · የርቀት'}</div></td>
                         <td className={`num ${low ? 'neg' : ''}`}>{p === null ? '—' : `${p}%`}</td>
                         <td>{r.final ?? <span className="muted">አልገባም</span>}</td>
                         <td>

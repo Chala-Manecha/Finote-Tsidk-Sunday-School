@@ -45,7 +45,17 @@ export const SUB_CITIES = [
   'አቃቂ ቃሊቲ', 'አዲስ ከተማ', 'አራዳ', 'ቦሌ', 'ጉለሌ', 'ቂርቆስ',
   'ኮልፌ ቀራንዮ', 'ለሚ ኩራ', 'ልደታ', 'ንፋስ ስልክ ላፍቶ', 'የካ',
 ] as const;
-export const LANGUAGES = ['አማርኛ', 'ኦሮምኛ', 'ትግርኛ', 'ጉራግኛ', 'ሃድይኛ', 'ሌላ'] as const;
+/** Ethiopian languages offered in the drop-down (Afar … Harari). */
+export const LANGUAGES = [
+  'ዓፋርኛ', 'አማርኛ', 'ኦሮምኛ', 'ሶማሊኛ', 'ትግርኛ', 'ሲዳምኛ', 'ወላይትኛ',
+  'ጉራግኛ', 'ሃድይኛ', 'ጋሞኛ', 'ጌዴኦኛ', 'ስልጥኛ', 'ካፊኛ', 'ሐረሪኛ',
+] as const;
+export const MEMBER_TYPE = { regular: 'መደበኛ', special: 'ልዩ መደበኛ', honorary: 'የክብር አባል', other: 'ሌላ' } as const;
+export type MemberType = keyof typeof MEMBER_TYPE;
+export const memberTypeLabel = (t: string | null | undefined, other?: string | null) =>
+  t === 'other' ? (other || 'ሌላ') : MEMBER_TYPE[(t ?? 'regular') as MemberType] ?? '—';
+export const STUDY_MODE = { regular: 'መደበኛ', distance: 'የርቀት' } as const;
+export type StudyMode = keyof typeof STUDY_MODE;
 
 export type SessionType = 'mezmur' | 'wereb' | 'course' | 'abnet' | 'meeting';
 export const SESSION_TYPES: Record<SessionType, { label: string; dept: DeptCode }> = {

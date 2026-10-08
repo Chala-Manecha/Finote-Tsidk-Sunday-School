@@ -63,7 +63,7 @@ export default async function TeachPage({ params }: { params: Promise<{ id: stri
 
       <section className="card" style={{ marginBottom: 16 }}>
         <h2 className="section" style={{ marginTop: 0 }}>ውጤት</h2>
-        <p className="small muted">ነጥቦቹ የሚገቡት ከእያንዳንዱ ክፍል ከፍተኛ ነጥብ ውስጥ ነው። ማለፊያ፦ {s.pass_mark}/100።{s.min_attendance > 0 && ` ለዋና ፈተና ዝቅተኛ ክትትል፦ ${s.min_attendance}%።`}</p>
+        <p className="small muted">ነጥቦቹ የሚገቡት ከእያንዳንዱ ክፍል ከፍተኛ ነጥብ ውስጥ ነው። ማለፊያ፦ {s.pass_mark}/100።{s.min_attendance > 0 && ` ለዋና ፈተና ዝቅተኛ ክትትል፦ መደበኛ ${s.min_attendance}% · የርቀት ${s.min_attendance_distance}%።`}</p>
         <MarksGrid offeringId={id} students={students} marks={marks} weights={weights} locked={locked}
           attendance={attendance} barred={barredIds} makeup={makeupIds} />
         {offering.status === 'draft' && (

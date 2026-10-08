@@ -18,6 +18,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'money-approvals', label: 'የገንዘብ ጥያቄ ማጸደቂያ', ready: true },
     { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: true },
     { slug: 'assignees', label: 'ክፍል ኃላፊዎች', ready: true },
+    { slug: 'staff-access', label: 'የአመራሮች መግቢያ ፈቃድ', ready: true },
     { slug: 'feedback-tracker', label: 'የአስተያየት ክትትል', ready: true },
     { slug: 'terms', label: 'የአመራር ቡድን', ready: true },
     { slug: 'departures', label: 'የመልቀቂያ ጥያቄዎች', ready: true },
@@ -30,6 +31,8 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   hr: [
     { slug: 'register', label: 'ምዝገባ (+ አባል መዝግብ)', ready: true },
+    { slug: 'applications', label: 'የሕዝብ ምዝገባ ማመልከቻዎች', ready: true },
+    { slug: 'age-groups', label: 'የዕድሜ ክፍሎች', ready: true },
     { slug: 'overview', label: 'አጠቃላይ አቴንዳንስ', ready: true },
     { slug: 'attendance', label: 'ስብሰባ ክትትል መያዝ', ready: true },
     { slug: 'duty', label: 'አባል መድብ', ready: true },
@@ -92,7 +95,7 @@ const specific: Record<DeptCode, Tab[]> = {
 const OFFICE_GROUPS: [string, string[]][] = [
   ['አባላት', ['roster', 'departures', 'members']],
   ['ገንዘብና ንብረት', ['money-approvals', 'dept-property', 'money', 'property']],
-  ['ክፍል ኃላፊዎች', ['assignees']],
+  ['ክፍል ኃላፊዎች', ['assignees', 'staff-access']],
   ['መርሐ ግብሮች', ['request-event']],
   ['አስተዳደር', ['terms', 'feedback-tracker', 'feedback']],
 ];
@@ -103,7 +106,13 @@ const EDUCATION_GROUPS: [string, string[]][] = [
   ['አብነትና ወረብ', ['attendance', 'abnet', 'wereb-admin']],
   ['የክፍሉ', ['members', 'duty', 'property', 'money', 'request-event', 'feedback']],
 ];
-const GROUPS: Partial<Record<DeptCode, [string, string[]][]>> = { office: OFFICE_GROUPS, education: EDUCATION_GROUPS };
+const HR_GROUPS: [string, string[]][] = [
+  ['ምዝገባ', ['register', 'applications', 'age-groups', 'members']],
+  ['ክትትል', ['overview', 'attendance', 'lost-members', 'departures']],
+  ['ምደባና አመራር', ['duty', 'all-duties', 'leadership']],
+  ['የክፍሉ', ['property', 'money', 'request-event', 'feedback']],
+];
+const GROUPS: Partial<Record<DeptCode, [string, string[]][]>> = { office: OFFICE_GROUPS, education: EDUCATION_GROUPS, hr: HR_GROUPS };
 
 export function tabsFor(dept: DeptCode): Tab[] {
   const all = [...specific[dept], ...shared(dept)];

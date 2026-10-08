@@ -547,3 +547,41 @@ a.contact-card:hover { background: #000; color: #fff; }
 .form-submit { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .form-submit .btn { padding: 12px 28px; font-size: .95rem; }
 @media (max-width: 640px) { .form-block { padding: 14px 12px 8px; } .form-steps { top: 70px; } }
+
+/* ---------- Tables on white (department pages) ---------- */
+.table-wrap { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); margin-top: 12px; }
+.table-wrap table { margin-top: 0; }
+.table-wrap tr:last-child td { border-bottom: none; }
+.table-wrap th:first-child { border-top-left-radius: 12px; }
+.table-wrap th:last-child { border-top-right-radius: 12px; }
+tbody tr { transition: background .12s; }
+tbody tr:hover td { background: #F2F6F9; }
+.card .table-wrap, .doc-sheet .table-wrap { box-shadow: none; }
+.table-wrap td > input:not([type="checkbox"]), .table-wrap td > select, .table-wrap td select, .table-wrap td input[name="reason"] {
+  font: inherit; font-size: .86rem; padding: 6px 8px; border: 1px solid var(--field-border); border-radius: 7px; background: #fff; color: var(--ink);
+}
+
+/* ---------- Multi-select (check boxes in a drop-down) ---------- */
+.multi-select { position: relative; }
+.multi-select-box {
+  width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: start;
+  font: inherit; font-size: .9rem; padding: 8px 10px; border: 1px solid var(--field-border); border-radius: 8px; background: #fff; color: var(--ink);
+}
+.multi-select.open .multi-select-box { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(69, 104, 130, .18); }
+.multi-select-box > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.multi-select-list {
+  position: absolute; z-index: 30; top: calc(100% + 4px); inset-inline: 0; max-height: 280px; overflow-y: auto;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(16, 24, 40, .16); padding: 6px;
+}
+.multi-select-list .check { padding: 6px 8px; border-radius: 7px; }
+.multi-select-list .check:hover { background: var(--soft); }
+output.readonly { display: block; padding: 8px 10px; border: 1px dashed var(--field-border); border-radius: 8px; background: var(--soft); font-size: .9rem; min-height: 38px; }
+
+/* ---------- Registration strip + login ---------- */
+.register-strip { display: block; text-align: center; padding: 9px 16px; background: var(--green); color: #fff; font-weight: 600; font-size: .92rem; }
+.register-strip:hover { background: #000; }
+.login-box { max-width: 440px; }
+.admin-login { margin-top: 18px; }
+.admin-login > summary { cursor: pointer; font-size: .82rem; color: var(--muted); text-align: center; }
+.admin-login > summary:hover { color: #000; text-decoration: underline; }
+.table-wrap .multi-select-list { position: static; box-shadow: none; margin-top: 4px; }

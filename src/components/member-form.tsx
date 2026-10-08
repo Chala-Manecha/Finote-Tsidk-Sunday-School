@@ -1,12 +1,14 @@
 'use client';
-import { useActionState, useState, startTransition, useRef } from 'react';
+import { useActionState, useState, startTransition } from 'react';
 import { saveMember, type MemberFormState } from '@/app/staff/members/actions';
+import { submitApplication, applicationUploadUrl } from '@/lib/actions/applications';
 import { createClient } from '@/lib/supabase/client';
 import { resizeImage } from '@/lib/client/upload';
 import { EcDatePicker } from './ec-date-picker';
-import { ageFromIso, todayIsoAddis } from '@/lib/ethiopian-calendar';
+import { MultiSelect } from './multi-select';
+import { ageFromIso, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
-  DEPARTMENTS, EDUCATION_LEVELS, EMERGENCY_RELATIONS, GEEZ_LEVEL, LANGUAGES, MARITAL_STATUS, MEMBER_STATUS,
+  DEPARTMENTS, EDUCATION_LEVELS, EMERGENCY_RELATIONS, GEEZ_LEVEL, LANGUAGES, MARITAL_STATUS, MEMBER_TYPE,
   REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
 } from '@/lib/constants';
 import { emptyEducation, emptyWork, type EducationEntry, type WorkEntry } from '@/lib/member-details';
@@ -17,7 +19,6 @@ export type MemberInitial = {
   sex?: string;
   title?: string | null;
   work_status?: string;
-  member_status?: string;
   dob?: string | null;
   phone?: string | null;
   email?: string | null;
@@ -35,7 +36,8 @@ export type MemberInitial = {
   secular_school?: { name?: string | null; evidence_path?: string | null } | null;
   depts?: string[];
   registered_on?: string | null;
-  doc_no?: string | null;
+  member_type?: string | null;
+  member_type_other?: string | null;
   first_name?: string | null;
   father_name?: string | null;
   grandfather_name?: string | null;
@@ -57,6 +59,9 @@ export type MemberInitial = {
   work?: WorkEntry[] | null;
 };
 
+/** staff = HR registers/edits · public = self-registration (goes to HR) · approve = HR reviews an application */
+export type FormMode = 'staff' | 'public' | 'approve';
+
 const SECTIONS = [
   ['sec-membership', 'የአባልነት መረጃ'],
   ['sec-personal', 'ግላዊ መረጃ'],
@@ -64,14 +69,38 @@ const SECTIONS = [
   ['sec-contacts', 'ንሰሐ አባት እና ተጠሪ'],
   ['sec-education', 'ትምህርት'],
   ['sec-work', 'ሥራ'],
-  ['sec-depts', 'ክፍል መረጣ'],
+  ['sec-depts', 'ዝንባሌ'],
 ] as const;
+
+const LANG_OPTIONS = LANGUAGES.map((l) => ({ value: l, label: l }));
+const DEPT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d.code, label: d.name }));
+const MAX_FILE = 10 * 1024 * 1024;
 
 /** Splits an old single full_name into ስም / የአባት ስም / የአያት ስም. */
 function nameParts(i: MemberInitial): [string, string, string] {
   if (i.first_name || i.father_name) return [i.first_name ?? '', i.father_name ?? '', i.grandfather_name ?? ''];
   const w = (i.full_name ?? '').trim().split(/\s+/).filter(Boolean);
   return [w[0] ?? '', w[1] ?? '', w.slice(2).join(' ')];
+}
+
+/** Staff upload straight to the private bucket (RLS); the public form gets a one-time signed URL from the server. */
+async function upload(mode: FormMode, file: File | Blob, name = 'file'): Promise<string> {
+  if (file.size > MAX_FILE) throw new Error('ፋይሉ ከ10MB በላይ ነው።');
+  const supabase = createClient();
+  if (mode === 'public') {
+    const signed = await applicationUploadUrl(name);
+    if ('error' in signed) throw new Error(signed.error);
+    const { error } = await supabase.storage.from('member-docs').uploadToSignedUrl(signed.path, signed.token, file, {
+      contentType: file.type || undefined,
+    });
+    if (error) throw new Error(`ፋይል መጫን አልተቻለም፦ ${error.message}`);
+    return signed.path;
+  }
+  const safe = name.replace(/[^\w.\-]+/g, '_').slice(-60);
+  const path = `members/${crypto.randomUUID()}-${safe}`;
+  const { error } = await supabase.storage.from('member-docs').upload(path, file, { contentType: file.type || undefined });
+  if (error) throw new Error(`ፋይል መጫን አልተቻለም፦ ${error.message}`);
+  return path;
 }
 
 function Section({ n, id, title, children }: { n: number; id: string; title: string; children: React.ReactNode }) {
@@ -103,41 +132,31 @@ function YearsFields({ e, set, nowLabel }: {
   );
 }
 
-
-const MAX_FILE = 10 * 1024 * 1024;
-
-async function uploadEvidence(file: File | Blob, name = 'file'): Promise<string> {
-  if (file.size > MAX_FILE) throw new Error('ፋይሉ ከ10MB በላይ ነው።');
-  const supabase = createClient();
-  const safe = name.replace(/[^\w.\-]+/g, '_').slice(-60);
-  const path = `members/${crypto.randomUUID()}-${safe}`;
-  const { error } = await supabase.storage.from('member-docs').upload(path, file, {
-    contentType: file.type || undefined,
-  });
-  if (error) throw new Error(`ፋይል መጫን አልተቻለም፦ ${error.message}`);
-  return path;
-}
-
-export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
-  const [state, action, pending] = useActionState<MemberFormState, FormData>(saveMember, {});
+export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
+  initial?: MemberInitial; mode?: FormMode; applicationId?: string;
+}) {
+  const [state, action, pending] = useActionState<MemberFormState, FormData>(mode === 'public' ? submitApplication : saveMember, {});
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dob, setDob] = useState<string | null>(initial.dob ?? null);
+  const [joined, setJoined] = useState<string>(initial.joined_year ? String(initial.joined_year) : '');
   const [hasPrior, setHasPrior] = useState(!!initial.prior_school);
   const [isEthiopian, setIsEthiopian] = useState(initial.is_ethiopian ?? true);
+  const [memberType, setMemberType] = useState(initial.member_type ?? 'regular');
+  const [workStatus, setWorkStatus] = useState(initial.work_status ?? '');
   const [region, setRegion] = useState(initial.region ?? (initial.id ? (initial.sub_city ? 'አዲስ አበባ' : '') : 'አዲስ አበባ'));
   const initLangs = initial.languages ?? [];
   const otherLangs = initLangs.filter((l) => !(LANGUAGES as readonly string[]).includes(l));
-  const [langOther, setLangOther] = useState(otherLangs.length > 0);
-  const [depts, setDepts] = useState<string[]>(initial.depts ?? []);
   const [photoPreview, setPhotoPreview] = useState<string | null>(initial.photo_url ?? null);
   const [education, setEducation] = useState<EducationEntry[]>(initial.education?.length ? initial.education : [emptyEducation()]);
   const [work, setWork] = useState<WorkEntry[]>(initial.work?.length ? initial.work : [emptyWork()]);
-  const formRef = useRef<HTMLFormElement>(null);
   const [first, father, grand] = nameParts(initial);
   const isNew = !initial.id;
 
   const age = ageFromIso(dob);
+  const thisYear = isoToEc(todayIsoAddis()).year;
+  const joinedNum = Number(joined);
+  const sundayAge = joined && Number.isInteger(joinedNum) && joinedNum <= thisYear && joinedNum > 1900 ? thisYear - joinedNum : null;
   const patchEdu = (i: number, p: Partial<EducationEntry>) => setEducation(education.map((e, j) => (j === i ? { ...e, ...p } : e)));
   const patchWork = (i: number, p: Partial<WorkEntry>) => setWork(work.map((e, j) => (j === i ? { ...e, ...p } : e)));
 
@@ -146,23 +165,23 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
     setUploadError(null);
     const fd = new FormData(e.currentTarget);
     fd.set('education_json', JSON.stringify(education));
-    fd.set('work_json', JSON.stringify(work));
+    fd.set('work_json', JSON.stringify(workStatus === 'worker' ? work : []));
     try {
       setUploading(true);
       const photo = fd.get('photo_file');
       fd.delete('photo_file');
       if (photo instanceof File && photo.size > 0) {
         const blob = await resizeImage(photo, 1600, 0.85);
-        fd.set('photo_path', await uploadEvidence(blob, 'photo.jpg'));
-      } else if (!initial.photo_path) {
+        fd.set('photo_path', await upload(mode, blob, 'photo.jpg'));
+      } else if (initial.photo_path) {
+        fd.set('photo_path', initial.photo_path);
+      } else {
         throw new Error('ፎቶ ያስገቡ።');
       }
       for (const key of ['prior_school', 'secular_school'] as const) {
         const file = fd.get(`${key}_file`);
         fd.delete(`${key}_file`);
-        if (file instanceof File && file.size > 0) {
-          fd.set(`${key}_evidence`, await uploadEvidence(file, file.name));
-        }
+        if (file instanceof File && file.size > 0) fd.set(`${key}_evidence`, await upload(mode, file, file.name));
       }
     } catch (err) {
       setUploadError((err as Error).message);
@@ -173,12 +192,23 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
     startTransition(() => action(fd));
   }
 
+  if (mode === 'public' && state.ok) {
+    return (
+      <div className="card" style={{ textAlign: 'center', padding: 36 }}>
+        <div style={{ fontSize: '2.4rem' }}>✅</div>
+        <h2 style={{ marginTop: 6 }}>ማመልከቻዎ ደርሷል</h2>
+        <p className="muted">{state.ok}</p>
+      </div>
+    );
+  }
+
   const busy = pending || uploading;
   const req = isNew ? <span className="req">*</span> : null;
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} className="member-form">
+    <form onSubmit={onSubmit} className="member-form">
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
+      {applicationId && <input type="hidden" name="application_id" value={applicationId} />}
       <nav className="form-steps" aria-label="የቅጹ ክፍሎች">
         {SECTIONS.map(([id, label], i) => <a key={id} href={`#${id}`}><span>{i + 1}</span>{label}</a>)}
       </nav>
@@ -199,25 +229,25 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
             <div className="field"><span className="label">የምዝገባ መለያ ቁጥር</span><span className="pill" style={{ alignSelf: 'flex-start' }}>{initial.reg_no}</span></div>
           )}
           <div className="field">
-            <span className="label">የአባልነት ምዝገባ ቀን (ዓ.ም) <span className="req">*</span></span>
-            <EcDatePicker name="registered_on" defaultIso={initial.registered_on ?? todayIsoAddis()} yearsBack={30} yearsForward={0} required />
-          </div>
-          <div className="field">
-            <label htmlFor="doc_no">የዶክመንት (የወረቀት ፎርም) ቁጥር</label>
-            <input id="doc_no" name="doc_no" defaultValue={initial.doc_no ?? ''} placeholder="ካለ" />
-          </div>
-          <div className="field">
-            <label htmlFor="member_status">የአባልነት ሁኔታ <span className="req">*</span></label>
-            <select id="member_status" name="member_status" required defaultValue={initial.member_status ?? 'new'}>
-              {Object.entries(MEMBER_STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            <label htmlFor="member_type">የአባልነት ሁኔታ <span className="req">*</span></label>
+            <select id="member_type" name="member_type" value={memberType} onChange={(e) => setMemberType(e.target.value)}>
+              {Object.entries(MEMBER_TYPE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
+          {memberType === 'other' && (
+            <div className="field"><label htmlFor="member_type_other">ሌላ (ይግለጹ) <span className="req">*</span></label>
+              <input id="member_type_other" name="member_type_other" required defaultValue={initial.member_type_other ?? ''} /></div>
+          )}
           <div className="field">
             <label htmlFor="joined_year">ሰንበት ት/ቤቱን የተቀላቀሉበት ዓመት (ዓ.ም)</label>
-            <input id="joined_year" name="joined_year" type="number" min={1980} max={2100} step={1} defaultValue={initial.joined_year ?? ''} placeholder="ለምሳሌ 2010" />
-            <span className="hint">በመልቀቂያ ምስክር ወረቀት ላይ ለአባልነት ዘመን ይውላል።</span>
+            <input id="joined_year" name="joined_year" type="number" min={1980} max={thisYear} step={1} value={joined} onChange={(e) => setJoined(e.target.value)} placeholder="ለምሳሌ 2010" />
+          </div>
+          <div className="field">
+            <span className="label">የሰንበት እድሜ</span>
+            <output className="readonly">{sundayAge === null ? '—' : sundayAge === 0 ? 'ከዚህ ዓመት ጀምሮ' : `${sundayAge} ዓመት`}</output>
           </div>
         </div>
+        {isNew && mode !== 'public' && <p className="hint muted small" style={{ margin: 0 }}>የምዝገባ ቀኑ “አባል መዝግብ” ሲጫን በራሱ ይመዘገባል።</p>}
       </Section>
 
       <Section n={2} id="sec-personal" title="ግላዊ መረጃ">
@@ -238,7 +268,10 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
           <div className="field">
             <span className="label">የትውልድ ቀን (ዓ.ም) {req}</span>
             <EcDatePicker name="dob" defaultIso={initial.dob} yearsBack={100} yearsForward={0} onChange={setDob} required={isNew} />
-            <span className="hint">{dob ? `ዕድሜ፦ ${age} · እ.ኤ.አ ${dob}` : 'ቀን፣ ወር እና ዓ.ም ይምረጡ'}</span>
+          </div>
+          <div className="field">
+            <span className="label">እድሜ</span>
+            <output className="readonly">{dob ? `${age} ዓመት` : '—'}</output>
           </div>
           <div className="field">
             <label htmlFor="sex">ፆታ <span className="req">*</span></label>
@@ -265,25 +298,24 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
           <input type="checkbox" name="is_ethiopian" checked={isEthiopian} onChange={(e) => setIsEthiopian(e.target.checked)} />
           ዜግነት ኢትዮጵያዊ
         </label>
-        {!isEthiopian && (
-          <div className="field" style={{ maxWidth: 320 }}>
-            <label htmlFor="nationality">ዜግነት <span className="req">*</span></label>
-            <input id="nationality" name="nationality" required defaultValue={initial.nationality ?? ''} />
-          </div>
-        )}
-        <div className="field">
-          <span className="label">ቋንቋ (ብዙ መምረጥ ይቻላል)</span>
-          <div className="check-grid">
-            {LANGUAGES.filter((l) => l !== 'ሌላ').map((l) => (
-              <label key={l} className="check" style={{ margin: 0 }}>
-                <input type="checkbox" name="languages" value={l} defaultChecked={initLangs.includes(l)} /> {l}
-              </label>
-            ))}
-            <label className="check" style={{ margin: 0 }}>
-              <input type="checkbox" checked={langOther} onChange={(e) => setLangOther(e.target.checked)} /> ሌላ
-            </label>
-          </div>
-          {langOther && <input name="language_other" placeholder="ሌላ ቋንቋ (በኮማ ይለዩ)" defaultValue={otherLangs.join(', ')} />}
+        <div className="form-grid">
+          {isEthiopian ? (
+            <div className="field">
+              <label htmlFor="languages">ቋንቋ (ብዙ መምረጥ ይቻላል)</label>
+              <MultiSelect id="languages" name="languages" options={LANG_OPTIONS} defaultValue={initLangs} placeholder="ቋንቋዎችን ይምረጡ" />
+            </div>
+          ) : (
+            <>
+              <div className="field">
+                <label htmlFor="nationality">ሌላ ዜግነት <span className="req">*</span></label>
+                <input id="nationality" name="nationality" required defaultValue={initial.nationality ?? ''} />
+              </div>
+              <div className="field">
+                <label htmlFor="language_other">ቋንቋ</label>
+                <input id="language_other" name="language_other" placeholder="በኮማ ይለዩ (ለምሳሌ English, Arabic)" defaultValue={(initial.is_ethiopian === false ? initLangs : otherLangs).join(', ')} />
+              </div>
+            </>
+          )}
         </div>
       </Section>
 
@@ -308,7 +340,7 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
           </div>
           <div className="field"><label htmlFor="woreda">ወረዳ</label><input id="woreda" name="woreda" defaultValue={initial.woreda ?? ''} /></div>
           <div className="field"><label htmlFor="house_no">የቤት ቁጥር</label><input id="house_no" name="house_no" defaultValue={initial.house_no ?? ''} placeholder="ካለ" /></div>
-          <div className="field"><label htmlFor="phone">ስልክ</label><input id="phone" name="phone" type="tel" dir="ltr" placeholder="09/07…" defaultValue={initial.phone ?? ''} /></div>
+          <div className="field"><label htmlFor="phone">ስልክ {mode === 'public' && <span className="req">*</span>}</label><input id="phone" name="phone" type="tel" dir="ltr" placeholder="09/07…" required={mode === 'public'} defaultValue={initial.phone ?? ''} /></div>
           <div className="field"><label htmlFor="phone2">ሁለተኛ ስልክ</label><input id="phone2" name="phone2" type="tel" dir="ltr" placeholder="09/07…" defaultValue={initial.phone2 ?? ''} /></div>
           <div className="field"><label htmlFor="email">ኢሜይል</label><input id="email" name="email" type="email" dir="ltr" defaultValue={initial.email ?? ''} /></div>
           <div className="field"><label htmlFor="telegram_username">Telegram Username</label><input id="telegram_username" name="telegram_username" dir="ltr" placeholder="@username" defaultValue={initial.telegram_username ?? ''} /></div>
@@ -383,52 +415,47 @@ export function MemberForm({ initial = {} }: { initial?: MemberInitial }) {
       <Section n={6} id="sec-work" title="የሥራ መረጃ">
         <div className="field" style={{ maxWidth: 320 }}>
           <label htmlFor="work_status">አሁን ያሉበት ሁኔታ <span className="req">*</span></label>
-          <select id="work_status" name="work_status" required defaultValue={initial.work_status ?? ''}>
+          <select id="work_status" name="work_status" required value={workStatus} onChange={(e) => setWorkStatus(e.target.value)}>
             <option value="" disabled>ይምረጡ</option>
             {Object.entries(WORK_STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
-        {work.map((w, i) => (
-          <div key={i} className="repeat-row">
-            <div className="repeat-head">
-              <b>{i + 1}.</b>
-              <button type="button" className="btn sm danger" onClick={() => setWork(work.length > 1 ? work.filter((_, j) => j !== i) : [emptyWork()])}>🗑 አጥፋ</button>
-            </div>
-            <div className="form-grid">
-              <div className="field"><label>የሥራ ዘርፍ</label>
-                <select value={w.field} onChange={(x) => patchWork(i, { field: x.target.value })}>
-                  <option value="">ይምረጡ</option>
-                  {WORK_SECTORS.map((l) => <option key={l}>{l}</option>)}
-                </select></div>
-              <div className="field"><label>መሥሪያ ቤት</label><input value={w.workplace} onChange={(x) => patchWork(i, { workplace: x.target.value })} placeholder="የመሥሪያ ቤት ስም" /></div>
-              <YearsFields e={w} set={(p) => patchWork(i, p)} nowLabel="እስከ አሁን በሥራ ላይ" />
-            </div>
-          </div>
-        ))}
-        <button type="button" className="btn sm secondary" onClick={() => setWork([...work, emptyWork()])}>+ ተጨማሪ የሥራ መረጃ</button>
+        {workStatus === 'worker' && (
+          <>
+            {work.map((w, i) => (
+              <div key={i} className="repeat-row">
+                <div className="repeat-head">
+                  <b>{i + 1}.</b>
+                  <button type="button" className="btn sm danger" onClick={() => setWork(work.length > 1 ? work.filter((_, j) => j !== i) : [emptyWork()])}>🗑 አጥፋ</button>
+                </div>
+                <div className="form-grid">
+                  <div className="field"><label>የሥራ ዘርፍ</label>
+                    <select value={w.field} onChange={(x) => patchWork(i, { field: x.target.value })}>
+                      <option value="">ይምረጡ</option>
+                      {WORK_SECTORS.map((l) => <option key={l}>{l}</option>)}
+                    </select></div>
+                  <div className="field"><label>መሥሪያ ቤት</label><input value={w.workplace} onChange={(x) => patchWork(i, { workplace: x.target.value })} placeholder="የመሥሪያ ቤት ስም" /></div>
+                  <YearsFields e={w} set={(p) => patchWork(i, p)} nowLabel="እስከ አሁን በሥራ ላይ" />
+                </div>
+              </div>
+            ))}
+            <button type="button" className="btn sm secondary" onClick={() => setWork([...work, emptyWork()])}>+ ተጨማሪ የሥራ መረጃ</button>
+          </>
+        )}
       </Section>
 
-      <Section n={7} id="sec-depts" title="ክፍል መረጣ">
-        <p className="hint muted small" style={{ marginTop: 0 }}>በየትኛው ክፍል ስር በንዑስ አባልነት ማገልገል ይፈልጋሉ? (ቢበዛ 2)</p>
-        <div className="check-grid">
-          {DEPARTMENTS.map((d) => (
-            <label key={d.code} className="check">
-              <input
-                type="checkbox" name="depts" value={d.code}
-                checked={depts.includes(d.code)}
-                disabled={!depts.includes(d.code) && depts.length >= 2}
-                onChange={(e) => setDepts(e.target.checked ? [...depts, d.code] : depts.filter((x) => x !== d.code))}
-              />
-              {d.name}
-            </label>
-          ))}
+      <Section n={7} id="sec-depts" title="ዝንባሌ">
+        <div className="field" style={{ maxWidth: 520 }}>
+          <label htmlFor="depts">በየትኛው ክፍል ቀርበው ማገልገል ይፈልጋሉ? (ቢበዛ 2)</label>
+          <MultiSelect id="depts" name="depts" options={DEPT_OPTIONS} defaultValue={initial.depts ?? []} max={2} placeholder="ክፍል ይምረጡ" />
         </div>
       </Section>
 
       <div className="form-submit">
         {(uploadError || state.error) && <div className="alert error">{uploadError || state.error}</div>}
         <button className="btn" disabled={busy}>
-          {uploading ? 'ፋይል በመጫን ላይ…' : pending ? 'በማስቀመጥ ላይ…' : initial.id ? 'ለውጥ አስቀምጥ' : 'አባል መዝግብ'}
+          {uploading ? 'ፋይል በመጫን ላይ…' : pending ? 'በማስቀመጥ ላይ…'
+            : mode === 'public' ? 'ማመልከቻውን ላክ' : mode === 'approve' ? 'አጽድቅና አባል መዝግብ' : initial.id ? 'ለውጥ አስቀምጥ' : 'አባል መዝግብ'}
         </button>
       </div>
     </form>

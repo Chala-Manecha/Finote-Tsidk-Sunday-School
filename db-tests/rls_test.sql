@@ -190,7 +190,7 @@ select pg_temp.must_equal((select count(*) from public.member_departments md joi
 select pg_temp.must_equal((select count(*) from public.members where full_name = 'ሄኖን ጫላ' and work_status = 'student' and prior_school is null), 1, 'save_member updates');
 select public.save_member(null, '{"full_name":"ዮሐንስ ተስፋዬ ገብሬ","first_name":"ዮሐንስ","father_name":"ተስፋዬ","grandfather_name":"ገብሬ","mother_name":"ማርታ","marital_status":"single","sex":"male","work_status":"worker","dob":"1995-05-05","region":"አዲስ አበባ","confessor_name":"ቀሲስ አበበ","emergency_name":"ማርታ","emergency_relation":"እናት","emergency_phone":"0911","education":[{"level":"የመጀመሪያ ዲግሪ","field":"ሒሳብ","institution":"AAU","start_year":2010,"end_year":2014,"current":false}],"work":[{"field":"የግል ድርጅት","workplace":"ኤቢሲ","start_year":2015,"end_year":null,"current":true}]}', '{}');
 select pg_temp.must_equal((select count(*) from public.members where full_name = 'ዮሐንስ ተስፋዬ ገብሬ' and mother_name = 'ማርታ' and marital_status = 'single'
-  and jsonb_array_length(education) = 1 and work->0->>'workplace' = 'ኤቢሲ' and registered_on = current_date), 1, 'save_member stores the new registration details');
+  and jsonb_array_length(education) = 1 and work->0->>'workplace' = 'ኤቢሲ' and registered_on = (now() at time zone 'Africa/Addis_Ababa')::date and age_group = 'youth'), 1, 'save_member stores the new registration details');
 select pg_temp.must_fail($q$select public.save_member(null, '{"full_name":"ሀሀ ለለ መመ","sex":"male","work_status":"student","marital_status":"unknown"}', '{}')$q$);
 reset role;
 
@@ -669,6 +669,36 @@ select set_config('request.jwt.claim.role', 'anon', false);
 select set_config('request.jwt.claim.sub', '', false);
 select pg_temp.must_fail('select buy_price from public.sale_items');
 select pg_temp.must_equal((select count(*) from public.sale_items where qty - sold_qty = 3), 1, 'public sees remaining stock');
+reset role;
+
+-- ---------- round 5: age groups, registration window, applications ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail('select public.apply_age_groups()');
+select pg_temp.must_fail('select public.set_registration(true, null)');
+update public.age_groups set min_age = 12 where code = 'middle';
+select pg_temp.must_equal((select min_age from public.age_groups where code = 'middle'), 11, 'non-HR cannot change age groups');
+select pg_temp.must_equal((select count(*) from public.member_applications), 0, 'non-HR sees no applications');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+update public.age_groups set max_age = 12 where code = 'children';
+select pg_temp.must_fail('select public.apply_age_groups()');   -- overlaps ማዕከላዊ (11)
+update public.age_groups set max_age = 10 where code = 'children';
+select public.apply_age_groups();
+select public.set_registration(true, null);
+select pg_temp.must_equal((select public.registration_is_open()::int), 1, 'HR opens registration');
+reset role;
+insert into public.member_applications (data, full_name) values ('{}', 'ፈተና ሰው ስም');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select pg_temp.must_equal((select count(*) from public.member_applications), 1, 'HR sees applications');
+select public.set_registration(false, null);
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((select public.registration_is_open()::int), 0, 'registration closed');
+select pg_temp.must_fail($q$insert into public.member_applications (data, full_name) values ('{}', 'x y z')$q$);
 reset role;
 
 \echo ALL RLS TESTS PASSED

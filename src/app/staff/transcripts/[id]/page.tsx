@@ -1,3 +1,4 @@
+import { STUDY_MODE } from '@/lib/constants';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -24,7 +25,7 @@ export default async function TranscriptPage({ params }: { params: Promise<{ id:
   const s = sem as Semester & { academic_years: { ec_year: number } };
   const [{ data: m }, { data: enr }, { data: cond }] = await Promise.all([
     supabase.from('members').select('full_name, reg_no, sex, title, photo_path, joined_year').eq('id', t.member_id).single(),
-    supabase.from('enrollments').select('class_level').eq('year_id', s.year_id).eq('member_id', t.member_id).single(),
+    supabase.from('enrollments').select('class_level, study_mode').eq('year_id', s.year_id).eq('member_id', t.member_id).single(),
     supabase.from('semester_conduct').select('conduct, remark').eq('semester_id', s.id).eq('member_id', t.member_id).maybeSingle(),
   ]);
   if (!m || !enr?.class_level) notFound();
@@ -59,7 +60,7 @@ export default async function TranscriptPage({ params }: { params: Promise<{ id:
             ['ሙሉ ስም', <b key="n">{m.full_name}</b>],
             ['የመመዝገቢያ ቁጥር', m.reg_no],
             ['ፆታ', SEX[m.sex as keyof typeof SEX]],
-            ['ክፍል', classLabel(enr.class_level)],
+            ['ክፍል', `${classLabel(enr.class_level)} · ${STUDY_MODE[(enr.study_mode ?? 'regular') as keyof typeof STUDY_MODE]}`],
             ['የትምህርት ዘመን', `${s.academic_years.ec_year} ዓ.ም`],
             ['ወሰነ ትምህርት', semesterLabel(s.no)],
             ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
@@ -131,7 +132,7 @@ async function YearTranscript({ t, canPrint }: { t: T; canPrint: boolean }) {
   const { data: yr } = await supabase.from('academic_years').select('id, ec_year').eq('id', t.year_id!).single();
   const [{ data: m }, { data: enr }, { data: sems }, { data: cond }, { data: hist }] = await Promise.all([
     supabase.from('members').select('full_name, reg_no, sex, photo_path, joined_year').eq('id', t.member_id).single(),
-    supabase.from('enrollments').select('class_level').eq('year_id', t.year_id!).eq('member_id', t.member_id).single(),
+    supabase.from('enrollments').select('class_level, study_mode').eq('year_id', t.year_id!).eq('member_id', t.member_id).single(),
     supabase.from('semesters').select('*').eq('year_id', t.year_id!).order('no'),
     supabase.from('semester_conduct').select('semester_id, conduct').eq('member_id', t.member_id),
     supabase.rpc('student_history', { p_member: t.member_id }),
@@ -167,7 +168,7 @@ async function YearTranscript({ t, canPrint }: { t: T; canPrint: boolean }) {
             ['ሙሉ ስም', <b key="n">{m.full_name}</b>],
             ['የመመዝገቢያ ቁጥር', m.reg_no],
             ['ፆታ', SEX[m.sex as keyof typeof SEX]],
-            ['ክፍል', classLabel(enr.class_level)],
+            ['ክፍል', `${classLabel(enr.class_level)} · ${STUDY_MODE[(enr.study_mode ?? 'regular') as keyof typeof STUDY_MODE]}`],
             ['የትምህርት ዘመን', `${yr.ec_year} ዓ.ም`],
             ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
             ['የተሰጠበት', formatEc(t.issued_at)],

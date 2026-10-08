@@ -3,14 +3,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-type NavLink = { href: string; label: string; highlight?: boolean };
-type NavGroup = { label: string; items: NavLink[]; primary?: boolean };
+type NavLink = { href: string; label: string; highlight?: boolean; title?: string };
+type NavGroup = { label: string; items: NavLink[] };
 export type NavEntry = NavLink | NavGroup;
 
 const isGroup = (e: NavEntry): e is NavGroup => 'items' in e;
 
 /** Desktop: links + click dropdowns. Phones: ≡ opens a full-width panel (like eotcssu.et). */
-export function SiteNav({ items, cta }: { items: NavEntry[]; cta?: NavGroup }) {
+export function SiteNav({ items, cta }: { items: NavEntry[]; cta?: NavLink }) {
   const pathname = usePathname();
   const [open, setOpen] = useState<string | null>(null); // open dropdown label
   const [panel, setPanel] = useState(false);              // phone panel
@@ -35,11 +35,11 @@ export function SiteNav({ items, cta }: { items: NavEntry[]; cta?: NavGroup }) {
   const active = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href.split('#')[0]) && href !== '/#contact');
   const close = () => { setOpen(null); setPanel(false); };
 
-  const dropdown = (g: NavGroup, extra = '') => (
-    <div className={`nav-drop ${extra} ${open === g.label ? 'open' : ''}`} key={g.label}>
+  const dropdown = (g: NavGroup) => (
+    <div className={`nav-drop ${open === g.label ? 'open' : ''}`} key={g.label}>
       <button
         type="button"
-        className={g.primary ? 'btn nav-cta' : `nav-link ${g.items.some((i) => active(i.href)) ? 'active' : ''}`}
+        className={`nav-link ${g.items.some((i) => active(i.href)) ? 'active' : ''}`}
         aria-expanded={open === g.label}
         onClick={() => setOpen(open === g.label ? null : g.label)}
       >
@@ -59,7 +59,7 @@ export function SiteNav({ items, cta }: { items: NavEntry[]; cta?: NavGroup }) {
         {items.map((e) => isGroup(e) ? dropdown(e) : (
           <Link key={e.href} href={e.href} className={`nav-link ${e.highlight ? 'highlight' : ''} ${active(e.href) ? 'active' : ''}`}>{e.label}</Link>
         ))}
-        {cta && dropdown(cta, 'right')}
+        {cta && <Link href={cta.href} className="btn nav-cta" title={cta.title}>{cta.label} →</Link>}
       </nav>
 
       <button type="button" className="nav-burger" aria-label={panel ? 'ማውጫውን ዝጋ' : 'ማውጫ'} aria-expanded={panel} onClick={() => setPanel(!panel)}>
@@ -77,7 +77,8 @@ export function SiteNav({ items, cta }: { items: NavEntry[]; cta?: NavGroup }) {
           ))}
           {cta && (
             <div className="nav-panel-cta">
-              {cta.items.map((i) => <Link key={i.href} href={i.href} onClick={close} className="btn">{i.label}</Link>)}
+              <Link href={cta.href} onClick={close} className="btn">{cta.label} →</Link>
+              {cta.title && <span className="small muted" style={{ textAlign: 'center' }}>{cta.title}</span>}
             </div>
           )}
         </nav>
