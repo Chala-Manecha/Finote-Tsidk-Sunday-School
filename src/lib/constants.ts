@@ -28,6 +28,19 @@ export const WORK_STATUS = { student: 'ተማሪ', worker: 'ሠራተኛ' } as c
 export const MEMBER_STATUS = { new: 'አዲስ', existing: 'ነባር', lost: 'የጠፉ' } as const;
 export const GEEZ_LEVEL = { none: 'ምንም', understand: 'መረዳት ደረጃ', correct: 'ማረም ደረጃ' } as const;
 
+export const MARITAL_STATUS = {
+  single: 'ያላገባ/ች', married: 'ያገባ/ች', widowed: 'የትዳር አጋሩን/ሯን ያጣ/ች', divorced: 'የተፋታ/ች', monastic: 'ምንኩስና',
+} as const;
+export const REGIONS = [
+  'አዲስ አበባ', 'ኦሮሚያ', 'አማራ', 'ትግራይ', 'ደቡብ ኢትዮጵያ', 'ማዕከላዊ ኢትዮጵያ', 'ሲዳማ', 'ደቡብ ምዕራብ ኢትዮጵያ',
+  'አፋር', 'ሶማሌ', 'ቤኒሻንጉል ጉሙዝ', 'ጋምቤላ', 'ሐረሪ', 'ድሬዳዋ', 'ከኢትዮጵያ ውጭ',
+] as const;
+export const EDUCATION_LEVELS = [
+  'የመጀመሪያ ደረጃ (1-8)', 'ሁለተኛ ደረጃ (9-12)', 'ሰርተፊኬት', 'ዲፕሎማ / TVET', 'የመጀመሪያ ዲግሪ', 'ሁለተኛ ዲግሪ', 'ሦስተኛ ዲግሪ (PhD)', 'ሌላ',
+] as const;
+export const WORK_SECTORS = ['መንግሥታዊ', 'የግል ድርጅት', 'የግል ሥራ / ንግድ', 'መንግሥታዊ ያልሆነ ድርጅት', 'ቤተ ክርስቲያን', 'ሌላ'] as const;
+export const EMERGENCY_RELATIONS = ['አባት', 'እናት', 'ወንድም', 'እህት', 'ባለቤት', 'ልጅ', 'ዘመድ', 'ጓደኛ', 'ሌላ'] as const;
+
 export const SUB_CITIES = [
   'አቃቂ ቃሊቲ', 'አዲስ ከተማ', 'አራዳ', 'ቦሌ', 'ጉለሌ', 'ቂርቆስ',
   'ኮልፌ ቀራንዮ', 'ለሚ ኩራ', 'ልደታ', 'ንፋስ ስልክ ላፍቶ', 'የካ',

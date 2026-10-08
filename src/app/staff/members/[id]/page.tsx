@@ -4,10 +4,11 @@ import { requireDept } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { ageFromIso, formatEc } from '@/lib/ethiopian-calendar';
 import {
-  ATTENDANCE_STATUS, DEPT_NAME, GEEZ_LEVEL, MEMBER_STATUS, SESSION_TYPES, SEX, TITLES, WORK_STATUS,
+  ATTENDANCE_STATUS, DEPT_NAME, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_STATUS, SESSION_TYPES, SEX, TITLES, WORK_STATUS,
   type AttendanceStatus, type SessionType,
 } from '@/lib/constants';
 import { PrintButton } from '@/components/print-button';
+import { yearsLabel, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
 type AttRow = {
   status: AttendanceStatus;
@@ -54,30 +55,54 @@ export default async function MemberDetail({
   const photoUrl = await signed(m.photo_path);
   const secularUrl = await signed(m.secular_school?.evidence_path);
 
-  const rows: [string, React.ReactNode][] = [
-    ['የምዝገባ መለያ ቁጥር', <b key="r">{m.reg_no}</b>],
-    ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
-    ...(m.is_active ? [] : [['ሁኔታ (መልቀቂያ)', <span key="l" className="pill absent">መልቀቂያ ወስደዋል</span>] as [string, React.ReactNode]]),
-    ['ፆታ', SEX[m.sex as keyof typeof SEX]],
-    ['ማዕረግ', m.title ? TITLES[m.title as keyof typeof TITLES] : '—'],
-    ['ሁኔታ', WORK_STATUS[m.work_status as keyof typeof WORK_STATUS]],
-    ['የአባልነት ሁኔታ', MEMBER_STATUS[m.member_status as keyof typeof MEMBER_STATUS]],
-    ['የትውልድ ቀን', m.dob ? `${formatEc(m.dob)} (ዕድሜ ${ageFromIso(m.dob)})` : '—'],
-    ['ስልክ', m.phone ?? '—'],
-    ['Email', m.email ?? '—'],
-    ['Telegram', m.telegram_username ? `@${m.telegram_username}` : '—'],
-    ['ክፍለ ከተማ', m.sub_city ?? '—'],
-    ['ቋንቋ', (m.languages ?? []).join('፣ ') || '—'],
-    ['የግዕዝ ችሎታ', GEEZ_LEVEL[m.geez_level as keyof typeof GEEZ_LEVEL]],
-    ['ዜግነት', m.is_ethiopian ? 'ኢትዮጵያዊ' : m.nationality],
-    ['ቀድሞ ሰ/ት/ቤት', m.prior_school
-      ? <>{m.prior_school.name} · {m.prior_school.years ?? '—'} ዓመት {priorUrl && <a className="link" href={priorUrl} target="_blank">ማስረጃ</a>}</>
-      : '—'],
-    ['አለማዊ ትምህርት', m.secular_school
-      ? <>{m.secular_school.name} {secularUrl && <a className="link" href={secularUrl} target="_blank">ማስረጃ</a>}</>
-      : '—'],
-    ['የመረጡት ክፍል', m.member_departments.map((d: { dept: string }) => DEPT_NAME[d.dept]).join('፣ ') || '—'],
-    ['የተመዘገበበት', formatEc(m.created_at)],
+  type Row = [string, React.ReactNode];
+  const dash = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
+  const education = (m.education ?? []) as EducationEntry[];
+  const work = (m.work ?? []) as WorkEntry[];
+  const groups: [string, Row[]][] = [
+    ['የአባልነት መረጃ', [
+      ['የምዝገባ መለያ ቁጥር', <b key="r">{m.reg_no}</b>],
+      ['የአባልነት ምዝገባ ቀን', m.registered_on ? formatEc(m.registered_on) : formatEc(m.created_at)],
+      ['የዶክመንት ቁጥር', dash(m.doc_no)],
+      ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
+      ['የአባልነት ሁኔታ', MEMBER_STATUS[m.member_status as keyof typeof MEMBER_STATUS]],
+      ...(m.is_active ? [] : [['ሁኔታ (መልቀቂያ)', <span key="l" className="pill absent">መልቀቂያ ወስደዋል</span>] as Row]),
+      ['የመረጡት ክፍል', m.member_departments.map((d: { dept: string }) => DEPT_NAME[d.dept]).join('፣ ') || '—'],
+    ]],
+    ['ግላዊ መረጃ', [
+      ['ማዕረግ', m.title ? TITLES[m.title as keyof typeof TITLES] : '—'],
+      ['ስም · የአባት · የአያት', [m.first_name, m.father_name, m.grandfather_name].filter(Boolean).join(' · ') || m.full_name],
+      ['የእናት ስም', dash(m.mother_name)],
+      ['የክርስትና ስም', dash(m.christian_name)],
+      ['ክርስትና የተነሱበት', dash(m.baptism_church)],
+      ['የትውልድ ቀን', m.dob ? `${formatEc(m.dob)} (ዕድሜ ${ageFromIso(m.dob)})` : '—'],
+      ['ፆታ', SEX[m.sex as keyof typeof SEX]],
+      ['የትዳር ሁኔታ', m.marital_status ? MARITAL_STATUS[m.marital_status as keyof typeof MARITAL_STATUS] : '—'],
+      ['ዜግነት', m.is_ethiopian ? 'ኢትዮጵያዊ' : m.nationality],
+      ['ቋንቋ', (m.languages ?? []).join('፣ ') || '—'],
+      ['የግዕዝ ችሎታ', GEEZ_LEVEL[m.geez_level as keyof typeof GEEZ_LEVEL]],
+    ]],
+    ['አድራሻ እና ግንኙነት', [
+      ['አድራሻ', [m.region, m.city, m.sub_city, m.woreda && `ወረዳ ${m.woreda}`, m.house_no && `የቤት ቁ. ${m.house_no}`].filter(Boolean).join('፣ ') || '—'],
+      ['ስልክ', [m.phone, m.phone2].filter(Boolean).join(' · ') || '—'],
+      ['ኢሜይል', dash(m.email)],
+      ['Telegram', m.telegram_username ? `@${m.telegram_username}` : '—'],
+      ['የንሰሐ አባት', [m.confessor_name, m.confessor_phone].filter(Boolean).join(' · ') || '—'],
+      ['የአደጋ ጊዜ ተጠሪ', [m.emergency_name, m.emergency_relation && `(${m.emergency_relation})`, m.emergency_phone].filter(Boolean).join(' ') || '—'],
+    ]],
+    ['ትምህርት እና ሥራ', [
+      ['አለማዊ ትምህርት', education.length
+        ? <>{education.map((e, i) => <div key={i}>{[e.level, e.field, e.institution].filter(Boolean).join(' · ')} <span className="muted small">{yearsLabel(e)}</span></div>)}
+            {secularUrl && <a className="link" href={secularUrl} target="_blank">ማስረጃ</a>}</>
+        : m.secular_school ? <>{m.secular_school.name} {secularUrl && <a className="link" href={secularUrl} target="_blank">ማስረጃ</a>}</> : '—'],
+      ['ቀድሞ ሰ/ት/ቤት', m.prior_school
+        ? <>{m.prior_school.name} · {m.prior_school.years ?? '—'} ዓመት {priorUrl && <a className="link" href={priorUrl} target="_blank">ማስረጃ</a>}</>
+        : '—'],
+      ['ሁኔታ', WORK_STATUS[m.work_status as keyof typeof WORK_STATUS]],
+      ['ሥራ', work.length
+        ? work.map((w, i) => <div key={i}>{[w.field, w.workplace].filter(Boolean).join(' · ')} <span className="muted small">{yearsLabel(w)}</span></div>)
+        : '—'],
+    ]],
   ];
 
   return (
@@ -101,16 +126,20 @@ export default async function MemberDetail({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={photoUrl} alt={m.full_name} className="member-photo" />
       )}
-      <h2 className="section">የምዝገባ መረጃ</h2>
-      <div className="table-wrap">
-        <table>
-          <tbody>
-            {rows.map(([k, v]) => (
-              <tr key={k}><th style={{ width: 200 }}>{k}</th><td>{v}</td></tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {groups.map(([title, rows]) => (
+        <section key={title}>
+          <h2 className="section">{title}</h2>
+          <div className="table-wrap">
+            <table>
+              <tbody>
+                {rows.map(([k, v]) => (
+                  <tr key={k}><th style={{ width: 200 }}>{k}</th><td>{v}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))}
 
       <h2 className="section">ክትትል በክፍል</h2>
       <div className="table-wrap">

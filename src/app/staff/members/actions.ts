@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireDept } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { isDeptCode, MEMBER_STATUS, SEX, WORK_STATUS, TITLES, GEEZ_LEVEL } from '@/lib/constants';
+import { isDeptCode, MEMBER_STATUS, SEX, WORK_STATUS, TITLES, GEEZ_LEVEL, MARITAL_STATUS } from '@/lib/constants';
+import { cleanEducation, cleanWork } from '@/lib/member-details';
 
 export type MemberFormState = { error?: string };
 
@@ -21,13 +22,26 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
   await requireDept('hr', 'office');
 
   const id = str(fd, 'id');
-  const fullName = str(fd, 'full_name');
+  const nameParts = ['first_name', 'father_name', 'grandfather_name'].map((k) => str(fd, k)?.replace(/\s+/g, ' ') ?? null);
+  const [firstName, fatherName, grandfatherName] = nameParts;
+  if (!firstName || !fatherName || !grandfatherName) return { error: 'ስም፣ የአባት ስም እና የአያት ስም ያስገቡ።' };
+  const fullName = nameParts.join(' ');
+  const maritalStatus = oneOf(str(fd, 'marital_status'), MARITAL_STATUS);
+  const motherName = str(fd, 'mother_name');
+  const registeredOn = str(fd, 'registered_on');
+  if (registeredOn && !/^\d{4}-\d{2}-\d{2}$/.test(registeredOn)) return { error: 'የምዝገባ ቀን ትክክል አይደለም።' };
+  if (!id) {
+    if (!motherName) return { error: 'የእናት ስም ያስገቡ።' };
+    if (!maritalStatus) return { error: 'የትዳር ሁኔታ ይምረጡ።' };
+    if (!str(fd, 'dob')) return { error: 'የትውልድ ቀን ያስገቡ።' };
+  }
+  const education = cleanEducation(str(fd, 'education_json'));
+  const work = cleanWork(str(fd, 'work_json'));
   const sex = oneOf(str(fd, 'sex'), SEX);
   const workStatus = oneOf(str(fd, 'work_status'), WORK_STATUS);
   const memberStatus = oneOf(str(fd, 'member_status'), MEMBER_STATUS);
   const dob = str(fd, 'dob');
 
-  if (!fullName || fullName.length < 2) return { error: 'ሙሉ ስም ያስገቡ።' };
   if (!sex) return { error: 'ፆታ ይምረጡ።' };
   if (!workStatus) return { error: 'ሁኔታ (ተማሪ/ሠራተኛ) ይምረጡ።' };
   if (!memberStatus) return { error: 'የአባልነት ሁኔታ ይምረጡ።' };
@@ -38,7 +52,7 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
   if (!isEthiopian && !nationality) return { error: 'ዜግነት ያስገቡ።' };
 
   const hasPrior = fd.get('has_prior_school') === 'on';
-  const hasSecular = fd.get('has_secular_school') === 'on';
+  const secularEvidence = docPath(str(fd, 'secular_school_evidence'));
   const languages = [
     ...fd.getAll('languages').map(String),
     ...(str(fd, 'language_other') ?? '').split(/[,،፣]/).map((l) => l.trim()),
@@ -75,12 +89,30 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
           evidence_path: docPath(str(fd, 'prior_school_evidence')),
         }
       : null,
-    secular_school: hasSecular
-      ? {
-          name: str(fd, 'secular_school_name'),
-          evidence_path: docPath(str(fd, 'secular_school_evidence')),
-        }
+    secular_school: secularEvidence || education.length
+      ? { name: education[0]?.institution || education[0]?.level || null, evidence_path: secularEvidence }
       : null,
+    registered_on: registeredOn,
+    doc_no: str(fd, 'doc_no'),
+    first_name: firstName,
+    father_name: fatherName,
+    grandfather_name: grandfatherName,
+    mother_name: motherName,
+    christian_name: str(fd, 'christian_name'),
+    baptism_church: str(fd, 'baptism_church'),
+    marital_status: maritalStatus,
+    region: str(fd, 'region'),
+    city: str(fd, 'city'),
+    woreda: str(fd, 'woreda'),
+    house_no: str(fd, 'house_no'),
+    phone2: str(fd, 'phone2'),
+    confessor_name: str(fd, 'confessor_name'),
+    confessor_phone: str(fd, 'confessor_phone'),
+    emergency_name: str(fd, 'emergency_name'),
+    emergency_relation: str(fd, 'emergency_relation'),
+    emergency_phone: str(fd, 'emergency_phone'),
+    education,
+    work,
   };
   const depts = fd.getAll('depts').map(String).filter(isDeptCode);
   if (depts.length > 2) return { error: 'ቢበዛ 2 ክፍሎች ብቻ መምረጥ ይቻላል።' };

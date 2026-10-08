@@ -188,6 +188,10 @@ select pg_temp.must_equal((select count(*) from public.member_departments md joi
 select public.save_member((select id from public.members where full_name = 'ሄኖን ጫላ'), '{"full_name":"ሄኖን ጫላ","sex":"male","work_status":"student"}', '{hr}');
 select pg_temp.must_equal((select count(*) from public.member_departments md join public.members m on m.id = md.member_id where m.full_name = 'ሄኖን ጫላ' and md.dept = 'hr'), 1, 'save_member replaces depts');
 select pg_temp.must_equal((select count(*) from public.members where full_name = 'ሄኖን ጫላ' and work_status = 'student' and prior_school is null), 1, 'save_member updates');
+select public.save_member(null, '{"full_name":"ዮሐንስ ተስፋዬ ገብሬ","first_name":"ዮሐንስ","father_name":"ተስፋዬ","grandfather_name":"ገብሬ","mother_name":"ማርታ","marital_status":"single","sex":"male","work_status":"worker","dob":"1995-05-05","region":"አዲስ አበባ","confessor_name":"ቀሲስ አበበ","emergency_name":"ማርታ","emergency_relation":"እናት","emergency_phone":"0911","education":[{"level":"የመጀመሪያ ዲግሪ","field":"ሒሳብ","institution":"AAU","start_year":2010,"end_year":2014,"current":false}],"work":[{"field":"የግል ድርጅት","workplace":"ኤቢሲ","start_year":2015,"end_year":null,"current":true}]}', '{}');
+select pg_temp.must_equal((select count(*) from public.members where full_name = 'ዮሐንስ ተስፋዬ ገብሬ' and mother_name = 'ማርታ' and marital_status = 'single'
+  and jsonb_array_length(education) = 1 and work->0->>'workplace' = 'ኤቢሲ' and registered_on = current_date), 1, 'save_member stores the new registration details');
+select pg_temp.must_fail($q$select public.save_member(null, '{"full_name":"ሀሀ ለለ መመ","sex":"male","work_status":"student","marital_status":"unknown"}', '{}')$q$);
 reset role;
 
 -- ---------- phase 2: scheduling ----------
