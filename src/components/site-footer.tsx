@@ -1,16 +1,58 @@
-import { SCHOOL_NAME } from '@/lib/constants';
+import Link from 'next/link';
+import { CHURCH_NAME, CHURCH_NAME_EN, SCHOOL_NAME } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/server';
-import { SOCIAL_PLATFORMS, type SocialLink } from '@/lib/site';
+import { SITE_DEFAULTS, SOCIAL_PLATFORMS, type SocialLink } from '@/lib/site';
 
-/** Fixed bottom bar on every page: rolling verse + address and contact line. */
+/** Footer on every page (like eotcssu.et) + the thin rolling-verse bar fixed at the bottom. */
 export async function SiteFooter() {
-  // Social links are managed by የውስጥ ግንኙነት.
+  // Contacts and social links are managed by የውስጥ ግንኙነት.
   const supabase = await createClient();
-  const { data } = await supabase.from('social_links').select('id, platform, url, label, sort').order('sort').order('created_at');
+  const [{ data }, { data: s }] = await Promise.all([
+    supabase.from('social_links').select('id, platform, url, label, sort').order('sort').order('created_at'),
+    supabase.from('site_settings').select('contact_phone, contact_email, contact_address').maybeSingle(),
+  ]);
   const links = (data ?? []) as SocialLink[];
+  const phone = s?.contact_phone || SITE_DEFAULTS.contact_phone;
+  const email = s?.contact_email || SITE_DEFAULTS.contact_email;
+  const address = s?.contact_address || SITE_DEFAULTS.contact_address;
   return (
-    <footer className="site-footer">
-      <div className="ticker" aria-label="ቃለ እግዚአብሔር">
+    <>
+      <footer className="site-footer">
+        <div className="footer-grid">
+          <div className="footer-brand">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-192.png" alt="" width={56} height={56} />
+            <div>
+              <b>{SCHOOL_NAME}</b>
+              <div className="small">{CHURCH_NAME}</div>
+              <div className="small muted">{CHURCH_NAME_EN}</div>
+            </div>
+          </div>
+          <div>
+            <b className="footer-h">ያግኙን</b>
+            <a href={`tel:${phone.replace(/\s/g, '')}`} dir="ltr">📞 {phone}</a>
+            <a href={`mailto:${email}`} dir="ltr">✉️ {email}</a>
+            <span>📍 {address}</span>
+          </div>
+          <div>
+            <b className="footer-h">ፈጣን ሊንኮች</b>
+            <Link href="/history">ታሪካችን</Link>
+            <Link href="/departments">ክፍሎቻችን</Link>
+            <Link href="/donate">ለመርዳት</Link>
+            <Link href="/verify">ሰነድ ማረጋገጫ</Link>
+          </div>
+          {links.length > 0 && (
+            <div>
+              <b className="footer-h">ይከተሉን</b>
+              {links.map((l) => (
+                <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer">{l.label || SOCIAL_PLATFORMS[l.platform]}</a>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="footer-copy">© {new Date().getFullYear()} {SCHOOL_NAME}</div>
+      </footer>
+      <div className="verse-bar" aria-label="ቃለ እግዚአብሔር">
         <span>
           ተፈሣሕኩ እስመ ይቤሉኒ ቤተ እግዚአብሔር ነሐውር።
           <i aria-hidden>✦</i>
@@ -19,27 +61,6 @@ export async function SiteFooter() {
           ወደ እግዚአብሔር ቤት እንሂድ ባሉኝ ጊዜ ደስ አለኝ።
         </span>
       </div>
-      <div className="footer-info">
-        <span className="footer-address">
-          📍 አቃቂ ቃሊቲ፣ ወረዳ-1፣ ደብረ ጽጌ ቅዱስ ሩፋኤል ቤተክርስቲያን፣ ኢትዮጵያ
-          <span className="footer-en"> · Akaki Kaliti, Woreda 1, Debre Tsige St. Rufael Church, Ethiopia</span>
-        </span>
-        <span className="footer-line">
-          <a href="https://t.me/make_living" target="_blank" rel="noreferrer">Telegram: @make_living</a>
-          <span className="sep">|</span>
-          {links.length > 0 && (
-            <>
-              <span className="footer-social">
-                {links.map((l, i) => (
-                  <span key={l.id}>{i > 0 && ' · '}<a href={l.url} target="_blank" rel="noopener noreferrer">{SOCIAL_PLATFORMS[l.platform]}</a></span>
-                ))}
-              </span>
-              <span className="sep">|</span>
-            </>
-          )}
-          <span>© {new Date().getFullYear()} {SCHOOL_NAME}</span>
-        </span>
-      </div>
-    </footer>
+    </>
   );
 }

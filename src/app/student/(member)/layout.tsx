@@ -13,7 +13,7 @@ export default async function MemberLayout({ children }: { children: React.React
         <nav><Link href="/student">የእኔ ገጽ</Link></nav>
         <span className="chip-user">{me.fullName}</span>
         <form action={logoutMember}>
-          <button className="btn sm secondary" style={{ color: '#F1E6C8', borderColor: '#C89B3C' }}>ውጣ</button>
+          <button className="btn sm secondary">ውጣ</button>
         </form>
       </header>
       <main className="page">{children}</main>

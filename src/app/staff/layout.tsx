@@ -16,7 +16,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         </nav>
         <span className="chip-user">{staff.fullName}</span>
         <form action={logout}>
-          <button className="btn sm secondary" style={{ color: '#F1E6C8', borderColor: '#C89B3C' }}>
+          <button className="btn sm secondary">
             ውጣ
           </button>
         </form>

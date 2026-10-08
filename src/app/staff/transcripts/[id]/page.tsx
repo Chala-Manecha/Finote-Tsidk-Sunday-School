@@ -53,7 +53,7 @@ export default async function TranscriptPage({ params }: { params: Promise<{ id:
       </div>
       <article className="doc-sheet">
         <DocHeader title="የትምህርት ማስረጃ (ትራንስክሪፕት)" code={t.code} mark={mark} />
-        <p className="serif" style={{ textAlign: 'center', fontSize: '1.05rem', margin: '0 0 14px', color: '#7A1F2B' }}>{THANKSGIVING}</p>
+        <p className="serif" style={{ textAlign: 'center', fontSize: '1.05rem', margin: '0 0 14px', color: '#1B3D55' }}>{THANKSGIVING}</p>
         <div className="cert-body">
           <DocRows rows={[
             ['ሙሉ ስም', <b key="n">{m.full_name}</b>],
@@ -161,7 +161,7 @@ async function YearTranscript({ t, canPrint }: { t: T; canPrint: boolean }) {
       </div>
       <article className="doc-sheet">
         <DocHeader title="የዓመት የትምህርት ማስረጃ (ትራንስክሪፕት)" code={t.code} mark={mark} />
-        <p className="serif" style={{ textAlign: 'center', fontSize: '1.05rem', margin: '0 0 14px', color: '#7A1F2B' }}>{THANKSGIVING}</p>
+        <p className="serif" style={{ textAlign: 'center', fontSize: '1.05rem', margin: '0 0 14px', color: '#1B3D55' }}>{THANKSGIVING}</p>
         <div className="cert-body">
           <DocRows rows={[
             ['ሙሉ ስም', <b key="n">{m.full_name}</b>],

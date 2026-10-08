@@ -488,7 +488,7 @@ reset role;
 set role anon;
 select set_config('request.jwt.claim.role', 'anon', false);
 select set_config('request.jwt.claim.sub', '', false);
-select pg_temp.must_equal((select count(*) from public.social_links), 1, 'public sees social links');
+select pg_temp.must_equal((select count(*) from public.social_links), 5, 'public sees social links (4 seeded + 1)');
 reset role;
 
 -- =================== ROUND 3b: education ===================

@@ -31,7 +31,7 @@ export default async function Honour({ params }: { params: Promise<{ yearId: str
       <article className="doc-sheet honour">
         <DocHeader title="የክብር ሰርተፍኬት" code={`${yr.ec_year} ዓ.ም`} />
         <div style={{ textAlign: 'center', padding: '18px 10px' }}>
-          <p className="serif" style={{ fontSize: '1.1rem', color: '#7A1F2B' }}>{THANKSGIVING}</p>
+          <p className="serif" style={{ fontSize: '1.1rem', color: '#1B3D55' }}>{THANKSGIVING}</p>
           <p style={{ fontSize: '1rem' }}>ይህ የክብር ሰርተፍኬት</p>
           <p className="serif" style={{ fontSize: '1.9rem', fontWeight: 700, margin: '6px 0' }}>{r.full_name}</p>
           <p className="small muted">{r.reg_no}</p>

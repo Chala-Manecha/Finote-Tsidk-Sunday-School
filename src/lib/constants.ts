@@ -148,10 +148,11 @@ export const PROPERTY_LOG_KIND: Record<PropertyLogKind, string> = {
 
 // ---------- Anniversary (ምሥረታ) ----------
 /**
- * Founding date in the Ethiopian calendar. Change here if it needs correcting —
- * the running anniversary year ("16ኛ ምሥረታ አመት") is computed from it.
+ * Founding date in the Ethiopian calendar (as given on eotcssu.et): the church was
+ * consecrated on 29/11/2000 ዓ.ም and the Sunday school was founded right after.
+ * The running anniversary year ("19ኛ ምሥረታ") is computed from it.
  */
-export const FOUNDED_EC = { year: 2003, month: 9, day: 13 } as const; // ግንቦት 13, 2003 ዓ.ም
+export const FOUNDED_EC = { year: 2000, month: 11, day: 29 } as const; // ሐምሌ 29, 2000 ዓ.ም
 
 // ---------- Round 2: payments, donations, leaving, roles ----------
 export type PayMethod = 'cash' | 'telebirr' | 'cbe' | 'other';
@@ -180,5 +181,7 @@ export type LeaderRole = 'head' | 'deputy' | 'secretary';
 export const LEADER_ROLE: Record<LeaderRole, string> = { head: 'ኃላፊ', deputy: 'ምክትል ኃላፊ', secretary: 'ጸሐፊ' };
 export const LEADER_ROLES: LeaderRole[] = ['head', 'deputy', 'secretary'];
 
-export const CHURCH_NAME = 'ደብረ ጽጌ ቅዱስ ሩፋኤል ቤተክርስቲያን';
-export const SCHOOL_ADDRESS = 'አቃቂ ቃሊቲ፣ ወረዳ-1';
+export const CHURCH_NAME = 'አቃቂ ፋንታ ደብረ ፅጌ ቅዱስ ሩፋኤል እና ቅድስት አርሴማ ቤተክርስቲያን';
+export const CHURCH_NAME_EN = 'Akaki Kality St.Rufael & St.Arsema Church';
+export const SCHOOL_NAME_EN = 'Finote Tsidk Sunday School';
+export const SCHOOL_ADDRESS = 'አቃቂ ቃሊቲ፣ ወረዳ-1፣ አዲስ አበባ';

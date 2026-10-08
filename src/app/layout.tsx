@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { SCHOOL_NAME } from '@/lib/constants';
+import { CHURCH_NAME, SCHOOL_NAME } from '@/lib/constants';
 import { SiteFooter } from '@/components/site-footer';
 
 export const metadata: Metadata = {
   title: SCHOOL_NAME,
-  description: 'ፍኖተ ጽድቅ ሰንበት ትምህርት ቤት — አቃቂ ቃሊቲ, ደብረ ጽጌ ቅዱስ ሩፋኤል ቤተክርስቲያን',
+  description: `${SCHOOL_NAME} — ${CHURCH_NAME}፣ አቃቂ ቃሊቲ`,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&family=Noto+Serif+Ethiopic:wght@500;700&family=Noto+Sans+Ethiopic:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;500;600;700;800&family=Noto+Serif+Ethiopic:wght@500;700&display=swap"
         />
       </head>
       <body>

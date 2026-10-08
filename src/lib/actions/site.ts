@@ -9,7 +9,7 @@ const text = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
 const refresh = () => revalidatePath('/', 'layout');
 const denied = (m: string) => (m.includes('row-level') || m.includes('permission') ? 'ፈቃድ የለዎትም።' : m);
 
-/** የውስጥ ግንኙነት: welcome text, announcement bar, section order/visibility, photo speed. */
+/** የውስጥ ግንኙነት: hero picture and texts, contacts, announcement bar, section order/visibility, photo speed. */
 export async function saveHomeSettings(_: FormState, fd: FormData): Promise<FormState> {
   await requireStaff();
   const seconds = Number(text(fd, 'marquee_seconds') || '40');
@@ -19,8 +19,34 @@ export async function saveHomeSettings(_: FormState, fd: FormData): Promise<Form
     .sort((a, b) => a.order - b.order)
     .map(({ key, visible }) => ({ key, visible }));
   const announcement = text(fd, 'announcement');
+  const coord = (k: string, max: number) => {
+    const v = text(fd, k);
+    if (!v) return null;
+    const n = Number(v);
+    return Number.isFinite(n) && Math.abs(n) <= max ? n : NaN;
+  };
+  const lat = coord('map_lat', 90);
+  const lng = coord('map_lng', 180);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return { error: 'የካርታ ቁጥሮቹ ትክክል አይደሉም (ለምሳሌ 8.87890 እና 38.80538)።' };
+  const email = text(fd, 'contact_email');
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'ትክክለኛ ኢሜይል ያስገቡ።' };
+  const hero: { hero_path?: string | null } = {};
+  if (text(fd, 'hero_path')) hero.hero_path = text(fd, 'hero_path');
+  else if (fd.get('remove_hero') === 'on') hero.hero_path = null;
   const supabase = await createClient();
   const { error, count } = await supabase.from('site_settings').update({
+    ...hero,
+    hero_text: text(fd, 'hero_text') || null,
+    about_title: text(fd, 'about_title') || null,
+    about_text: text(fd, 'about_text') || null,
+    mission: text(fd, 'mission') || null,
+    vision: text(fd, 'vision') || null,
+    core_values: text(fd, 'core_values') || null,
+    contact_phone: text(fd, 'contact_phone') || null,
+    contact_email: email || null,
+    contact_address: text(fd, 'contact_address') || null,
+    map_lat: lat,
+    map_lng: lng,
     welcome_title: text(fd, 'welcome_title') || null,
     welcome_text: text(fd, 'welcome_text') || null,
     announcement: announcement || null,
