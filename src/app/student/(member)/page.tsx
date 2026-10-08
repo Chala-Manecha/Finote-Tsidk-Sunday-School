@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { requireMember } from '@/lib/member-auth';
 import {
@@ -14,10 +13,9 @@ export default async function StudentHome() {
   const { data: yearData } = await supabase.from('academic_years').select('id, ec_year, is_active').eq('is_active', true).maybeSingle();
   const year = yearData as AcademicYear | null;
 
-  const [{ data: semData }, { data: enr }, { data: teach }] = await Promise.all([
+  const [{ data: semData }, { data: enr }] = await Promise.all([
     year ? supabase.from('semesters').select('*').eq('year_id', year.id).order('no') : Promise.resolve({ data: [] }),
     year ? supabase.from('enrollments').select('class_level').eq('year_id', year.id).eq('member_id', me.memberId).maybeSingle() : Promise.resolve({ data: null }),
-    supabase.from('offering_teachers').select('course_offerings(id, name, class_level, status, semesters(no, academic_years(ec_year, is_active)))').eq('member_id', me.memberId),
   ]);
   const semesters = (semData ?? []) as Semester[];
   const classLevel = (enr as { class_level: string | null } | null)?.class_level ?? null;
@@ -33,28 +31,10 @@ export default async function StudentHome() {
     ? (((await supabase.rpc('year_results', { p_year: year.id, p_class: classLevel })).data ?? []) as YearRow[])[0]
     : undefined;
 
-  type T = { course_offerings: { id: string; name: string; class_level: string; status: string;
-    semesters: { no: number; academic_years: { ec_year: number; is_active: boolean } } } | null };
-  const teaching = ((teach ?? []) as unknown as T[]).map((t) => t.course_offerings!).filter(Boolean)
-    .filter((o) => o.semesters.academic_years.is_active);
-
   return (
     <>
       <h1 className="title" style={{ marginTop: 0 }}>ሰላም፣ {me.fullName}</h1>
       <p className="muted small">መለያ ቁ. {me.regNo}</p>
-
-      {teaching.length > 0 && (
-        <section className="card" style={{ marginBottom: 16 }}>
-          <h2 className="section" style={{ marginTop: 0 }}>የማስተምራቸው ክፍሎች</h2>
-          <div className="btn-row" style={{ flexWrap: 'wrap' }}>
-            {teaching.map((o) => (
-              <Link key={o.id} className="btn secondary" href={`/student/teach/${o.id}`}>
-                {o.name} · {classLabel(o.class_level)} · {semesterLabel(o.semesters.no)}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
 
       <h2 className="section">የእኔ ትምህርት</h2>
       {!year && <p className="muted">የትምህርት ዘመኑ ገና አልተከፈተም።</p>}

@@ -51,7 +51,7 @@ export default async function TeachPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <Link className="link small" href="/student">← የእኔ ገጽ</Link>
+      <Link className="link small" href="/student/teach">← የማስተምራቸው ክፍሎች</Link>
       <h1 className="title">{offering.name}</h1>
       <p className="muted">{classLabel(offering.class_level)} · {semesterLabel(s.no)} · <span className={`pill ${offering.status === 'approved' ? 'present' : 'half'}`}>{OFFERING_STATUS[offering.status]}</span></p>
 

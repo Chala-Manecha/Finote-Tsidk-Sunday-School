@@ -585,3 +585,18 @@ output.readonly { display: block; padding: 8px 10px; border: 1px dashed var(--fi
 .admin-login > summary { cursor: pointer; font-size: .82rem; color: var(--muted); text-align: center; }
 .admin-login > summary:hover { color: #000; text-decoration: underline; }
 .table-wrap .multi-select-list { position: static; box-shadow: none; margin-top: 4px; }
+
+/* ---------- Role chooser + switch ---------- */
+.role-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 18px; }
+.role-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 26px 18px;
+  background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); transition: background .15s, color .15s;
+}
+.role-card b { font-size: 1.2rem; }
+.role-card:hover { background: #000; color: #fff; }
+.role-card:hover .muted { color: rgba(255, 255, 255, .75); }
+.role-switch { display: flex; gap: 2px; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.role-switch a { padding: 5px 12px; border-radius: 8px; font-size: .84rem; font-weight: 600; white-space: nowrap; }
+.role-switch a.active { background: var(--gold); color: #fff; }
+.role-switch a:not(.active):hover { background: #000; color: #fff; }
+@media (max-width: 640px) { .role-switch a { padding: 5px 8px; font-size: .78rem; } }

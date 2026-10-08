@@ -18,14 +18,6 @@ async function identify(reg: string, phone: string) {
   return (data as { member_id: string; full_name: string; reg_key: string; has_account: boolean }[] | null)?.[0] ?? null;
 }
 
-/** Where a member lands after signing in: department pages if ጽሕፈት ቤት gave access, else their own page. */
-async function landingFor(userId: string | undefined) {
-  if (!userId) return '/student';
-  const admin = createAdminClient();
-  const { data } = await admin.from('staff_profiles').select('is_active').eq('user_id', userId).maybeSingle();
-  return data?.is_active ? '/staff' : '/student';
-}
-
 async function derivedPassword(regKey: string, pin: string) {
   const admin = createAdminClient();
   const { data, error } = await admin.rpc('member_password', { p_reg_key: regKey, p_pin: pin });
@@ -65,7 +57,7 @@ export async function createMemberAccount(_: AuthState, fd: FormData): Promise<A
   const supabase = await createClient();
   await supabase.auth.signInWithPassword({ email: emailOf(m.reg_key), password });
   if (fd.get('enroll') === 'on') await supabase.rpc('enroll_self');
-  redirect('/student');
+  redirect('/choose');
 }
 
 /** Registration ID + PIN; 5 wrong PINs lock the account until ትምህርት ክፍል unlocks it. */
@@ -82,7 +74,7 @@ export async function loginMember(_: AuthState, fd: FormData): Promise<AuthState
   if (acct.locked_at) return { error: 'መለያዎ ተቆልፏል። እባክዎ ትምህርት ክፍልን ያነጋግሩ።' };
 
   const supabase = await createClient();
-  const { data: signed, error } = await supabase.auth.signInWithPassword({ email: emailOf(member.reg_key), password: await derivedPassword(member.reg_key, pin) });
+  const { error } = await supabase.auth.signInWithPassword({ email: emailOf(member.reg_key), password: await derivedPassword(member.reg_key, pin) });
   if (error) {
     const tries = acct.failed_attempts + 1;
     await admin.from('member_accounts').update({
@@ -92,8 +84,8 @@ export async function loginMember(_: AuthState, fd: FormData): Promise<AuthState
   }
   await admin.from('member_accounts').update({ failed_attempts: 0, last_login_at: new Date().toISOString() }).eq('member_id', member.id);
   const next = text(fd, 'next');
-  const home = await landingFor(signed.user?.id);
-  redirect(next.startsWith('/staff') && home === '/staff' ? next : next.startsWith('/student') ? next : home);
+  // One role → straight in; two or three → the chooser (ተማሪ / መምህር / አመራር).
+  redirect(/^\/(staff|student)(\/|$)/.test(next) ? next : '/choose');
 }
 
 export async function logoutMember() {

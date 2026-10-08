@@ -19,8 +19,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const signedIn = !!data?.claims?.sub;
   if (signedIn && reason !== 'no-staff') {
     const [staff, member] = await Promise.all([getStaff(), getMember()]);
-    if (staff) redirect(next.startsWith('/staff') || next.startsWith('/student') ? next : '/staff');
-    if (member) redirect(next.startsWith('/student') ? next : '/student');
+    if (staff || member) redirect(/^\/(staff|student)(\/|$)/.test(next) ? next : '/choose');
   }
 
   return (
