@@ -42,11 +42,34 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
   redirect(`/staff/members/${data}?saved=1`);
 }
 
+/** HR / ጽሕፈት ቤት: take a member off the active lists (history kept; can be restored). */
 export async function deactivateMember(id: string) {
   await requireDept('hr', 'office');
   const supabase = await createClient();
   const { error } = await supabase.from('members').update({ is_active: false }).eq('id', id);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
+  revalidatePath('/staff', 'layout');
+}
+
+export async function restoreMember(id: string) {
+  await requireDept('hr', 'office');
+  const supabase = await createClient();
+  const { error } = await supabase.from('members').update({ is_active: true }).eq('id', id);
+  if (error) return { error: error.message.includes('duplicate_name') ? DUPLICATE_NAME_MSG : error.message };
+  revalidatePath('/staff', 'layout');
+}
+
+/** HR: permanently delete a member who has no attendance, results or service history. */
+export async function deleteMember(id: string) {
+  await requireDept('hr');
+  const supabase = await createClient();
+  const { data: userId, error } = await supabase.rpc('delete_member', { p_member: id });
+  if (error) {
+    return { error: error.message.includes('member_has_history')
+      ? 'ይህ አባል ክትትል፣ ውጤት ወይም የአገልግሎት ታሪክ ስላለው ሊጠፋ አይችልም። “ሰርዝ (አቦዝን)” ይጠቀሙ።'
+      : 'ማጥፋት አልተቻለም።' };
+  }
+  if (userId) await createAdminClient().auth.admin.deleteUser(userId as string);
   revalidatePath('/staff', 'layout');
   redirect('/staff/hr/members');
 }

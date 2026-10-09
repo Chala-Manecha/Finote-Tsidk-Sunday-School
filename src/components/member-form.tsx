@@ -181,8 +181,10 @@ function YearsFields({ e, set, nowLabel }: {
     <>
       <div className="field"><label>የጀመሩበት ዓመት (ዓ.ም)</label>
         <input type="number" min={1900} max={2100} value={e.start_year ?? ''} onChange={(x) => set({ start_year: num(x.target.value) })} /></div>
-      <div className="field"><label>ያበቁበት ዓመት (ዓ.ም)</label>
-        <input type="number" min={1900} max={2100} disabled={e.current} value={e.current ? '' : (e.end_year ?? '')} onChange={(x) => set({ end_year: num(x.target.value) })} /></div>
+      {!e.current && (
+        <div className="field"><label>ያበቁበት ዓመት (ዓ.ም)</label>
+          <input type="number" min={1900} max={2100} value={e.end_year ?? ''} onChange={(x) => set({ end_year: num(x.target.value) })} /></div>
+      )}
       <label className="check" style={{ alignSelf: 'end' }}>
         <input type="checkbox" checked={e.current} onChange={(x) => set({ current: x.target.checked })} /> {nowLabel}
       </label>
@@ -206,7 +208,14 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   const initLangs = initial.languages ?? [];
   const otherLangs = initLangs.filter((l) => !(LANGUAGES as readonly string[]).includes(l));
   const [photoPreview, setPhotoPreview] = useState<string | null>(initial.photo_url ?? null);
-  const [education, setEducation] = useState<EducationEntry[]>(initial.education?.length ? initial.education : [emptyEducation()]);
+  const [education, setEducation] = useState<EducationEntry[]>(() => {
+    // Deterministic keys for the first render (server and browser must match).
+    const rows = initial.education?.length ? initial.education.map((e, i) => ({ ...e, _k: `init${i}` })) : [{ ...emptyEducation(), _k: 'init0' }];
+    // Older records kept one evidence file for all education; show it on the first row.
+    const legacy = initial.secular_school?.evidence_path;
+    if (legacy && !rows.some((e) => e.evidence_path)) rows[0] = { ...rows[0], evidence_path: legacy };
+    return rows;
+  });
   const [work, setWork] = useState<WorkEntry[]>(initial.work?.length ? initial.work : [emptyWork()]);
   const [slip, setSlip] = useState<SlipData | null>(null);
   const [pinShown, setPinShown] = useState('');
@@ -229,7 +238,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
       setSlip(buildSlip(fd, education, work, photoPreview));
       setPinShown(String(fd.get('pin') ?? ''));
     }
-    fd.set('education_json', JSON.stringify(education));
+    let eduRows = education;
     fd.set('work_json', JSON.stringify(workStatus === 'worker' ? work : []));
     try {
       setUploading(true);
@@ -243,11 +252,17 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
       } else {
         throw new Error('ፎቶ ያስገቡ።');
       }
-      for (const key of ['prior_school', 'secular_school'] as const) {
-        const file = fd.get(`${key}_file`);
-        fd.delete(`${key}_file`);
-        if (file instanceof File && file.size > 0) fd.set(`${key}_evidence`, await upload(mode, file, file.name));
-      }
+      const prior = fd.get('prior_school_file');
+      fd.delete('prior_school_file');
+      if (prior instanceof File && prior.size > 0) fd.set('prior_school_evidence', await upload(mode, prior, prior.name));
+      if (fd.get('has_prior_school') === 'on' && !String(fd.get('prior_school_evidence') ?? '')) throw new Error('የቀድሞ ሰ/ት/ቤት ማስረጃ ያያይዙ።');
+      eduRows = await Promise.all(education.map(async (row) => {
+        const file = fd.get(`edu_file_${row._k}`);
+        fd.delete(`edu_file_${row._k}`);
+        return file instanceof File && file.size > 0 ? { ...row, evidence_path: await upload(mode, file, file.name) } : row;
+      }));
+      setEducation(eduRows);
+      fd.set('education_json', JSON.stringify(eduRows.map(({ _k, ...rest }) => (void _k, rest))));
     } catch (err) {
       setUploadError((err as Error).message);
       return;
@@ -344,7 +359,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
           <div className="field"><label htmlFor="father_name">የአባት ስም <span className="req">*</span></label><input id="father_name" name="father_name" required defaultValue={father} /></div>
           <div className="field"><label htmlFor="grandfather_name">የአያት ስም <span className="req">*</span></label><input id="grandfather_name" name="grandfather_name" required defaultValue={grand} /></div>
           <div className="field"><label htmlFor="mother_name">የእናት ስም {req}</label><input id="mother_name" name="mother_name" required={isNew} defaultValue={initial.mother_name ?? ''} /></div>
-          <div className="field"><label htmlFor="christian_name">የክርስትና ስም</label><input id="christian_name" name="christian_name" defaultValue={initial.christian_name ?? ''} /></div>
+          <div className="field"><label htmlFor="christian_name">የክርስትና ስም {req}</label><input id="christian_name" name="christian_name" required={isNew} defaultValue={initial.christian_name ?? ''} /></div>
           <div className="field"><label htmlFor="baptism_church">ክርስትና የተነሱበት ቤተ ክርስቲያን</label><input id="baptism_church" name="baptism_church" defaultValue={initial.baptism_church ?? ''} /></div>
           <div className="field">
             <span className="label">የትውልድ ቀን (ዓ.ም) {req}</span>
@@ -413,7 +428,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
           <div className="field">
             <label htmlFor="sub_city">ክፍለ ከተማ</label>
             {region === 'አዲስ አበባ' ? (
-              <select id="sub_city" name="sub_city" defaultValue={initial.sub_city ?? ''}>
+              <select id="sub_city" name="sub_city" defaultValue={initial.sub_city ?? (initial.id ? '' : 'አቃቂ ቃሊቲ')}>
                 <option value="">—</option>
                 {SUB_CITIES.map((s) => <option key={s}>{s}</option>)}
               </select>
@@ -424,7 +439,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
           <div className="field"><label htmlFor="phone">ስልክ {mode === 'public' && <span className="req">*</span>}</label><input id="phone" name="phone" type="tel" dir="ltr" placeholder="09/07…" required={mode === 'public'} defaultValue={initial.phone ?? ''} /></div>
           <div className="field"><label htmlFor="phone2">ሁለተኛ ስልክ</label><input id="phone2" name="phone2" type="tel" dir="ltr" placeholder="09/07…" defaultValue={initial.phone2 ?? ''} /></div>
           <div className="field"><label htmlFor="email">ኢሜይል</label><input id="email" name="email" type="email" dir="ltr" defaultValue={initial.email ?? ''} /></div>
-          <div className="field"><label htmlFor="telegram_username">Telegram Username</label><input id="telegram_username" name="telegram_username" dir="ltr" placeholder="@username" defaultValue={initial.telegram_username ?? ''} /></div>
+          <div className="field"><label htmlFor="telegram_username">Telegram Username {req}</label><input id="telegram_username" name="telegram_username" dir="ltr" placeholder="@username" required={isNew} pattern="@?[A-Za-z0-9_]{5,32}" title="5–32 ፊደላት (A-Z, 0-9, _)" defaultValue={initial.telegram_username ?? ''} /></div>
         </div>
       </Section>
 
@@ -449,7 +464,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
       <Section n={5} id="sec-education" title="የትምህርት መረጃ">
         <div className="sub-head">አለማዊ ትምህርት</div>
         {education.map((e, i) => (
-          <div key={i} className="repeat-row">
+          <div key={e._k ?? i} className="repeat-row">
             <div className="repeat-head">
               <b>{i + 1}.</b>
               <button type="button" className="btn sm danger" onClick={() => setEducation(education.length > 1 ? education.filter((_, j) => j !== i) : [emptyEducation()])}>🗑 አጥፋ</button>
@@ -463,29 +478,27 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
               <div className="field"><label>የትምህርት ዘርፍ</label><input value={e.field} onChange={(x) => patchEdu(i, { field: x.target.value })} placeholder="ለምሳሌ ሒሳብ አያያዝ" /></div>
               <div className="field"><label>የትምህርት ተቋም</label><input value={e.institution} onChange={(x) => patchEdu(i, { institution: x.target.value })} /></div>
               <YearsFields e={e} set={(p) => patchEdu(i, p)} nowLabel="እስከ አሁን በትምህርት ላይ" />
+              <div className="field">
+                <label>የትምህርት ማስረጃ ፋይል (ካለ)</label>
+                <input name={`edu_file_${e._k}`} type="file" accept="image/*,.pdf" />
+                {e.evidence_path && <span className="hint">ማስረጃ ተያይዟል — አዲስ ፋይል ከመረጡ ይተካል</span>}
+              </div>
             </div>
           </div>
         ))}
-        <button type="button" className="btn sm secondary" onClick={() => setEducation([...education, emptyEducation()])}>+ ተጨማሪ የትምህርት ማስረጃ</button>
-        <div className="field" style={{ marginTop: 12, maxWidth: 420 }}>
-          <label htmlFor="secular_school_file">የትምህርት ማስረጃ ፋይል (ካለ)</label>
-          <input id="secular_school_file" name="secular_school_file" type="file" accept="image/*,.pdf" />
-          <input type="hidden" name="secular_school_evidence" defaultValue={initial.secular_school?.evidence_path ?? ''} />
-          {initial.secular_school?.evidence_path && <span className="hint">ማስረጃ ተያይዟል — አዲስ ፋይል ከመረጡ ይተካል</span>}
-        </div>
+        <button type="button" className="btn sm secondary" onClick={() => setEducation([...education, emptyEducation()])}>+ ተጨማሪ የትምህርት መረጃ</button>
 
-        <div className="sub-head">መንፈሳዊ አገልግሎት</div>
         <label className="check">
           <input type="checkbox" name="has_prior_school" checked={hasPrior} onChange={(e) => setHasPrior(e.target.checked)} />
           ከዚህ በፊት ሌላ ሰ/ት/ቤት አገልግለዋል
         </label>
         {hasPrior && (
           <div className="form-grid">
-            <div className="field"><label htmlFor="prior_school_name">የሰ/ት/ቤቱ ስም</label><input id="prior_school_name" name="prior_school_name" defaultValue={initial.prior_school?.name ?? ''} /></div>
-            <div className="field"><label htmlFor="prior_school_years">የአገልግሎት ዓመታት</label><input id="prior_school_years" name="prior_school_years" type="number" min={0} max={80} defaultValue={initial.prior_school?.years ?? ''} /></div>
+            <div className="field"><label htmlFor="prior_school_name">የሰ/ት/ቤቱ ስም <span className="req">*</span></label><input id="prior_school_name" name="prior_school_name" required defaultValue={initial.prior_school?.name ?? ''} /></div>
+            <div className="field"><label htmlFor="prior_school_years">የአገልግሎት ዓመታት <span className="req">*</span></label><input id="prior_school_years" name="prior_school_years" type="number" min={1} max={80} required defaultValue={initial.prior_school?.years ?? ''} /></div>
             <div className="field">
-              <label htmlFor="prior_school_file">ማስረጃ</label>
-              <input id="prior_school_file" name="prior_school_file" type="file" accept="image/*,.pdf" />
+              <label htmlFor="prior_school_file">ማስረጃ <span className="req">*</span></label>
+              <input id="prior_school_file" name="prior_school_file" type="file" accept="image/*,.pdf" required={!initial.prior_school?.evidence_path} />
               <input type="hidden" name="prior_school_evidence" defaultValue={initial.prior_school?.evidence_path ?? ''} />
               {initial.prior_school?.evidence_path && <span className="hint">ማስረጃ ተያይዟል — አዲስ ፋይል ከመረጡ ይተካል</span>}
             </div>

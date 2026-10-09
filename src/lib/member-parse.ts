@@ -25,8 +25,13 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
   const maritalStatus = oneOf(str(fd, 'marital_status'), MARITAL_STATUS);
   const motherName = str(fd, 'mother_name');
   const dob = str(fd, 'dob');
+  const christianName = str(fd, 'christian_name');
+  const telegram = str(fd, 'telegram_username')?.replace(/^@/, '') ?? null;
+  if (telegram && !/^[A-Za-z0-9_]{5,32}$/.test(telegram)) return { error: 'Telegram username ትክክል አይደለም (5–32 ፊደላት፣ A-Z፣ 0-9፣ _)።' };
   if (isNew) {
     if (!motherName) return { error: 'የእናት ስም ያስገቡ።' };
+    if (!christianName) return { error: 'የክርስትና ስም ያስገቡ።' };
+    if (!telegram) return { error: 'Telegram username ያስገቡ።' };
     if (!maritalStatus) return { error: 'የትዳር ሁኔታ ይምረጡ።' };
     if (!dob) return { error: 'የትውልድ ቀን ያስገቡ።' };
   }
@@ -56,7 +61,11 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
   }
   const education = cleanEducation(str(fd, 'education_json'));
   const work = workStatus === 'worker' ? cleanWork(str(fd, 'work_json')) : [];
-  const secularEvidence = docPath(str(fd, 'secular_school_evidence'));
+  const hasPrior = fd.get('has_prior_school') === 'on';
+  const prior = hasPrior
+    ? { name: str(fd, 'prior_school_name'), years: Number(str(fd, 'prior_school_years')) || null, evidence_path: docPath(str(fd, 'prior_school_evidence')) }
+    : null;
+  if (prior && (!prior.name || !prior.years || !prior.evidence_path)) return { error: 'የቀድሞ ሰ/ት/ቤት ስም፣ የአገልግሎት ዓመታት እና ማስረጃ ያስፈልጋሉ።' };
   const depts = fd.getAll('depts').map(String).filter(isDeptCode);
   if (depts.length > 2) return { error: 'ቢበዛ 2 ክፍሎች ብቻ መምረጥ ይቻላል።' };
   const phone = str(fd, 'phone');
@@ -69,7 +78,7 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
     dob,
     phone,
     email: str(fd, 'email'),
-    telegram_username: str(fd, 'telegram_username')?.replace(/^@/, '') ?? null,
+    telegram_username: telegram,
     sub_city: str(fd, 'sub_city'),
     languages,
     photo_path: photoPath,
@@ -77,11 +86,10 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
     geez_level: oneOf(str(fd, 'geez_level'), GEEZ_LEVEL) ?? 'none',
     is_ethiopian: isEthiopian,
     nationality,
-    prior_school: fd.get('has_prior_school') === 'on'
-      ? { name: str(fd, 'prior_school_name'), years: Number(str(fd, 'prior_school_years')) || null, evidence_path: docPath(str(fd, 'prior_school_evidence')) }
-      : null,
-    secular_school: secularEvidence || education.length
-      ? { name: education[0]?.institution || education[0]?.level || null, evidence_path: secularEvidence }
+    prior_school: prior,
+    // Summary of the first education row (older pages read this); files now live on each row.
+    secular_school: education.length
+      ? { name: education[0].institution || education[0].level || null, evidence_path: education.find((e) => e.evidence_path)?.evidence_path ?? null }
       : null,
     member_type: memberType,
     member_type_other: memberTypeOther,
@@ -89,7 +97,7 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
     father_name: fatherName,
     grandfather_name: grandfatherName,
     mother_name: motherName,
-    christian_name: str(fd, 'christian_name'),
+    christian_name: christianName,
     baptism_church: str(fd, 'baptism_church'),
     marital_status: maritalStatus,
     region: str(fd, 'region'),

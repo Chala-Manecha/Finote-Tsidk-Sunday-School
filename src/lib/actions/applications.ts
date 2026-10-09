@@ -39,7 +39,7 @@ export async function submitApplication(_: ApplicationState, fd: FormData): Prom
   if ('error' in parsed) return { error: parsed.error };
   if (!parsed.phone) return { error: 'ስልክ ቁጥር ያስገቡ።' };
   const paths = [parsed.member.photo_path, (parsed.member.prior_school as { evidence_path?: string } | null)?.evidence_path,
-    (parsed.member.secular_school as { evidence_path?: string } | null)?.evidence_path].filter(Boolean) as string[];
+    ...(parsed.member.education as { evidence_path?: string | null }[]).map((e) => e.evidence_path)].filter(Boolean) as string[];
   if (paths.some((p) => !p.startsWith('applications/'))) return { error: 'ፋይሉ ትክክል አይደለም። እንደገና ይጫኑ።' };
 
   const admin = createAdminClient();

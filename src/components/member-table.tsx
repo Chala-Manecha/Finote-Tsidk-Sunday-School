@@ -6,7 +6,7 @@ import {
 } from '@/lib/constants';
 import { PrintButton } from './print-button';
 
-type Filters = { q?: string; status?: string; work?: string; dept?: string; group?: string };
+type Filters = { q?: string; status?: string; work?: string; dept?: string; group?: string; inactive?: string };
 
 type Row = {
   id: string;
@@ -49,7 +49,7 @@ export async function MemberTable({
         ? 'id, reg_no, full_name, title, sex, dob, phone, work_status, member_status, member_type, member_type_other, age_group, all_depts:member_departments(dept), f:member_departments!inner(dept)'
         : 'id, reg_no, full_name, title, sex, dob, phone, work_status, member_status, member_type, member_type_other, age_group, all_depts:member_departments(dept)',
     )
-    .eq('is_active', true)
+    .eq('is_active', filters.inactive !== '1')
     .order('full_name');
 
   if (dept) query = query.eq('f.dept', dept);
@@ -112,6 +112,9 @@ export async function MemberTable({
             </select>
           </div>
         )}
+        <label className="check" style={{ margin: 0, alignSelf: 'center' }}>
+          <input type="checkbox" name="inactive" value="1" defaultChecked={filters.inactive === '1'} /> የተሰረዙ (ያልነቁ) ብቻ
+        </label>
         <button className="btn sm">አጣራ</button>
         <span style={{ flex: 1 }} />
         <PrintButton />

@@ -2,13 +2,17 @@
 export type EducationEntry = {
   level: string; field: string; institution: string;
   start_year: number | null; end_year: number | null; current: boolean;
+  evidence_path?: string | null;   // certificate / transcript file for this entry
+  _k?: string;                     // client-only row key
 };
 export type WorkEntry = {
   field: string; workplace: string;
   start_year: number | null; end_year: number | null; current: boolean;
 };
 
-export const emptyEducation = (): EducationEntry => ({ level: '', field: '', institution: '', start_year: null, end_year: null, current: false });
+let seq = 0;
+export const rowKey = () => `r${Date.now().toString(36)}${(seq++).toString(36)}`;
+export const emptyEducation = (): EducationEntry => ({ level: '', field: '', institution: '', start_year: null, end_year: null, current: false, evidence_path: null, _k: rowKey() });
 export const emptyWork = (): WorkEntry => ({ field: '', workplace: '', start_year: null, end_year: null, current: false });
 
 const txt = (v: unknown) => (typeof v === 'string' ? v.trim().slice(0, 120) : '');
@@ -31,6 +35,7 @@ export function cleanEducation(raw: string | null): EducationEntry[] {
     level: txt(e.level), field: txt(e.field), institution: txt(e.institution),
     start_year: year(e.start_year), current: e.current === true,
     end_year: e.current === true ? null : year(e.end_year),
+    evidence_path: typeof e.evidence_path === 'string' && /^(members|applications)\//.test(e.evidence_path) ? e.evidence_path : null,
   })).filter((e) => e.level || e.field || e.institution);
 }
 export function cleanWork(raw: string | null): WorkEntry[] {

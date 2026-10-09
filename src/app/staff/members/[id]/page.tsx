@@ -8,6 +8,9 @@ import {
   type AttendanceStatus, type SessionType,
 } from '@/lib/constants';
 import { PrintButton } from '@/components/print-button';
+import { ActionButton } from '@/components/action-button';
+import { canAccess } from '@/lib/auth';
+import { deactivateMember, restoreMember, deleteMember } from '@/app/staff/members/actions';
 import { DocHeader, DocSigns } from '@/components/doc-sheet';
 import { yearsLabel, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
@@ -23,12 +26,12 @@ export default async function MemberDetail({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string }>;
 }) {
-  await requireDept('hr', 'office');
+  const staff = await requireDept('hr', 'office');
   const { id } = await params;
   const { saved } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: m }, { data: att }, { data: ageGroups }] = await Promise.all([
+  const [{ data: m }, { data: att }, { data: ageGroups }, { data: history }] = await Promise.all([
     supabase.from('members').select('*, member_departments(dept)').eq('id', id).maybeSingle(),
     supabase
       .from('attendance')
@@ -36,7 +39,9 @@ export default async function MemberDetail({
       .eq('member_id', id)
       .returns<AttRow[]>(),
     supabase.from('age_groups').select('code, name'),
+    supabase.rpc('member_history_count', { p_member: id }),
   ]);
+  const isHr = canAccess(staff, 'hr');
   if (!m) notFound();
 
   // Attendance broken down by session type (each belongs to a department)
@@ -56,6 +61,7 @@ export default async function MemberDetail({
   const priorUrl = await signed(m.prior_school?.evidence_path);
   const photoUrl = await signed(m.photo_path);
   const secularUrl = await signed(m.secular_school?.evidence_path);
+  const eduUrls = await Promise.all(((m.education ?? []) as EducationEntry[]).map((e) => signed(e.evidence_path)));
 
   type Row = [string, React.ReactNode];
   const dash = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
@@ -95,8 +101,11 @@ export default async function MemberDetail({
     ]],
     ['ትምህርት እና ሥራ', [
       ['አለማዊ ትምህርት', education.length
-        ? <>{education.map((e, i) => <div key={i}>{[e.level, e.field, e.institution].filter(Boolean).join(' · ')} <span className="muted small">{yearsLabel(e)}</span></div>)}
-            {secularUrl && <a className="link" href={secularUrl} target="_blank">ማስረጃ</a>}</>
+        ? <>{education.map((e, i) => (
+            <div key={i}>{[e.level, e.field, e.institution].filter(Boolean).join(' · ')} <span className="muted small">{yearsLabel(e)}</span>
+              {eduUrls[i] && <> · <a className="link" href={eduUrls[i]!} target="_blank">ማስረጃ</a></>}</div>
+          ))}
+            {secularUrl && !eduUrls.some(Boolean) && <a className="link" href={secularUrl} target="_blank">ማስረጃ</a>}</>
         : m.secular_school ? <>{m.secular_school.name} {secularUrl && <a className="link" href={secularUrl} target="_blank">ማስረጃ</a>}</> : '—'],
       ['ቀድሞ ሰ/ት/ቤት', m.prior_school
         ? <>{m.prior_school.name} · {m.prior_school.years ?? '—'} ዓመት {priorUrl && <a className="link" href={priorUrl} target="_blank">ማስረጃ</a>}</>
@@ -123,6 +132,14 @@ export default async function MemberDetail({
         <div className="btn-row no-print">
           <Link className="btn sm" href={`/staff/members/${id}/edit`}>አርም</Link>
           <PrintButton />
+          {m.is_active
+            ? <ActionButton action={deactivateMember.bind(null, id)} label="ሰርዝ (አቦዝን)" className="btn sm secondary"
+                confirmText={`${m.full_name} ከንቁ አባላት ዝርዝር ይውጣ? ታሪኩ ይቀመጣል፤ በኋላ መመለስ ይቻላል።`} />
+            : <ActionButton action={restoreMember.bind(null, id)} label="መልስ (አንቃ)" className="btn sm green" />}
+          {isHr && history === 0 && (
+            <ActionButton action={deleteMember.bind(null, id)} label="ሙሉ በሙሉ አጥፋ" className="btn sm danger"
+              confirmText={`${m.full_name} ሙሉ በሙሉ ይጥፋ? ይህ አይመለስም።`} />
+          )}
         </div>
       </div>
 

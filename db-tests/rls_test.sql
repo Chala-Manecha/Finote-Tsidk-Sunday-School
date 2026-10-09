@@ -715,4 +715,15 @@ select public.save_member(null, jsonb_build_object('reg_key', 'ZZZZ2222', 'full_
 select pg_temp.must_equal((select count(*) from public.members where reg_key = 'ZZZZ2222'), 0, 'arbitrary numbers are not accepted');
 reset role;
 
+-- ---------- round 5d: HR deletes members without history ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail($q$select public.delete_member((select id from public.members where full_name = 'ቀለም ለማ መኮንን'))$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select public.delete_member((select id from public.members where full_name = 'ቀለም ለማ መኮንን'));
+select pg_temp.must_equal((select count(*) from public.members where full_name = 'ቀለም ለማ መኮንን'), 0, 'HR deletes a member without history');
+select pg_temp.must_fail($q$select public.delete_member((select m.id from public.members m join public.attendance a on a.member_id = m.id limit 1))$q$);
+reset role;
+
 \echo ALL RLS TESTS PASSED

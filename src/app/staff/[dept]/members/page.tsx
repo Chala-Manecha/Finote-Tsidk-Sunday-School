@@ -23,7 +23,7 @@ export default async function SubMembersPage({
         basePath={`/staff/${dept}/members`}
         filters={filters}
         fixedDept={isHr ? undefined : dept}
-        linkToDetail={false}
+        linkToDetail={isHr}
       />
     </>
   );
