@@ -15,7 +15,7 @@ export default async function DepartmentsPage() {
       <PublicHeader />
       <main className="page">
         <h1 className="title">ክፍሎቻችን</h1>
-        <p className="muted">የእያንዳንዱን ክፍል ተግባርና ኃላፊነት የሚገልጸውን ሰነድ ያንብቡ። በንዑስ አባልነት ማገልገል ከፈለጉ ቢሮ ቁጥር 9 ይምጡ።</p>
+        <p className="muted">የእያንዳንዱን ክፍል ተግባርና ኃላፊነት የሚገልጸውን ሰነድ ያንብቡ። በንዑስ አባልነት ማገልገል ከፈለጉ ቢሮ ቁጥር 7 ይምጡ።</p>
         <div className="doc-list">
           {DEPARTMENTS.map((d) => {
             const path = docs.get(d.code);

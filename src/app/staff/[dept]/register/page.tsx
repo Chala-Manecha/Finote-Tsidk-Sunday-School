@@ -7,7 +7,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ dept:
   return (
     <>
       <h2 className="section" style={{ marginTop: 0 }}>+ አባል መዝግብ</h2>
-      <p className="muted small">በቢሮ ቁጥር 9 በአካል ለሚመጡ አዲስ አባላት። በቀጥታ ወደ አባላት ዝርዝር ይገባል።</p>
+      <p className="muted small">በቢሮ ቁጥር 7 በአካል ለሚመጡ አዲስ አባላት። በቀጥታ ወደ አባላት ዝርዝር ይገባል።</p>
       <MemberForm />
     </>
   );

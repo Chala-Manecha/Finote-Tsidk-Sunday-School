@@ -600,3 +600,35 @@ output.readonly { display: block; padding: 8px 10px; border: 1px dashed var(--fi
 .role-switch a.active { background: var(--gold); color: #fff; }
 .role-switch a:not(.active):hover { background: #000; color: #fff; }
 @media (max-width: 640px) { .role-switch a { padding: 5px 8px; font-size: .78rem; } }
+
+/* ---------- Registration success + slip ---------- */
+.slip-done { display: flex; flex-direction: column; gap: 18px; }
+.secret-box { max-width: 420px; margin: 14px auto 0; text-align: start; border: 2px dashed var(--gold); border-radius: 14px; padding: 14px 16px; background: var(--gold-light); }
+.secret-title { font-weight: 700; }
+.secret-box dl { margin: 0; display: grid; gap: 6px; }
+.secret-box dl div { display: flex; justify-content: space-between; gap: 10px; background: #fff; border-radius: 8px; padding: 8px 12px; }
+.secret-box dt { color: var(--muted); font-size: .86rem; }
+.secret-box dd { margin: 0; font-weight: 800; font-size: 1.1rem; letter-spacing: 1px; font-family: ui-monospace, Menlo, monospace; }
+.slip-head { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; border-bottom: 3px double var(--ink); padding-bottom: 12px; margin-bottom: 14px; }
+.slip-head img { border-radius: 50%; }
+.slip-title { text-align: end; }
+.slip-title h1 { margin: 0; font-size: 1.15rem; }
+.slip-top { display: grid; grid-template-columns: 120px 1fr auto; gap: 16px; align-items: start; margin-bottom: 10px; }
+.slip-top .cert-photo { width: 120px; height: 150px; }
+.slip-note p { margin: 6px 0; font-size: .9rem; }
+.slip-sec h3 { font-size: .92rem; margin: 14px 0 6px; color: var(--gold); }
+.slip .doc-rows > div { grid-template-columns: 130px 1fr; }
+@media (max-width: 640px) {
+  .slip-head { grid-template-columns: auto 1fr; }
+  .slip-title { grid-column: 1 / -1; text-align: start; }
+  .slip-top { grid-template-columns: 100px 1fr; }
+  .slip-top .doc-qr { grid-column: 1 / -1; }
+}
+@media print {
+  .register-strip, .verse-bar, .site-footer, .topbar { display: none !important; }
+  .slip { font-size: 11px; }
+  .slip .doc-rows { grid-template-columns: 1fr 1fr; }
+  .slip-sec { break-inside: avoid; }
+  @page { size: A4; margin: 12mm; }
+}
+.slip-note > b { font-size: 1.25em; display: block; }

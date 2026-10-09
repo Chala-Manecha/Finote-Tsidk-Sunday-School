@@ -19,7 +19,7 @@ export default async function Applications({ params, searchParams }: {
   const [{ data: s }, { data: open }, { data: rows }] = await Promise.all([
     supabase.from('site_settings').select('registration_open, registration_until').maybeSingle(),
     supabase.rpc('registration_is_open'),
-    supabase.from('member_applications').select('id, full_name, phone, status, reject_reason, member_id, created_at, decided_at')
+    supabase.from('member_applications').select('id, reg_no, full_name, phone, status, reject_reason, member_id, created_at, decided_at')
       .eq('status', show in STATUS ? show : 'pending').order('created_at', { ascending: show === 'pending' }).limit(300),
   ]);
 
@@ -45,10 +45,11 @@ export default async function Applications({ params, searchParams }: {
       </div>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>ሙሉ ስም</th><th>ስልክ</th><th>የቀረበበት</th><th>{show === 'pending' ? '' : 'ውሳኔ'}</th></tr></thead>
+          <thead><tr><th>ምዝገባ ቁ.</th><th>ሙሉ ስም</th><th>ስልክ</th><th>የቀረበበት</th><th>{show === 'pending' ? '' : 'ውሳኔ'}</th></tr></thead>
           <tbody>
             {(rows ?? []).map((r) => (
               <tr key={r.id}>
+                <td className="small" dir="ltr">{r.reg_no ?? '—'}</td>
                 <td>{r.full_name}</td>
                 <td dir="ltr">{r.phone ?? '—'}</td>
                 <td className="small">{formatEc(r.created_at)}</td>
@@ -59,7 +60,7 @@ export default async function Applications({ params, searchParams }: {
                 </td>
               </tr>
             ))}
-            {(rows ?? []).length === 0 && <tr><td colSpan={4} className="muted">ምንም የለም።</td></tr>}
+            {(rows ?? []).length === 0 && <tr><td colSpan={5} className="muted">ምንም የለም።</td></tr>}
           </tbody>
         </table>
       </div>

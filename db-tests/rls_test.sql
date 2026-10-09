@@ -701,4 +701,18 @@ select pg_temp.must_equal((select public.registration_is_open()::int), 0, 'regis
 select pg_temp.must_fail($q$insert into public.member_applications (data, full_name) values ('{}', 'x y z')$q$);
 reset role;
 
+-- ---------- round 5c: application keeps its registration number ----------
+select set_config('request.jwt.claim.role', '', false);
+select set_config('request.jwt.claim.sub', '', false);
+select public.new_application_key('ሙከራ') as k \gset
+insert into public.member_applications (data, full_name, reg_key) values ('{}', 'ቀ ለ መ', :'k');
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select public.save_member(null, jsonb_build_object('reg_key', :'k', 'full_name', 'ቀለም ለማ መኮንን', 'sex', 'male', 'work_status', 'student'), '{}');
+select pg_temp.must_equal((select count(*) from public.members where reg_key = :'k' and full_name = 'ቀለም ለማ መኮንን'), 1, 'approved member keeps the application number');
+select public.save_member(null, jsonb_build_object('reg_key', 'ZZZZ2222', 'full_name', 'ሌላ ሰው ስም', 'sex', 'male', 'work_status', 'student'), '{}');
+select pg_temp.must_equal((select count(*) from public.members where reg_key = 'ZZZZ2222'), 0, 'arbitrary numbers are not accepted');
+reset role;
+
 \echo ALL RLS TESTS PASSED

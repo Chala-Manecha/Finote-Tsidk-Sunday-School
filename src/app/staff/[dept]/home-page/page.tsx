@@ -58,7 +58,7 @@ export default async function HomePageSettings({ params }: { params: Promise<{ d
 
         <div className="form-section">እንኳን ደህና መጡ (የምዝገባ መረጃ)</div>
         <div className="field"><label>ርዕስ</label><input name="welcome_title" defaultValue={s?.welcome_title ?? ''} placeholder="እንኳን ወደ ፍኖተ ጽድቅ ሰንበት ትምህርት ቤት በሰላም መጡ።" /></div>
-        <div className="field"><label>ጽሑፍ</label><textarea name="welcome_text" rows={3} defaultValue={s?.welcome_text ?? ''} placeholder="ለመመዝገብ ወደ ቢሮ ቁጥር 9 በአካል ይሂዱ።" /></div>
+        <div className="field"><label>ጽሑፍ</label><textarea name="welcome_text" rows={3} defaultValue={s?.welcome_text ?? ''} placeholder="ለመመዝገብ ወደ ቢሮ ቁጥር 7 በአካል ይሂዱ።" /></div>
 
         <div className="form-section">የገጹ ክፍሎች — ቅደም ተከተልና ማሳያ</div>
         <div className="table-wrap">

@@ -29,7 +29,7 @@ export async function submitFeedback(_: FormState, fd: FormData): Promise<FormSt
     case 'mismatch':
       return { error: 'እባክዎ ሲመዘገቡ ባስገቡት መሰረት በትክክል ያስገቡ።' };
     case 'not_found':
-      return { error: 'እባክዎ በቅድሚያ ወደ ቢሮ ቁጥር 9 በመሄድ ይመዝገቡ!' };
+      return { error: 'እባክዎ በቅድሚያ ወደ ቢሮ ቁጥር 7 በመሄድ ይመዝገቡ!' };
     default:
       return { error: 'መረጃው ትክክል አይደለም።' };
   }

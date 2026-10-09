@@ -28,7 +28,7 @@ async function derivedPassword(regKey: string, pin: string) {
 /** Step 1: registration ID + the phone on record → show only the name to confirm. */
 export async function identifyMember(_: AuthState, fd: FormData): Promise<AuthState> {
   const m = await identify(text(fd, 'reg_no'), text(fd, 'phone'));
-  if (!m) return { error: 'የመመዝገቢያ ቁጥሩ ወይም ስልኩ ሲመዘገቡ ካስገቡት ጋር አይመሳሰልም። እባክዎ በትክክል ያስገቡ ወይም ቢሮ ቁጥር 9 ይምጡ።' };
+  if (!m) return { error: 'የመመዝገቢያ ቁጥሩ ወይም ስልኩ ሲመዘገቡ ካስገቡት ጋር አይመሳሰልም። እባክዎ በትክክል ያስገቡ ወይም ቢሮ ቁጥር 7 ይምጡ።' };
   if (m.has_account) return { error: 'ቀደም ብለው ተመዝግበዋል። በመመዝገቢያ ቁጥርዎ እና በፒንዎ ይግቡ። ፒኑን ከረሱ ትምህርት ክፍልን ያነጋግሩ።' };
   return { step: 'confirm', name: m.full_name };
 }
@@ -70,6 +70,11 @@ export async function loginMember(_: AuthState, fd: FormData): Promise<AuthState
   const { data: acct } = member
     ? await admin.from('member_accounts').select('member_id, failed_attempts, locked_at').eq('member_id', member.id).maybeSingle()
     : { data: null };
+  if (!member) {
+    const { data: app } = await admin.from('member_applications').select('status').eq('reg_key', reg).maybeSingle();
+    if (app?.status === 'pending') return { error: 'ምዝገባዎ ገና አልጸደቀም። የምዝገባ ቅጽዎን ይዘው ወደ የሰው ሃብት አስተዳደር (ቢሮ ቁጥር 7) ይምጡ።' };
+    if (app?.status === 'rejected') return { error: 'ምዝገባዎ ተቀባይነት አላገኘም። የሰው ሃብት አስተዳደርን (ቢሮ ቁጥር 7) ያነጋግሩ።' };
+  }
   if (!member || !member.is_active || !acct) return { error: 'መለያ አልተገኘም። መጀመሪያ “መለያ ይፍጠሩ” የሚለውን ይጠቀሙ።' };
   if (acct.locked_at) return { error: 'መለያዎ ተቆልፏል። እባክዎ ትምህርት ክፍልን ያነጋግሩ።' };
 

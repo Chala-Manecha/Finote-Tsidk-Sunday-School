@@ -23,7 +23,7 @@ export default async function Register() {
           </>
         ) : (
           <div className="card">
-            <p style={{ marginTop: 0 }}>የኦንላይን ምዝገባ ለጊዜው ዝግ ነው። ለመመዝገብ ቢሮ ቁጥር 9 በአካል ይምጡ።</p>
+            <p style={{ marginTop: 0 }}>የኦንላይን ምዝገባ ለጊዜው ዝግ ነው። ለመመዝገብ ቢሮ ቁጥር 7 በአካል ይምጡ።</p>
             <Link className="btn" href="/">ወደ ዋና ገጽ</Link>
           </div>
         )}

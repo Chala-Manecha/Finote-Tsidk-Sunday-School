@@ -11,7 +11,7 @@ export default async function ReviewApplication({ params }: { params: Promise<{ 
   const { dept, id } = await params;
   if (dept !== 'hr') notFound();
   const supabase = await createClient();
-  const { data: a } = await supabase.from('member_applications').select('id, data, depts, status, created_at').eq('id', id).maybeSingle();
+  const { data: a } = await supabase.from('member_applications').select('id, reg_no, data, depts, status, created_at').eq('id', id).maybeSingle();
   if (!a) notFound();
   const d = a.data as MemberInitial;
   const photo_url = d.photo_path
@@ -21,7 +21,7 @@ export default async function ReviewApplication({ params }: { params: Promise<{ 
   return (
     <>
       <div className="crumb"><Link href="/staff/hr/applications">ማመልከቻዎች</Link> › {d.full_name}</div>
-      <p className="muted small">የቀረበው {formatEc(a.created_at)}። መረጃውን ያረጋግጡ፣ አስፈላጊ ከሆነ ያስተካክሉ እና “አጽድቅና አባል መዝግብ” ይጫኑ።</p>
+      <p className="muted small">ምዝገባ ቁ. <b dir="ltr">{a.reg_no ?? '—'}</b> · የቀረበው {formatEc(a.created_at)}። ሲጸድቅ አባሉ ይህንኑ ቁጥር ይይዛል፤ በምዝገባ ወቅት በፈጠረው ኮድም መግባት ይችላል። መረጃውን ያረጋግጡ፣ አስፈላጊ ከሆነ ያስተካክሉ እና “አጽድቅና አባል መዝግብ” ይጫኑ።</p>
       {a.status !== 'pending' ? <div className="alert error">ይህ ማመልከቻ ቀደም ብሎ ተወስኗል።</div> : (
         <>
           <MemberForm mode="approve" applicationId={a.id} initial={{ ...d, photo_url, depts: a.depts }} />
