@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-type NavLink = { href: string; label: string; highlight?: boolean; title?: string };
+type NavLink = { href: string; label: string; highlight?: boolean; title?: string; register?: boolean };
 type NavGroup = { label: string; items: NavLink[] };
 export type NavEntry = NavLink | NavGroup;
 
@@ -57,7 +57,7 @@ export function SiteNav({ items, cta }: { items: NavEntry[]; cta?: NavLink }) {
     <div className="site-nav" ref={ref}>
       <nav className="nav-desktop" aria-label="ዋና ማውጫ">
         {items.map((e) => isGroup(e) ? dropdown(e) : (
-          <Link key={e.href} href={e.href} className={`nav-link ${e.highlight ? 'highlight' : ''} ${active(e.href) ? 'active' : ''}`}>{e.label}</Link>
+          <Link key={e.href} href={e.href} className={e.register ? 'nav-register' : `nav-link ${e.highlight ? 'highlight' : ''} ${active(e.href) ? 'active' : ''}`}>{e.label}</Link>
         ))}
         {cta && <Link href={cta.href} className="btn nav-cta" title={cta.title}>{cta.label} →</Link>}
       </nav>
@@ -73,7 +73,7 @@ export function SiteNav({ items, cta }: { items: NavEntry[]; cta?: NavLink }) {
               {e.items.map((i) => <Link key={i.href} href={i.href} onClick={close} className={active(i.href) ? 'active' : ''}>{i.label}</Link>)}
             </div>
           ) : (
-            <Link key={e.href} href={e.href} onClick={close} className={`${e.highlight ? 'highlight' : ''} ${active(e.href) ? 'active' : ''}`}>{e.label}</Link>
+            <Link key={e.href} href={e.href} onClick={close} className={e.register ? 'nav-register' : `${e.highlight ? 'highlight' : ''} ${active(e.href) ? 'active' : ''}`}>{e.label}</Link>
           ))}
           {cta && (
             <div className="nav-panel-cta">

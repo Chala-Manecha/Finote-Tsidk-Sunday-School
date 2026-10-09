@@ -681,3 +681,26 @@ output.readonly { display: block; padding: 8px 10px; border: 1px dashed var(--fi
   .hero-en, .hero-pill, .hero-text { display: none; }
   .hero-buttons .glass { padding: 9px 14px; font-size: .9rem; }
 }
+.print-only { display: none; }
+@media print { .print-only { display: block; } }
+
+/* ---------- Eye-catching registration buttons ---------- */
+.nav-register, .register-cta {
+  background: linear-gradient(135deg, #F5A524, #E4572E); color: #fff; font-weight: 800;
+  border: none; box-shadow: 0 6px 18px rgba(228, 87, 46, .45); animation: regPulse 2.2s ease-in-out infinite;
+  transition: background .15s, color .15s, transform .15s;
+}
+.nav-register { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 10px; font-size: .9rem; white-space: nowrap; margin-inline-end: 6px; }
+.register-cta {
+  display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 24px; border-radius: 16px;
+  font-size: 1.15rem; margin-top: 6px;
+}
+.register-cta small { font-weight: 500; font-size: .78rem; opacity: .92; flex-basis: 100%; margin-inline-start: 34px; margin-top: -6px; }
+.nav-register:hover, .register-cta:hover { background: #000; color: #fff; transform: translateY(-1px); animation: none; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.nav-panel a.nav-register { justify-content: center; margin: 4px 0 8px; color: #fff; }
+@keyframes regPulse {
+  0%, 100% { box-shadow: 0 6px 18px rgba(228, 87, 46, .45), 0 0 0 0 rgba(245, 165, 36, .55); }
+  50% { box-shadow: 0 6px 18px rgba(228, 87, 46, .45), 0 0 0 10px rgba(245, 165, 36, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .nav-register, .register-cta { animation: none; } }
+.register-strip { background: linear-gradient(90deg, #E4572E, #F5A524); }

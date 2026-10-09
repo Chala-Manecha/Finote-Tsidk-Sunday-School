@@ -25,7 +25,7 @@ const SERVICES = [
 export default async function Home() {
   const today = todayIsoAddis();
   const supabase = await createClient();
-  const [{ data }, { data: photos }, { data: week }, { data: social }, { data: upcoming }] = await Promise.all([
+  const [{ data }, { data: photos }, { data: week }, { data: social }, { data: upcoming }, { data: regOpen }] = await Promise.all([
     supabase.from('site_settings').select(SITE_TEXT_COLUMNS).maybeSingle(),
     supabase.from('event_photos').select('id, caption, image_path').order('created_at', { ascending: false }).limit(20),
     supabase.from('events').select('id, title, event_date, event_time').eq('status', 'approved')
@@ -33,6 +33,7 @@ export default async function Home() {
     supabase.from('social_links').select('id, platform, url, label, sort').order('sort').order('created_at'),
     supabase.from('events').select('id, title, event_date, event_time').eq('status', 'approved')
       .gt('event_date', addDays(today, 7)).order('event_date').order('event_time').limit(1),
+    supabase.rpc('registration_is_open'),
   ]);
   const tomorrow = addDays(today, 1);
   const shortDay = (d: string) => { const e = isoToEc(d); return `${WEEKDAYS_AM[weekdayOf(d)]}፣ ${EC_MONTHS[e.month - 1]} ${e.day}`; };
@@ -178,6 +179,11 @@ export default async function Home() {
             <p className="hero-en">{SCHOOL_NAME_EN}</p>
             <span className="hero-pill">⛪ {CHURCH_NAME}</span>
             {s?.hero_text && <p className="hero-text">{s.hero_text}</p>}
+            {regOpen === true && (
+              <Link href="/register" className="register-cta">
+                <span aria-hidden>📝</span> ለመመዝገብ ይጫኑ <small>የአባልነት ምዝገባ ክፍት ነው</small>
+              </Link>
+            )}
             <div className="hero-buttons">
               <a className="glass" href={`tel:${phone.replace(/\s/g, '')}`} dir="ltr">📞 {phone}</a>
               <a className="glass solid" href="#about">ስለ እኛ</a>

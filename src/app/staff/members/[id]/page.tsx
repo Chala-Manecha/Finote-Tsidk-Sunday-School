@@ -8,6 +8,7 @@ import {
   type AttendanceStatus, type SessionType,
 } from '@/lib/constants';
 import { PrintButton } from '@/components/print-button';
+import { DocHeader, DocSigns } from '@/components/doc-sheet';
 import { yearsLabel, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
 type AttRow = {
@@ -112,7 +113,8 @@ export default async function MemberDetail({
       <div className="crumb no-print">
         <Link href="/staff">ሁሉም ክፍሎች</Link> › <Link href="/staff/hr/members">አባላት</Link> › {m.full_name}
       </div>
-      {saved && <div className="alert ok">ተቀምጧል።</div>}
+      {saved && <div className="alert ok no-print">ተቀምጧል።</div>}
+      <div className="print-only"><DocHeader title="የአባልነት ምዝገባ ማረጋገጫ" code={m.reg_no} /></div>
       <div className="btn-row" style={{ justifyContent: 'space-between' }}>
         <h1 className="title" style={{ margin: 0 }}>
           {m.title ? `${TITLES[m.title as keyof typeof TITLES]} ` : ''}{m.full_name}
@@ -143,6 +145,13 @@ export default async function MemberDetail({
         </section>
       ))}
 
+      <div className="print-only" style={{ marginTop: 30 }}>
+        <DocSigns roles={['የአባሉ ፊርማ', 'የመዘገበው (የሰው ሃብት አስተዳደር)']} />
+      </div>
+
+      {/* Attendance is for follow-up on screen only — never on the registration printout, and hidden until there is any. */}
+      {(att ?? []).length > 0 && (
+        <div className="no-print">
       <h2 className="section">ክትትል በክፍል</h2>
       <div className="table-wrap">
         <table>
@@ -182,6 +191,8 @@ export default async function MemberDetail({
               ))}
             </tbody>
           </table>
+        </div>
+      )}
         </div>
       )}
     </>

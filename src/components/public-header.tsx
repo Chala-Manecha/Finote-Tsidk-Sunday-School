@@ -38,7 +38,7 @@ export async function PublicHeader() {
     supabase.rpc('registration_is_open'),
   ]);
   const team = data as Pick<Term, 'name' | 'team_no'> | null;
-  const items: NavEntry[] = open ? [{ href: '/register', label: 'ይመዝገቡ', highlight: true }, ...NAV] : NAV;
+  const items: NavEntry[] = open ? [{ href: '/register', label: '📝 ለመመዝገብ', register: true }, ...NAV] : NAV;
   return (
     <>
       <header className="topbar site-header">
