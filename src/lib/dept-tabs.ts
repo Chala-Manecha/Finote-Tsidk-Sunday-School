@@ -31,7 +31,7 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   hr: [
     { slug: 'register', label: 'ምዝገባ (+ አባል መዝግብ)', ready: true },
-    { slug: 'applications', label: 'የሕዝብ ምዝገባ ማመልከቻዎች', ready: true },
+    { slug: 'applications', label: 'የተመዝጋቢዎች ዝርዝር', ready: true },
     { slug: 'age-groups', label: 'የዕድሜ ክፍሎች', ready: true },
     { slug: 'overview', label: 'አጠቃላይ አቴንዳንስ', ready: true },
     { slug: 'attendance', label: 'ስብሰባ ክትትል መያዝ', ready: true },

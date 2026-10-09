@@ -17,6 +17,7 @@ export function RegistrationSlip({ slip, regNo, appId }: { slip: SlipData; regNo
 
   return (
     <article className="doc-sheet slip">
+      <h1 className="slip-main-title">የአባልነት ማረጋገጫ ምስክር ወረቀት</h1>
       <header className="slip-head">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="" width={74} height={74} />
@@ -26,7 +27,7 @@ export function RegistrationSlip({ slip, regNo, appId }: { slip: SlipData; regNo
           <div className="small muted">{SCHOOL_ADDRESS}</div>
         </div>
         <div className="slip-title">
-          <h1>የአባልነት ማረጋገጫ ምስክር ወረቀት</h1>
+          <div className="small muted">የምዝገባ ቁጥር</div>
           <div className="doc-code">{regNo}</div>
           <div className="small muted">የምዝገባ ቀን፦ {formatEc(todayIsoAddis())}</div>
         </div>
@@ -39,8 +40,6 @@ export function RegistrationSlip({ slip, regNo, appId }: { slip: SlipData; regNo
           : <div className="cert-photo" />}
         <div className="slip-note">
           <b>{slip.fullName}</b>
-          <p>ይህን ቅጽ ይዘው ወደ <b>የሰው ሃብት አስተዳደር (ቢሮ ቁጥር 7)</b> ይምጡ። ምዝገባዎ ሲጸድቅ በዚህ የተጠቃሚ ስም (<b>{regNo}</b>) እና በፈጠሩት መግቢያ ኮድ መግባት ይችላሉ።</p>
-          <p className="small muted">መግቢያ ኮዱ በዚህ ቅጽ ላይ አልታተመም — ለማንም አያጋሩ።</p>
         </div>
         {qr && <div className="doc-qr" style={{ width: 96, height: 96 }} dangerouslySetInnerHTML={{ __html: qr }} />}
       </div>
@@ -57,7 +56,6 @@ export function RegistrationSlip({ slip, regNo, appId }: { slip: SlipData; regNo
       <div className="statement-signs">
         <div><div className="sign-line" />የአመልካች ፊርማ</div>
         <div><div className="sign-line" />የተቀበለው (የሰው ሃብት አስተዳደር) ስምና ፊርማ</div>
-        <div className="doc-stamp" style={{ justifySelf: 'center' }}>ማኅተም</div>
       </div>
       <p className="slip-thanks">በሰንበት ትምህርት ቤታችን ስለተመዘገቡ እናመሰግናለን። እግዚአብሔር ይጠብቅልን።</p>
     </article>

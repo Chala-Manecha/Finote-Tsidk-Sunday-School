@@ -72,7 +72,7 @@ export default async function MemberDetail({
       ['የምዝገባ መለያ ቁጥር', <b key="r">{m.reg_no}</b>],
       ['የአባልነት ምዝገባ ቀን', m.registered_on ? formatEc(m.registered_on) : formatEc(m.created_at)],
       ['የአባልነት ሁኔታ', memberTypeLabel(m.member_type, m.member_type_other)],
-      ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም (የአገልግሎት ቆይታ ${Math.max(isoToEc(todayIsoAddis()).year - m.joined_year, 0)} ዓመት)` : '—'],
+      ['አገልግሎት የጀመሩበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም (የአገልግሎት ቆይታ ${Math.max(isoToEc(todayIsoAddis()).year - m.joined_year, 0)} ዓመት)` : '—'],
       ['ክፍል (በዕድሜ)', (ageGroups ?? []).find((g) => g.code === m.age_group)?.name ?? '—'],
       ['ሁኔታ', MEMBER_STATUS[m.member_status as keyof typeof MEMBER_STATUS]],
       ...(m.is_active ? [] : [['ሁኔታ (መልቀቂያ)', <span key="l" className="pill absent">መልቀቂያ ወስደዋል</span>] as Row]),

@@ -121,7 +121,7 @@ function buildSlip(fd: FormData, education: EducationEntry[], work: WorkEntry[],
     sections: [
       { title: 'የአባልነት መረጃ', rows: [
         ['የአባልነት ሁኔታ', v('member_type') === 'other' ? v('member_type_other') : label(MEMBER_TYPE, fd.get('member_type'))],
-        ['የተቀላቀሉበት ዓመት', v('joined_year') ? `${v('joined_year')} ዓ.ም` : ''],
+        ['አገልግሎት የጀመሩበት ዓመት', v('joined_year') ? `${v('joined_year')} ዓ.ም` : ''],
       ] },
       { title: 'የግል መረጃ ዝርዝር', rows: [
         ['ማዕረግ', label(TITLES, fd.get('title'))],
@@ -234,14 +234,25 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   const confirmed = useRef(false);
   const formEl = useRef<HTMLFormElement>(null);
 
+  function precheck(fd: FormData): string | null {
+    const photo = fd.get('photo_file');
+    if (!(photo instanceof File && photo.size > 0) && !initial.photo_path) return 'የአባል ፎቶ ያስገቡ።';
+    if (isNew && !String(fd.get('dob') ?? '')) return 'የትውልድ ቀን (ቀን፣ ወር እና ዓ.ም) ይምረጡ።';
+    if (mode === 'public' && fd.get('pin') !== fd.get('pin2')) return 'ሁለቱ መግቢያ ኮዶች አይመሳሰሉም።';
+    if (fd.get('is_ethiopian') === 'on' && isNew && fd.getAll('languages').length === 0) return 'ቢያንስ አንድ ቋንቋ ይምረጡ።';
+    return null;
+  }
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (isNew && !confirmed.current) { setConfirming(true); return; }
+    const fd = new FormData(e.currentTarget);
+    // Checks the browser can't do by itself; the "are you sure?" box only opens when nothing is missing.
+    const missing = precheck(fd);
+    if (missing) { setUploadError(missing); confirmed.current = false; return; }
+    if (isNew && !confirmed.current) { setUploadError(null); setConfirming(true); return; }
     confirmed.current = false;
     setUploadError(null);
-    const fd = new FormData(e.currentTarget);
     if (mode === 'public') {
-      if (fd.get('pin') !== fd.get('pin2')) { setUploadError('ሁለቱ መግቢያ ኮዶች አይመሳሰሉም።'); return; }
       setSlip(buildSlip(fd, education, work, photoPreview));
       setPinShown(String(fd.get('pin') ?? ''));
     }
@@ -322,7 +333,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
           {photoPreview ? <img src={photoPreview} alt="" /> : <div className="photo-placeholder">ፎቶ</div>}
           <div className="field" style={{ margin: 0 }}>
             <label htmlFor="photo_file">የአባል ፎቶ {!initial.photo_path && <span className="req">*</span>}</label>
-            <input id="photo_file" name="photo_file" type="file" accept="image/*" capture="environment"
+            <input id="photo_file" name="photo_file" type="file" accept="image/*" capture="environment" required={!initial.photo_path}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) setPhotoPreview(URL.createObjectURL(f)); }} />
             <span className="hint">መንፈሳዊ ጉርድ (3×4) ፎቶ።</span>
           </div>
@@ -342,7 +353,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
               <input id="member_type_other" name="member_type_other" required defaultValue={initial.member_type_other ?? ''} /></div>
           )}
           <div className="field">
-            <label htmlFor="joined_year">ሰንበት ት/ቤቱን የተቀላቀሉበት ዓመት (ዓ.ም)</label>
+            <label htmlFor="joined_year">አገልግሎት የጀመሩበት ዓመት (ዓ.ም)</label>
             <input id="joined_year" name="joined_year" type="number" min={1980} max={thisYear} step={1} value={joined} onChange={(e) => setJoined(e.target.value)} placeholder="ለምሳሌ 2010" />
           </div>
           <div className="field">

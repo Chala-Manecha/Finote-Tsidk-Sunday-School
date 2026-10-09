@@ -63,7 +63,7 @@ export default async function TranscriptPage({ params }: { params: Promise<{ id:
             ['ክፍል', `${classLabel(enr.class_level)} · ${STUDY_MODE[(enr.study_mode ?? 'regular') as keyof typeof STUDY_MODE]}`],
             ['የትምህርት ዘመን', `${s.academic_years.ec_year} ዓ.ም`],
             ['ወሰነ ትምህርት', semesterLabel(s.no)],
-            ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
+            ['አገልግሎት የጀመሩበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
             ['የተሰጠበት', formatEc(t.issued_at)],
           ]} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -170,7 +170,7 @@ async function YearTranscript({ t, canPrint }: { t: T; canPrint: boolean }) {
             ['ፆታ', SEX[m.sex as keyof typeof SEX]],
             ['ክፍል', `${classLabel(enr.class_level)} · ${STUDY_MODE[(enr.study_mode ?? 'regular') as keyof typeof STUDY_MODE]}`],
             ['የትምህርት ዘመን', `${yr.ec_year} ዓ.ም`],
-            ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
+            ['አገልግሎት የጀመሩበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
             ['የተሰጠበት', formatEc(t.issued_at)],
             ['ውሳኔ', <b key="d">{y?.decision ? DECISION[y.decision] : '—'}</b>],
           ]} />

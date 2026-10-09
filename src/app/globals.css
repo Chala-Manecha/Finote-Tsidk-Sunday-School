@@ -629,7 +629,6 @@ output.readonly { display: block; padding: 8px 10px; border: 1px dashed var(--fi
   .slip { font-size: 11px; }
   .slip .doc-rows { grid-template-columns: 1fr 1fr; }
   .slip-sec { break-inside: avoid; }
-  @page { size: A4; margin: 12mm; }
 }
 .slip-note > b { font-size: 1.25em; display: block; }
 
@@ -732,5 +731,12 @@ output.readonly { display: block; padding: 8px 10px; border: 1px dashed var(--fi
   .slip .doc-stamp { width: 74px; height: 74px; }
   .slip-thanks { margin-top: 8px; padding-top: 6px; }
   .slip, .slip * { break-inside: avoid; }
-  @page { size: A4; margin: 10mm; }
+}
+.slip-main-title { text-align: center; margin: 0 0 12px; font-size: 1.45rem; letter-spacing: .3px; }
+.slip .statement-signs { grid-template-columns: 1fr 1fr; }
+@media print {
+  /* margin 0 removes the browser's own header/footer (page URL, date, title); the sheet pads itself instead */
+  @page slip { size: A4; margin: 0; }
+  .slip { page: slip; padding: 12mm 13mm !important; max-width: none; }
+  .slip-main-title { font-size: 1.7em; margin-bottom: 8px; }
 }

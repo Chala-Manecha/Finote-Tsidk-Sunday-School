@@ -25,7 +25,7 @@ export default async function Applications({ params, searchParams }: {
 
   return (
     <>
-      <h2 className="section" style={{ marginTop: 0 }}>የሕዝብ ምዝገባ</h2>
+      <h2 className="section" style={{ marginTop: 0 }}>የተመዝጋቢዎች ዝርዝር</h2>
       <MediaForm action={setRegistration} submitLabel="አስቀምጥ" resetOnSuccess={false}>
         <p style={{ marginTop: 0 }}>
           ሁኔታ፦ {open ? <span className="pill present">ክፍት ነው — በድረ-ገጹ ላይ “ይመዝገቡ” ይታያል</span> : <span className="pill">ዝግ ነው</span>}

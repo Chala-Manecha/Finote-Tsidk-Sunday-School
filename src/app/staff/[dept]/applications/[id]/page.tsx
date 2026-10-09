@@ -20,7 +20,7 @@ export default async function ReviewApplication({ params }: { params: Promise<{ 
 
   return (
     <>
-      <div className="crumb"><Link href="/staff/hr/applications">ማመልከቻዎች</Link> › {d.full_name}</div>
+      <div className="crumb"><Link href="/staff/hr/applications">የተመዝጋቢዎች ዝርዝር</Link> › {d.full_name}</div>
       <p className="muted small">ምዝገባ ቁ. <b dir="ltr">{a.reg_no ?? '—'}</b> · የቀረበው {formatEc(a.created_at)}። ሲጸድቅ አባሉ ይህንኑ ቁጥር ይይዛል፤ በምዝገባ ወቅት በፈጠረው ኮድም መግባት ይችላል። መረጃውን ያረጋግጡ፣ አስፈላጊ ከሆነ ያስተካክሉ እና “አጽድቅና አባል መዝግብ” ይጫኑ።</p>
       {a.status !== 'pending' ? <div className="alert error">ይህ ማመልከቻ ቀደም ብሎ ተወስኗል።</div> : (
         <>

@@ -60,7 +60,7 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
   const joinedRaw = str(fd, 'joined_year');
   const joinedYear = joinedRaw ? Number(joinedRaw) : null;
   if (joinedYear !== null && (!Number.isInteger(joinedYear) || joinedYear < 1980 || joinedYear > 2100)) {
-    return { error: 'የተቀላቀሉበት ዓመት ትክክል አይደለም።' };
+    return { error: 'አገልግሎት የጀመሩበት ዓመት ትክክል አይደለም።' };
   }
   const education = cleanEducation(str(fd, 'education_json'));
   const work = workStatus === 'worker' ? cleanWork(str(fd, 'work_json')) : [];
