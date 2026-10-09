@@ -632,3 +632,52 @@ output.readonly { display: block; padding: 8px 10px; border: 1px dashed var(--fi
   @page { size: A4; margin: 12mm; }
 }
 .slip-note > b { font-size: 1.25em; display: block; }
+
+/* ---------- Home top: compact banner + this week's programs, then photos ---------- */
+.hero { min-height: 0; padding: 40px 22px 44px; text-align: start; display: block; }
+.hero-grid { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; display: grid; grid-template-columns: 1.25fr 1fr; gap: 32px; align-items: center; }
+.hero-inner { align-items: flex-start; max-width: none; gap: 10px; }
+.hero h1 { font-size: clamp(1.8rem, 4.2vw, 3rem); margin: 2px 0 0; }
+.hero-text { margin: 2px 0 0; font-size: .92rem; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.hero-buttons { justify-content: flex-start; margin-top: 8px; }
+.glass { padding: 11px 18px; }
+.hero:not(.has-photo)::after { background-position: left -140px bottom -160px; }
+
+.week-panel {
+  background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .25); border-radius: 20px;
+  padding: 18px 18px 14px; color: #fff; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .22);
+}
+.week-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.week-head h2 { margin: 0; font-size: 1.15rem; font-family: 'Noto Sans Ethiopic', sans-serif; }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: #7ee2a8; box-shadow: 0 0 0 0 rgba(126, 226, 168, .7); animation: pulse 1.8s infinite; flex-shrink: 0; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(126, 226, 168, .7); } 70% { box-shadow: 0 0 0 10px rgba(126, 226, 168, 0); } 100% { box-shadow: 0 0 0 0 rgba(126, 226, 168, 0); } }
+.week-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.week-list li { display: grid; grid-template-columns: 112px 1fr; gap: 10px; align-items: center; padding: 9px 12px; border-radius: 12px; background: rgba(255, 255, 255, .08); }
+.week-list li.next { background: #fff; color: var(--ink); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+.week-list li.next b { font-size: 1.05rem; }
+.week-list .next-label { grid-column: 2; color: var(--gold); font-weight: 700; margin-top: -4px; }
+.week-when { display: flex; flex-direction: column; font-size: .8rem; line-height: 1.35; opacity: .95; }
+.week-when [dir="ltr"] { font-weight: 700; font-size: .95rem; }
+.day-tag { align-self: flex-start; background: #E4572E; color: #fff; font-weight: 700; font-size: .75rem; padding: 1px 9px; border-radius: 999px; }
+.week-empty p { margin: 4px 0; opacity: .92; }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+
+.photo-band { max-width: 1160px; margin: 0 auto; padding: 26px 22px 0; }
+.photo-band-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.photo-band-head h2 { margin: 0; font-size: 1.35rem; font-family: 'Noto Sans Ethiopic', sans-serif; }
+.photo-band-head .link { margin-inline-start: auto; }
+.photo-band .marquee a { width: 280px; height: 190px; }
+
+@media (max-width: 860px) {
+  .hero { padding: 26px 16px 28px; min-height: 0; }
+  .hero-grid { grid-template-columns: 1fr; gap: 18px; }
+  .hero-text { -webkit-line-clamp: 2; }
+  .week-list li { grid-template-columns: 92px 1fr; }
+  .photo-band { padding: 20px 16px 0; }
+  .photo-band .marquee a { width: 220px; height: 150px; }
+}
+@media (max-width: 640px) {
+  .hero-en, .hero-pill, .hero-text { display: none; }
+  .hero-buttons .glass { padding: 9px 14px; font-size: .9rem; }
+}

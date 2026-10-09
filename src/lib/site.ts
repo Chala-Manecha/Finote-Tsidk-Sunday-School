@@ -1,8 +1,7 @@
 // Home page layout controlled by የውስጥ ግንኙነት.
-// The hero (big picture at the top) is always first; these follow it in the saved order.
+// The top of the page is fixed: the banner with the week's programs, then the photo strip.
+// These sections follow in the saved order.
 export const HOME_SECTIONS = {
-  events: 'የሳምንቱ መርሓ ግብራት',
-  photos: 'ተንቀሳቃሽ ምስሎች (ዝግጅት ፎቶዎች)',
   mission: 'ተልዕኮ፣ ራዕይ እና እሴቶች',
   about: 'ስለ እኛ (የምሥረታ ታሪክ)',
   departments: 'ክፍሎቻችን',

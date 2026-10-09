@@ -5,7 +5,7 @@ import { SocialButtons } from '@/components/social-buttons';
 import { ScrollReveal } from '@/components/scroll-reveal';
 import { anniversaryYear } from '@/components/brand';
 import { createClient } from '@/lib/supabase/server';
-import { formatEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
+import { EC_MONTHS, WEEKDAYS_AM, formatEc, isoToEc, todayIsoAddis, weekdayOf } from '@/lib/ethiopian-calendar';
 import { mediaUrl } from '@/lib/media';
 import { SITE_DEFAULTS, SITE_TEXT_COLUMNS, normaliseSections, type SiteSettings, type SocialLink } from '@/lib/site';
 
@@ -25,13 +25,20 @@ const SERVICES = [
 export default async function Home() {
   const today = todayIsoAddis();
   const supabase = await createClient();
-  const [{ data }, { data: photos }, { data: week }, { data: social }] = await Promise.all([
+  const [{ data }, { data: photos }, { data: week }, { data: social }, { data: upcoming }] = await Promise.all([
     supabase.from('site_settings').select(SITE_TEXT_COLUMNS).maybeSingle(),
     supabase.from('event_photos').select('id, caption, image_path').order('created_at', { ascending: false }).limit(20),
     supabase.from('events').select('id, title, event_date, event_time').eq('status', 'approved')
       .gte('event_date', today).lte('event_date', addDays(today, 7)).order('event_date').order('event_time'),
     supabase.from('social_links').select('id, platform, url, label, sort').order('sort').order('created_at'),
+    supabase.from('events').select('id, title, event_date, event_time').eq('status', 'approved')
+      .gt('event_date', addDays(today, 7)).order('event_date').order('event_time').limit(1),
   ]);
+  const tomorrow = addDays(today, 1);
+  const shortDay = (d: string) => { const e = isoToEc(d); return `${WEEKDAYS_AM[weekdayOf(d)]}፣ ${EC_MONTHS[e.month - 1]} ${e.day}`; };
+  const dayTag = (d: string) => (d === today ? 'ዛሬ' : d === tomorrow ? 'ነገ' : null);
+  const weekList = week ?? [];
+  const later = (upcoming ?? [])[0];
   const s = data as SiteSettings | null;
   const sections = normaliseSections(s?.sections).filter((x) => x.visible);
   const links = (social ?? []) as SocialLink[];
@@ -53,38 +60,6 @@ export default async function Home() {
   );
 
   const blocks: Record<string, React.ReactNode> = {
-    events: (
-      <>
-        {head('ዝግጅቶች', 'የሳምንቱ መርሓ ግብራት', 'በሚቀጥሉት 7 ቀናት የተያዙ መርሓ ግብራት')}
-        {week && week.length > 0 ? (
-          <div className="event-cards">
-            {week.map((e) => (
-              <div key={e.id} className="event-card">
-                <span className="pill-date">{formatEc(e.event_date, { weekday: true })}</span>
-                <b>{e.title}</b>
-                <span className="muted small" dir="ltr">🕒 {e.event_time.slice(0, 5)}</span>
-              </div>
-            ))}
-          </div>
-        ) : <p className="muted center">በሚቀጥሉት 7 ቀናት የተያዘ መርሓ ግብር የለም።</p>}
-      </>
-    ),
-    photos: photos && photos.length > 0 ? (
-      <>
-        {head('ምስሎች', 'የክፍል ዝግጅቶች')}
-        <div className="marquee">
-          <div className="track" style={{ animationDuration: `${s?.marquee_seconds ?? 40}s` }}>
-            {[...photos, ...photos].map((p, i) => (
-              <Link key={`${p.id}-${i}`} href="/history" aria-hidden={i >= photos.length} tabIndex={i >= photos.length ? -1 : undefined}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={mediaUrl(supabase, p.image_path)!} alt={p.caption ?? ''} loading="lazy" />
-                {p.caption && <span>{p.caption}</span>}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </>
-    ) : null,
     mission: (s?.mission || s?.vision || values.length > 0) ? (
       <>
         {head('ማንነታችን', 'ተልዕኮ፣ ራዕይ እና እሴቶች')}
@@ -196,23 +171,68 @@ export default async function Home() {
         <div className="announce-bar" role="status">📢 {s.announcement}</div>
       )}
       <section className={`hero ${hero ? 'has-photo' : ''}`} style={hero ? { backgroundImage: `url("${hero}")` } : undefined}>
-        <div className="hero-inner">
-          <span className="hero-chip">ሰንበት ትምህርት ቤት <i aria-hidden>•</i> {years}ኛ ምሥረታ</span>
-          {!hero && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img className="hero-logo" src="/logo.png" alt="" width={150} height={150} />
-          )}
-          <h1>{SCHOOL_NAME}</h1>
-          <p className="hero-en">{SCHOOL_NAME_EN}</p>
-          <span className="hero-pill">⛪ {CHURCH_NAME}</span>
-          {s?.hero_text && <p className="hero-text">{s.hero_text}</p>}
-          <div className="hero-buttons">
-            <a className="glass" href={`tel:${phone.replace(/\s/g, '')}`} dir="ltr">📞 {phone}</a>
-            <a className="glass solid" href="#about">ስለ እኛ</a>
-            <a className="glass" href="#departments">አገልግሎቶች</a>
+        <div className="hero-grid">
+          <div className="hero-inner">
+            <span className="hero-chip">ሰንበት ትምህርት ቤት <i aria-hidden>•</i> {years}ኛ ምሥረታ</span>
+            <h1>{SCHOOL_NAME}</h1>
+            <p className="hero-en">{SCHOOL_NAME_EN}</p>
+            <span className="hero-pill">⛪ {CHURCH_NAME}</span>
+            {s?.hero_text && <p className="hero-text">{s.hero_text}</p>}
+            <div className="hero-buttons">
+              <a className="glass" href={`tel:${phone.replace(/\s/g, '')}`} dir="ltr">📞 {phone}</a>
+              <a className="glass solid" href="#about">ስለ እኛ</a>
+              <a className="glass" href="#departments">አገልግሎቶች</a>
+            </div>
           </div>
+
+          <aside className="week-panel" aria-labelledby="week-title">
+            <div className="week-head">
+              <span className="live-dot" aria-hidden />
+              <h2 id="week-title">የሳምንቱ መርሓ ግብራት</h2>
+            </div>
+            {weekList.length > 0 ? (
+              <ol className="week-list">
+                {weekList.slice(0, 6).map((e, i) => {
+                  const tag = dayTag(e.event_date);
+                  return (
+                    <li key={e.id} className={i === 0 ? 'next' : ''}>
+                      <div className="week-when">
+                        {tag ? <span className="day-tag">{tag}</span> : <span className="small">{shortDay(e.event_date)}</span>}
+                        <span dir="ltr">{e.event_time.slice(0, 5)}</span>
+                      </div>
+                      <b>{e.title}</b>
+                      {i === 0 && !tag && <span className="small next-label">ቀጣይ</span>}
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <div className="week-empty">
+                <p>በዚህ ሳምንት የተያዘ መርሓ ግብር የለም።</p>
+                {later && <p className="small">ቀጣይ፦ <b>{later.title}</b> · {formatEc(later.event_date, { weekday: true })}</p>}
+              </div>
+            )}
+            {weekList.length > 6 && <p className="small" style={{ margin: '8px 0 0', opacity: .8 }}>+{weekList.length - 6} ሌሎች</p>}
+          </aside>
         </div>
       </section>
+
+      {photos && photos.length > 0 && (
+        <section className="photo-band" aria-label="የክፍል ዝግጅቶች">
+          <div className="photo-band-head"><span className="eyebrow">ምስሎች</span><h2>የክፍል ዝግጅቶች</h2><Link href="/history" className="link small">ሁሉንም ይመልከቱ →</Link></div>
+          <div className="marquee">
+            <div className="track" style={{ animationDuration: `${s?.marquee_seconds ?? 40}s` }}>
+              {[...photos, ...photos].map((p, i) => (
+                <Link key={`${p.id}-${i}`} href="/history" aria-hidden={i >= photos.length} tabIndex={i >= photos.length ? -1 : undefined}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={mediaUrl(supabase, p.image_path)!} alt={p.caption ?? ''} loading="lazy" />
+                  {p.caption && <span>{p.caption}</span>}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
       <main className="home">
         {sections.map((x) => blocks[x.key] ? <section key={x.key} className={`home-sec reveal sec-${x.key}`}>{blocks[x.key]}</section> : null)}
       </main>
