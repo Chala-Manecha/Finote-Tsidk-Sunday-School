@@ -45,7 +45,7 @@ export default async function Applications({ params, searchParams }: {
       </div>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>ምዝገባ ቁ.</th><th>ሙሉ ስም</th><th>ስልክ</th><th>የቀረበበት</th><th>{show === 'pending' ? '' : 'ውሳኔ'}</th></tr></thead>
+          <thead><tr><th>ምዝገባ ቁ.</th><th>ሙሉ ስም</th><th>ስልክ</th><th>የምዝገባ ቀን</th><th>{show === 'pending' ? '' : 'ውሳኔ'}</th></tr></thead>
           <tbody>
             {(rows ?? []).map((r) => (
               <tr key={r.id}>

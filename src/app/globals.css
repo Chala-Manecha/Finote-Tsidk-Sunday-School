@@ -704,3 +704,33 @@ output.readonly { display: block; padding: 8px 10px; border: 1px dashed var(--fi
 }
 @media (prefers-reduced-motion: reduce) { .nav-register, .register-cta { animation: none; } }
 .register-strip { background: linear-gradient(90deg, #E4572E, #F5A524); }
+
+/* ---------- Confirm dialog ---------- */
+.modal-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(10, 20, 30, .55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.modal { background: #fff; border-radius: 18px; padding: 24px 22px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); }
+.modal h3 { margin: 6px 0 8px; font-size: 1.15rem; }
+
+/* ---------- Membership certificate (slip): one A4 page ---------- */
+.slip-thanks { text-align: center; font-weight: 600; margin: 16px 0 0; padding-top: 10px; border-top: 1px solid var(--line); }
+@media print {
+  body { padding-bottom: 0 !important; }
+  .page { padding: 0 !important; max-width: none; }
+  .slip { font-size: 10.5px; line-height: 1.4; padding: 0; border: none; }
+  .slip .doc-org { font-size: 1.15em; }
+  .slip-head { padding-bottom: 6px; margin-bottom: 8px; }
+  .slip-head img { width: 56px; height: 56px; }
+  .slip-title h1 { font-size: 1.35em; }
+  .slip-top { grid-template-columns: 90px 1fr 80px; gap: 10px; margin-bottom: 4px; }
+  .slip-top .cert-photo { width: 90px; height: 112px; }
+  .slip-top .doc-qr { width: 80px !important; height: 80px !important; }
+  .slip-note p { margin: 3px 0; font-size: 1em; }
+  .slip-sec h3 { margin: 6px 0 3px; font-size: 1.05em; }
+  .slip .doc-rows > div { grid-template-columns: 105px 1fr; }
+  .slip .doc-rows dt, .slip .doc-rows dd { padding: 3px 6px; font-size: 1em; }
+  .slip .statement-signs { margin-top: 14px; gap: 18px; }
+  .slip .sign-line { height: 22px; }
+  .slip .doc-stamp { width: 74px; height: 74px; }
+  .slip-thanks { margin-top: 8px; padding-top: 6px; }
+  .slip, .slip * { break-inside: avoid; }
+  @page { size: A4; margin: 10mm; }
+}

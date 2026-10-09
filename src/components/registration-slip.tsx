@@ -26,9 +26,9 @@ export function RegistrationSlip({ slip, regNo, appId }: { slip: SlipData; regNo
           <div className="small muted">{SCHOOL_ADDRESS}</div>
         </div>
         <div className="slip-title">
-          <h1>የአባልነት ምዝገባ ቅጽ</h1>
+          <h1>የአባልነት ማረጋገጫ ምስክር ወረቀት</h1>
           <div className="doc-code">{regNo}</div>
-          <div className="small muted">የቀረበበት፦ {formatEc(todayIsoAddis())}</div>
+          <div className="small muted">የምዝገባ ቀን፦ {formatEc(todayIsoAddis())}</div>
         </div>
       </header>
 
@@ -59,6 +59,7 @@ export function RegistrationSlip({ slip, regNo, appId }: { slip: SlipData; regNo
         <div><div className="sign-line" />የተቀበለው (የሰው ሃብት አስተዳደር) ስምና ፊርማ</div>
         <div className="doc-stamp" style={{ justifySelf: 'center' }}>ማኅተም</div>
       </div>
+      <p className="slip-thanks">በሰንበት ትምህርት ቤታችን ስለተመዘገቡ እናመሰግናለን። እግዚአብሔር ይጠብቅልን።</p>
     </article>
   );
 }

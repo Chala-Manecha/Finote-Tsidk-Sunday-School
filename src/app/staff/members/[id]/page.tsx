@@ -72,13 +72,13 @@ export default async function MemberDetail({
       ['የምዝገባ መለያ ቁጥር', <b key="r">{m.reg_no}</b>],
       ['የአባልነት ምዝገባ ቀን', m.registered_on ? formatEc(m.registered_on) : formatEc(m.created_at)],
       ['የአባልነት ሁኔታ', memberTypeLabel(m.member_type, m.member_type_other)],
-      ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም (የሰንበት እድሜ ${Math.max(isoToEc(todayIsoAddis()).year - m.joined_year, 0)} ዓመት)` : '—'],
+      ['የተቀላቀሉበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም (የአገልግሎት ቆይታ ${Math.max(isoToEc(todayIsoAddis()).year - m.joined_year, 0)} ዓመት)` : '—'],
       ['ክፍል (በዕድሜ)', (ageGroups ?? []).find((g) => g.code === m.age_group)?.name ?? '—'],
       ['ሁኔታ', MEMBER_STATUS[m.member_status as keyof typeof MEMBER_STATUS]],
       ...(m.is_active ? [] : [['ሁኔታ (መልቀቂያ)', <span key="l" className="pill absent">መልቀቂያ ወስደዋል</span>] as Row]),
       ['የመረጡት ክፍል', m.member_departments.map((d: { dept: string }) => DEPT_NAME[d.dept]).join('፣ ') || '—'],
     ]],
-    ['ግላዊ መረጃ', [
+    ['የግል መረጃ ዝርዝር', [
       ['ማዕረግ', m.title ? TITLES[m.title as keyof typeof TITLES] : '—'],
       ['ስም · የአባት · የአያት', [m.first_name, m.father_name, m.grandfather_name].filter(Boolean).join(' · ') || m.full_name],
       ['የእናት ስም', dash(m.mother_name)],
@@ -123,7 +123,7 @@ export default async function MemberDetail({
         <Link href="/staff">ሁሉም ክፍሎች</Link> › <Link href="/staff/hr/members">አባላት</Link> › {m.full_name}
       </div>
       {saved && <div className="alert ok no-print">ተቀምጧል።</div>}
-      <div className="print-only"><DocHeader title="የአባልነት ምዝገባ ማረጋገጫ" code={m.reg_no} /></div>
+      <div className="print-only"><DocHeader title="የአባልነት ማረጋገጫ ምስክር ወረቀት" code={m.reg_no} /></div>
       <div className="btn-row" style={{ justifyContent: 'space-between' }}>
         <h1 className="title" style={{ margin: 0 }}>
           {m.title ? `${TITLES[m.title as keyof typeof TITLES]} ` : ''}{m.full_name}

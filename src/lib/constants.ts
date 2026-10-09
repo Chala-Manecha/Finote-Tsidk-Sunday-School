@@ -207,4 +207,4 @@ export const LEADER_ROLES: LeaderRole[] = ['head', 'deputy', 'secretary'];
 export const CHURCH_NAME = 'አቃቂ ፋንታ ደብረ ፅጌ ቅዱስ ሩፋኤል እና ቅድስት አርሴማ ቤተክርስቲያን';
 export const CHURCH_NAME_EN = 'Akaki Kality St.Rufael & St.Arsema Church';
 export const SCHOOL_NAME_EN = 'Finote Tsidk Sunday School';
-export const SCHOOL_ADDRESS = 'አቃቂ ቃሊቲ፣ ወረዳ-1፣ አዲስ አበባ';
+export const SCHOOL_ADDRESS = 'አቃቂ ቃሊቲ፣ ወረዳ-13፣ አዲስ አበባ';

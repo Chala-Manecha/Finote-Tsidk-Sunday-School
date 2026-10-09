@@ -31,7 +31,7 @@ export type SiteSettings = {
 export const SITE_DEFAULTS = {
   contact_phone: '+251981954946',
   contact_email: 'finotetsidiki13@gmail.com',
-  contact_address: '1 • አቃቂ ቃሊቲ • አዲስ አበባ',
+  contact_address: 'ወረዳ 13 • አቃቂ ቃሊቲ • አዲስ አበባ',
   map_lat: 8.8789,
   map_lng: 38.80538,
 } as const;

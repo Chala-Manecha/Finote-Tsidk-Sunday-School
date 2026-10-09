@@ -15,10 +15,10 @@ export default async function Register() {
     <>
       <PublicHeader />
       <main className="page">
-        <h1 className="title">የአባልነት ምዝገባ</h1>
+        <h1 className="title no-print">የአባልነት ምዝገባ</h1>
         {open ? (
           <>
-            <p className="muted">ወደ {SCHOOL_NAME} አባልነት ለመመዝገብ ቅጹን ይሙሉ። የሰው ሃብት አስተዳደር መረጃዎን አረጋግጦ ሲያጸድቀው የምዝገባ መለያ ቁጥርዎን ያገኛሉ። <span className="req">*</span> ያለባቸው መሞላት አለባቸው።</p>
+            <p className="muted no-print">ወደ {SCHOOL_NAME} አባልነት ለመመዝገብ ቅጹን ይሙሉ። የሰው ሃብት አስተዳደር መረጃዎን አረጋግጦ ሲያጸድቀው የምዝገባ መለያ ቁጥርዎን ያገኛሉ። <span className="req">*</span> ያለባቸው መሞላት አለባቸው።</p>
             <MemberForm mode="public" />
           </>
         ) : (

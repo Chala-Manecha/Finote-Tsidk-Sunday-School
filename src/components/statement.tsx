@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SCHOOL_NAME } from '@/lib/constants';
+import { CHURCH_NAME, SCHOOL_ADDRESS, SCHOOL_NAME } from '@/lib/constants';
 import { formatEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import { PERIODS, type Period } from '@/lib/periods';
 import { PrintButton } from './print-button';
@@ -10,7 +10,7 @@ export function StatementHeader({ title, subtitle }: { title: string; subtitle: 
     <header className="statement-head">
       <div>
         <div className="statement-org serif">{SCHOOL_NAME}</div>
-        <div className="small muted">አቃቂ ቃሊቲ፣ ወረዳ-1፣ ደብረ ጽጌ ቅዱስ ሩፋኤል ቤተክርስቲያን</div>
+        <div className="small muted">{SCHOOL_ADDRESS} · {CHURCH_NAME}</div>
       </div>
       <div className="statement-title">
         <h2 className="serif">{title}</h2>

@@ -1,5 +1,5 @@
 'use client';
-import { useActionState, useState, startTransition } from 'react';
+import { useActionState, useState, startTransition, useRef } from 'react';
 import { saveMember, type MemberFormState } from '@/app/staff/members/actions';
 import { submitApplication, applicationUploadUrl } from '@/lib/actions/applications';
 import { createClient } from '@/lib/supabase/client';
@@ -65,7 +65,7 @@ export type FormMode = 'staff' | 'public' | 'approve';
 
 const SECTIONS = [
   ['sec-membership', 'የአባልነት መረጃ'],
-  ['sec-personal', 'ግላዊ መረጃ'],
+  ['sec-personal', 'የግል መረጃ ዝርዝር'],
   ['sec-address', 'አድራሻ'],
   ['sec-contacts', 'ንሰሐ አባት እና ተጠሪ'],
   ['sec-education', 'ትምህርት'],
@@ -123,7 +123,7 @@ function buildSlip(fd: FormData, education: EducationEntry[], work: WorkEntry[],
         ['የአባልነት ሁኔታ', v('member_type') === 'other' ? v('member_type_other') : label(MEMBER_TYPE, fd.get('member_type'))],
         ['የተቀላቀሉበት ዓመት', v('joined_year') ? `${v('joined_year')} ዓ.ም` : ''],
       ] },
-      { title: 'ግላዊ መረጃ', rows: [
+      { title: 'የግል መረጃ ዝርዝር', rows: [
         ['ማዕረግ', label(TITLES, fd.get('title'))],
         ['ሙሉ ስም', fullName],
         ['የእናት ስም', v('mother_name')],
@@ -229,8 +229,15 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   const patchEdu = (i: number, p: Partial<EducationEntry>) => setEducation(education.map((e, j) => (j === i ? { ...e, ...p } : e)));
   const patchWork = (i: number, p: Partial<WorkEntry>) => setWork(work.map((e, j) => (j === i ? { ...e, ...p } : e)));
 
+  // "Are you sure?" before a new registration is sent.
+  const [confirming, setConfirming] = useState(false);
+  const confirmed = useRef(false);
+  const formEl = useRef<HTMLFormElement>(null);
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (isNew && !confirmed.current) { setConfirming(true); return; }
+    confirmed.current = false;
     setUploadError(null);
     const fd = new FormData(e.currentTarget);
     if (mode === 'public') {
@@ -302,7 +309,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   const req = isNew ? <span className="req">*</span> : null;
 
   return (
-    <form onSubmit={onSubmit} className="member-form">
+    <form ref={formEl} onSubmit={onSubmit} className="member-form">
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
       {applicationId && <input type="hidden" name="application_id" value={applicationId} />}
       <nav className="form-steps" aria-label="የቅጹ ክፍሎች">
@@ -317,7 +324,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
             <label htmlFor="photo_file">የአባል ፎቶ {!initial.photo_path && <span className="req">*</span>}</label>
             <input id="photo_file" name="photo_file" type="file" accept="image/*" capture="environment"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) setPhotoPreview(URL.createObjectURL(f)); }} />
-            <span className="hint">ሙሉ ቁመት የሚያሳይ ፎቶ ቢሆን ይመረጣል።</span>
+            <span className="hint">መንፈሳዊ ጉርድ (3×4) ፎቶ።</span>
           </div>
         </div>
         <div className="form-grid">
@@ -339,14 +346,14 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
             <input id="joined_year" name="joined_year" type="number" min={1980} max={thisYear} step={1} value={joined} onChange={(e) => setJoined(e.target.value)} placeholder="ለምሳሌ 2010" />
           </div>
           <div className="field">
-            <span className="label">የሰንበት እድሜ</span>
+            <span className="label">የአገልግሎት ቆይታ</span>
             <output className="readonly">{sundayAge === null ? '—' : sundayAge === 0 ? 'ከዚህ ዓመት ጀምሮ' : `${sundayAge} ዓመት`}</output>
           </div>
         </div>
         {isNew && mode !== 'public' && <p className="hint muted small" style={{ margin: 0 }}>የምዝገባ ቀኑ “አባል መዝግብ” ሲጫን በራሱ ይመዘገባል።</p>}
       </Section>
 
-      <Section n={2} id="sec-personal" title="ግላዊ መረጃ">
+      <Section n={2} id="sec-personal" title="የግል መረጃ ዝርዝር">
         <div className="form-grid">
           <div className="field">
             <label htmlFor="title">ማዕረግ</label>
@@ -451,13 +458,13 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
         </div>
         <div className="sub-head">የአደጋ ጊዜ ተጠሪ</div>
         <div className="form-grid">
-          <div className="field"><label htmlFor="emergency_name">ሙሉ ስም</label><input id="emergency_name" name="emergency_name" defaultValue={initial.emergency_name ?? ''} /></div>
+          <div className="field"><label htmlFor="emergency_name">ሙሉ ስም {req}</label><input id="emergency_name" name="emergency_name" required={isNew} defaultValue={initial.emergency_name ?? ''} /></div>
           <div className="field">
-            <label htmlFor="emergency_relation">ዝምድና</label>
-            <input id="emergency_relation" name="emergency_relation" list="relations" defaultValue={initial.emergency_relation ?? ''} placeholder="ለምሳሌ እናት" />
+            <label htmlFor="emergency_relation">ዝምድና {req}</label>
+            <input id="emergency_relation" name="emergency_relation" list="relations" required={isNew} defaultValue={initial.emergency_relation ?? ''} placeholder="ለምሳሌ እናት" />
             <datalist id="relations">{EMERGENCY_RELATIONS.map((r) => <option key={r} value={r} />)}</datalist>
           </div>
-          <div className="field"><label htmlFor="emergency_phone">ስልክ</label><input id="emergency_phone" name="emergency_phone" type="tel" dir="ltr" defaultValue={initial.emergency_phone ?? ''} /></div>
+          <div className="field"><label htmlFor="emergency_phone">ስልክ {req}</label><input id="emergency_phone" name="emergency_phone" type="tel" dir="ltr" required={isNew} defaultValue={initial.emergency_phone ?? ''} /></div>
         </div>
       </Section>
 
@@ -564,6 +571,22 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
             : mode === 'public' ? 'አስቀምጥ (ተመዝገብ)' : mode === 'approve' ? 'አጽድቅና አባል መዝግብ' : initial.id ? 'ለውጥ አስቀምጥ' : 'አባል መዝግብ'}
         </button>
       </div>
+
+      {confirming && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+          <div className="modal">
+            <div style={{ fontSize: '2rem' }} aria-hidden>❓</div>
+            <h3 id="confirm-title">ያስገቡት መረጃ ትክክለኛ መሆኑን እርግጠኛ ኖት?</h3>
+            <p className="muted small">ከመላክዎ በፊት ስምዎን፣ ስልክዎን እና ፎቶዎን እንደገና ይመልከቱ።</p>
+            <div className="btn-row" style={{ justifyContent: 'center' }}>
+              <button type="button" className="btn secondary" autoFocus onClick={() => setConfirming(false)}>ለመመለስ</button>
+              <button type="button" className="btn" onClick={() => { setConfirming(false); confirmed.current = true; formEl.current?.requestSubmit(); }}>
+                እርግጠኛ ነኝ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

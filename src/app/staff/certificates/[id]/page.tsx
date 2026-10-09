@@ -52,7 +52,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
     ['የክርስትና ስም', m.christian_name || '—'],
     ['የአባልነት ሁኔታ', memberTypeLabel(m.member_type, m.member_type_other)],
     ['ክፍል', ageGroup ?? '—'],
-    ['የሰንበት እድሜ', `${sundayYears} ዓመት`],
+    ['የአገልግሎት ቆይታ', `${sundayYears} ዓመት`],
     ['የትምህርት ክፍል', lastEnr ? `${lastEnr.class_level ? classLabel(lastEnr.class_level) : '—'} · ${STUDY_MODE[lastEnr.study_mode]}${lastEnr.academic_years ? ` (${lastEnr.academic_years.ec_year} ዓ.ም)` : ''}` : '—'],
   ];
   const mark = d.reinstated_at ? 'ተመልሰው ገብተዋል' : d.print_count > 0 ? 'ቅጂ (COPY)' : null;

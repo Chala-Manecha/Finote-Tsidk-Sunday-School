@@ -32,6 +32,9 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
     if (!motherName) return { error: 'የእናት ስም ያስገቡ።' };
     if (!christianName) return { error: 'የክርስትና ስም ያስገቡ።' };
     if (!telegram) return { error: 'Telegram username ያስገቡ።' };
+    if (!str(fd, 'emergency_name') || !str(fd, 'emergency_relation') || !str(fd, 'emergency_phone')) {
+      return { error: 'የአደጋ ጊዜ ተጠሪ ሙሉ ስም፣ ዝምድና እና ስልክ ያስገቡ።' };
+    }
     if (!maritalStatus) return { error: 'የትዳር ሁኔታ ይምረጡ።' };
     if (!dob) return { error: 'የትውልድ ቀን ያስገቡ።' };
   }
