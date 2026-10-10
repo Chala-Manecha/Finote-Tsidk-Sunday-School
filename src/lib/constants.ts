@@ -75,7 +75,7 @@ export const ATTENDANCE_STATUS: Record<AttendanceStatus, string> = {
   half: 'ግማሽ',
 };
 
-export const STAFF_EMAIL_DOMAIN = process.env.NEXT_PUBLIC_STAFF_EMAIL_DOMAIN || 'staff.finote-tsidk.app';
+const STAFF_EMAIL_DOMAIN = process.env.NEXT_PUBLIC_STAFF_EMAIL_DOMAIN || 'staff.finote-tsidk.app';
 export const usernameToEmail = (username: string) =>
   `${username.trim().toLowerCase()}@${STAFF_EMAIL_DOMAIN}`;
 export const USERNAME_RE = /^[a-z0-9._-]{3,32}$/;
@@ -149,8 +149,6 @@ export const MAHIBER_NAMES = ['የቅዱስ ሩፋኤል ማኅበር', 'የማ�
 
 // ---------- Education ----------
 export const ABNET_SUBJECTS = ['መልእክተ ዮሐንስ', 'ውዳሴ ማርያም', 'መዝሙረ ዳዊት', 'ቅዳሴ', 'ዜማ', 'አቋቋም', 'ቅኔ'] as const;
-export const ABNET_TIMES = ['ጠዋት 12:00 ጀምሮ', 'ጠዋት 3:00 ጀምሮ', 'ማታ 10:00 ጀምሮ', 'ማታ 11:00 ጀምሮ'] as const;
-export const ABNET_TEACHERS = ['የኔታ አእምሮ', 'የኔታ ይባቤ'] as const;
 /** Day-of-week order used in pickers (Monday first); values are JS weekday indexes (0 = Sunday). */
 export const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
 
@@ -162,16 +160,9 @@ export const ITEM_CONDITION: Record<ItemCondition, string> = {
 
 export const FEEDBACK_STATUS = { unseen: 'አልታየም', seen: 'ታይቷል' } as const;
 
-export type PropertyLogKind = 'added' | 'maintained' | 'lost';
 /** Where a ንብረት came from (any other text is allowed too). */
 export const PROPERTY_SOURCES = ['የተተካ', 'አዲስ በክፍሉ የገዛ', 'ካለፈው የተረከበ'] as const;
 export const PROPERTY_SOURCE_INHERITED = 'ካለፈው የተረከበ';
-
-export const PROPERTY_LOG_KIND: Record<PropertyLogKind, string> = {
-  added: 'ንብረት በመጨመር',
-  maintained: 'ንብረት አያያዝ',
-  lost: 'የጎደለ ንብረት',
-};
 
 // ---------- Anniversary (ምሥረታ) ----------
 /**

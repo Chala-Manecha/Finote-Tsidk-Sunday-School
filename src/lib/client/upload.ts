@@ -18,11 +18,6 @@ export async function resizeImage(file: File, maxSide = 1600, quality = 0.85): P
   );
 }
 
-/** Upload to the public `media` bucket under `folder/`; returns the storage path. */
-export async function uploadMedia(folder: string, blob: Blob, name = 'file'): Promise<string> {
-  return uploadTo('media', folder, blob, name);
-}
-
 /** Upload to any bucket the signed-in user may write to; returns the storage path. */
 export async function uploadTo(bucket: string, folder: string, blob: Blob, name = 'file'): Promise<string> {
   if (blob.size > MAX) throw new Error('ፋይሉ ከ50MB በላይ ነው።');

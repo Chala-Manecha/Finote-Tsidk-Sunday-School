@@ -13,7 +13,7 @@ export const HOME_SECTIONS = {
 export type HomeSection = keyof typeof HOME_SECTIONS;
 export type SectionSetting = { key: HomeSection; visible: boolean };
 
-export const DEFAULT_SECTIONS: SectionSetting[] = (Object.keys(HOME_SECTIONS) as HomeSection[])
+const DEFAULT_SECTIONS: SectionSetting[] = (Object.keys(HOME_SECTIONS) as HomeSection[])
   .map((key) => ({ key, visible: true }));
 
 /** Editable texts and contacts of the public home page (site_settings columns). */

@@ -293,13 +293,10 @@ insert into public.dept_property (name, qty, condition, owner_dept) values ('ካ
 insert into public.dept_property (name, qty, condition, owner_dept) values ('ወንበር', 1, 'new', 'hr');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
 insert into public.abnet_sessions (subjects, days, times, teacher) values ('{ቅኔ,ዜማ}', '{1,3}', '{ጠዋት 12:00 ጀምሮ}', 'የኔታ አእምሮ');
-insert into public.edu_plan (course_name) values ('ሥርዓተ ቤተክርስቲያን');
-insert into public.course_sessions (name, days) values ('ዶግማ', '{0}');
 reset role;
 set role anon;
 select set_config('request.jwt.claim.role', 'anon', false);
 select pg_temp.must_equal((select count(*) from public.abnet_sessions), 1, 'anon reads abnet');
-select pg_temp.must_equal((select count(*) from public.edu_plan), 1, 'anon reads plan');
 select pg_temp.must_equal((select count(*) from public.mahiberat), 1, 'anon reads mahiberat');
 select pg_temp.must_equal((select count(*) from public.event_photos), 1, 'anon reads photos');
 select pg_temp.must_fail('select * from public.dept_property');

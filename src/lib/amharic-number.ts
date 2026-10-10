@@ -19,7 +19,7 @@ function below1000(n: number): string[] {
 }
 
 /** Whole number in Amharic words (0 – 999,999,999,999). */
-export function amharicWords(n: number): string {
+function amharicWords(n: number): string {
   n = Math.floor(Math.abs(n));
   if (n === 0) return 'ዜሮ';
   const scales: [number, string][] = [[1e9, 'ቢሊዮን'], [1e6, 'ሚሊዮን'], [1e3, 'ሺህ']];

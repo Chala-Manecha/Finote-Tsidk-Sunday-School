@@ -17,7 +17,7 @@ const div = (a: number, b: number) => Math.floor(a / b);
 const mod = (a: number, b: number) => a - b * Math.floor(a / b);
 
 /** ጳጉሜ has 6 days in the year before a Gregorian leap year (EC year % 4 === 3). */
-export function isEcLeapYear(year: number): boolean {
+function isEcLeapYear(year: number): boolean {
   return mod(year, 4) === 3;
 }
 
@@ -74,12 +74,6 @@ export function isoToEc(iso: string): EcDate {
   return jdnToEc(gcToJdn(y, m, d));
 }
 
-export function isValidEc({ year, month, day }: EcDate): boolean {
-  return (
-    Number.isInteger(year) && month >= 1 && month <= 13 &&
-    day >= 1 && day <= daysInEcMonth(year, month)
-  );
-}
 
 /** Weekday index 0 = Sunday for a Gregorian ISO date. */
 export function weekdayOf(iso: string): number {

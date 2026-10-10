@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatBirr } from '@/lib/constants';
 
-export const SHOP_SOURCE = 'የሱቅ ሽያጭ';
+const SHOP_SOURCE = 'የሱቅ ሽያጭ';
 
 /** ልማትና በጎ አድራጎት › የገንዘብ አስተዳደር: shop profit and what is still to be reported as ገቢ. */
 export async function ShopProfit({ supabase }: { supabase: SupabaseClient }) {

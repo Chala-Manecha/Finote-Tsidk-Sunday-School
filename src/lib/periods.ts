@@ -15,7 +15,7 @@ export const isPeriod = (p?: string): p is Period => !!p && p in PERIODS;
 export type Range = { from: string; to: string; label: string };
 
 /** The last N Ethiopian months ending with the current one (ጳጉሜ folds into ነሐሴ). */
-export function monthsRange(months: number): Range {
+function monthsRange(months: number): Range {
   const today = isoToEc(todayIsoAddis());
   let { year, month } = today;
   if (month === 13) month = 12;

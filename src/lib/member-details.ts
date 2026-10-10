@@ -11,7 +11,7 @@ export type WorkEntry = {
 };
 
 let seq = 0;
-export const rowKey = () => `r${Date.now().toString(36)}${(seq++).toString(36)}`;
+const rowKey = () => `r${Date.now().toString(36)}${(seq++).toString(36)}`;
 export const emptyEducation = (): EducationEntry => ({ level: '', field: '', institution: '', start_year: null, end_year: null, current: false, evidence_path: null, _k: rowKey() });
 export const emptyWork = (): WorkEntry => ({ field: '', workplace: '', start_year: null, end_year: null, current: false });
 
