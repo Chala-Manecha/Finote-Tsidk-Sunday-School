@@ -16,16 +16,27 @@ export default async function Applications({ params, searchParams }: {
   if (dept !== 'hr') notFound();
   const { show = 'pending' } = await searchParams;
   const supabase = await createClient();
-  const [{ data: s }, { data: open }, { data: rows }] = await Promise.all([
+  const count = (st: keyof typeof STATUS) =>
+    supabase.from('member_applications').select('id', { count: 'exact', head: true }).eq('status', st).then((r) => r.count ?? 0);
+  const [{ data: s }, { data: open }, { data: rows }, pending, approved, rejected] = await Promise.all([
     supabase.from('site_settings').select('registration_open, registration_until').maybeSingle(),
     supabase.rpc('registration_is_open'),
     supabase.from('member_applications').select('id, reg_no, full_name, phone, status, reject_reason, member_id, created_at, decided_at')
       .eq('status', show in STATUS ? show : 'pending').order('created_at', { ascending: show === 'pending' }).limit(300),
+    count('pending'), count('approved'), count('rejected'),
   ]);
+  const counts = { pending, approved, rejected };
+  const total = pending + approved + rejected;
 
   return (
     <>
       <h2 className="section" style={{ marginTop: 0 }}>የተመዝጋቢዎች ዝርዝር</h2>
+      <div className="stat-cards">
+        <div className="stat-card"><b>{total}</b>ጠቅላላ ተመዝጋቢ</div>
+        <Link className="stat-card" href="/staff/hr/applications?show=pending"><b style={{ color: 'var(--gold)' }}>{pending}</b>ያልጸደቁ (በመጠባበቅ ላይ)</Link>
+        <Link className="stat-card" href="/staff/hr/applications?show=approved"><b style={{ color: 'var(--green)' }}>{approved}</b>የጸደቁ</Link>
+        <Link className="stat-card" href="/staff/hr/applications?show=rejected"><b style={{ color: 'var(--danger)' }}>{rejected}</b>ተቀባይነት ያላገኙ</Link>
+      </div>
       <MediaForm action={setRegistration} submitLabel="አስቀምጥ" resetOnSuccess={false}>
         <p style={{ marginTop: 0 }}>
           ሁኔታ፦ {open ? <span className="pill present">ክፍት ነው — በድረ-ገጹ ላይ “ይመዝገቡ” ይታያል</span> : <span className="pill">ዝግ ነው</span>}
@@ -40,7 +51,7 @@ export default async function Applications({ params, searchParams }: {
 
       <div className="cat-tabs">
         {Object.entries(STATUS).map(([k, v]) => (
-          <Link key={k} href={`/staff/hr/applications?show=${k}`} className={show === k ? 'active' : ''}>{v}</Link>
+          <Link key={k} href={`/staff/hr/applications?show=${k}`} className={show === k ? 'active' : ''}>{v} ({counts[k as keyof typeof STATUS]})</Link>
         ))}
       </div>
       <div className="table-wrap">
