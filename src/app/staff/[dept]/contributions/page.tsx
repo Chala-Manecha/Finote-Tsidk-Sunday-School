@@ -35,7 +35,10 @@ export default async function AuditRanking({
     loadWallet(supabase),
     supabase.from('property_log').select('dept, kind, value').gte('log_date', range.from).lte('log_date', range.to),
   ]);
-  const money = contributions(wallet, range.from, range.to, depts);
+  // ከራስ ወጪ is not part of the audit view: net = ያስገኘው ገቢ − የጠየቀው ወጪ.
+  const money = contributions(wallet, range.from, range.to, depts)
+    .map((r) => ({ ...r, net: r.income - r.netOut }))
+    .sort((a, b) => b.net - a.net);
 
   const propMap = new Map<string, Prop>(depts.map((d) => [d, { dept: d, added: 0, maintained: 0, lost: 0, net: 0 }]));
   for (const l of logs ?? []) {
@@ -48,8 +51,8 @@ export default async function AuditRanking({
 
   const mMark = marks(money);
   const pMark = marks(property);
-  const tot = money.reduce((s, r) => ({ income: s.income + r.income, self: s.self + r.selfContributed, out: s.out + r.netOut, net: s.net + r.net }),
-    { income: 0, self: 0, out: 0, net: 0 });
+  const tot = money.reduce((s, r) => ({ income: s.income + r.income, out: s.out + r.netOut, net: s.net + r.net }),
+    { income: 0, out: 0, net: 0 });
   const ptot = property.reduce((s, r) => ({ a: s.a + r.added, m: s.m + r.maintained, l: s.l + r.lost, n: s.n + r.net }), { a: 0, m: 0, l: 0, n: 0 });
 
   const best = money[0];
@@ -74,8 +77,8 @@ export default async function AuditRanking({
           <thead>
             <tr>
               <th className="rank">ተ.ቁ</th><th>ክፍል</th>
-              <th className="num">ገቢ</th><th className="num">ከራስ ወጪ</th>
-              <th className="num">የወጣ (የተጣራ)</th><th className="num">የተጣራ አስተዋጽኦ</th>
+              <th className="num">ያስገኘው ገቢ</th>
+              <th className="num">የጠየቀው ወጪ</th><th className="num">የተጣራ አስተዋጽኦ</th>
             </tr>
           </thead>
           <tbody>
@@ -84,7 +87,6 @@ export default async function AuditRanking({
                 <td className="rank">{i + 1}</td>
                 <td>{DEPT_NAME[r.dept]}{mMark(r) === 'top' ? ' ★' : ''}</td>
                 <td className="num">{formatBirr(r.income)}</td>
-                <td className="num">{formatBirr(r.selfContributed)}</td>
                 <td className="num">{formatBirr(r.netOut)}</td>
                 <td className={`num ${cls(r.net)}`}>{sign(r.net)}</td>
               </tr>
@@ -93,14 +95,14 @@ export default async function AuditRanking({
           <tfoot>
             <tr>
               <th /><th>ድምር</th>
-              <th className="num">{formatBirr(tot.income)}</th><th className="num">{formatBirr(tot.self)}</th>
+              <th className="num">{formatBirr(tot.income)}</th>
               <th className="num">{formatBirr(tot.out)}</th><th className={`num ${cls(tot.net)}`}>{sign(tot.net)}</th>
             </tr>
           </tfoot>
         </table>
       </div>
       <p className="small muted">
-        የተጣራ አስተዋጽኦ = በሒሳብና ንብረት የጸደቀ ገቢ + ከራስ ወጪ − (ከሰንበት ት/ቤቱ የተከፈለ − ተመላሽ)።
+        የተጣራ አስተዋጽኦ = ያስገኘው ገቢ (በሒሳብና ንብረት የጸደቀ) − የጠየቀው ወጪ (ከሰንበት ት/ቤቱ የተከፈለ − ተመላሽ)።
       </p>
 
       <h3 className="serif">2. የንብረት አስተዋጽኦ</h3>
@@ -134,7 +136,7 @@ export default async function AuditRanking({
           </tfoot>
         </table>
       </div>
-      <p className="small muted">ከሒሳብና ንብረት የንብረት መዝገብ የተወሰደ (በዋጋ)።</p>
+      <p className="small muted">በሒሳብና ንብረት ከጸደቀው አዲስ ንብረት የተወሰደ (በዋጋ)።</p>
 
       <StatementSignatures />
     </div>

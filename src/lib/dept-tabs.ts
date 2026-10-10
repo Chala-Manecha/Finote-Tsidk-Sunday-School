@@ -49,7 +49,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'receipts', label: 'ደረሰኞች', ready: true },
     { slug: 'money-report', label: 'የገንዘብ ሪፖርት', ready: true },
     { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: true },
-    { slug: 'property-log', label: 'የንብረት መዝገብ', ready: true },
+    { slug: 'property-requests', label: 'አዲስ የተገዛ ንብረት ለማጸደቅ', ready: true },
   ],
   development: [
     { slug: 'purchases', label: 'የተገዙ ዕቃዎች መዝገብ', ready: true },
@@ -115,7 +115,7 @@ const AUDIT_GROUPS: [string, string[]][] = [
 const FINANCE_GROUPS: [string, string[]][] = [
   ['ለማጽደቅ', ['requests', 'earnings', 'donations']],
   ['ሪፖርትና መዛግብት', ['money-report', 'receipts']],
-  ['ንብረት', ['dept-property', 'property-log']],
+  ['ንብረት', ['property-requests', 'dept-property']],
   ['የክፍሉ', ['members', 'property', 'request-event', 'feedback']],
 ];
 const HR_GROUPS: [string, string[]][] = [

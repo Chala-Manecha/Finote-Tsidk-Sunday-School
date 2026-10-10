@@ -15,7 +15,7 @@ const num = (fd: FormData, k: string) => {
 };
 const refresh = () => revalidatePath('/staff', 'layout');
 
-/** ንብረት: ጽሕፈት ቤት for any dept, ሒሳብና ንብረት for its own (RLS enforces). */
+/** ንብረት: ሒሳብና ንብረት registers and edits every department's property (RLS enforces). */
 export async function saveProperty(_: FormState, fd: FormData): Promise<FormState> {
   await requireStaff();
   const id = text(fd, 'id') || null;
@@ -29,7 +29,11 @@ export async function saveProperty(_: FormState, fd: FormData): Promise<FormStat
   if (!(condition in ITEM_CONDITION)) return { error: 'ሁኔታ ይምረጡ።' };
   if (qty === null || Number.isNaN(qty) || !Number.isInteger(qty)) return { error: 'ብዛት ያስገቡ።' };
   if (Number.isNaN(price)) return { error: 'ዋጋ ትክክል አይደለም።' };
-  const row = { name, owner_dept, condition, qty, price, note: text(fd, 'note') || null };
+  const registered_on = text(fd, 'registered_on');
+  const source = text(fd, 'source');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(registered_on)) return { error: 'የተመዘገበበትን ቀን ይምረጡ።' };
+  if (!source) return { error: 'ምንጩን ይምረጡ።' };
+  const row = { name, owner_dept, condition, qty, price, note: text(fd, 'note') || null, registered_on, source };
   const supabase = await createClient();
   const { error, count } = id
     ? await supabase.from('dept_property').update(row, { count: 'exact' }).eq('id', id)
@@ -46,6 +50,57 @@ export async function deleteProperty(id: string) {
   if (error) return { error: error.message };
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
   refresh();
+}
+
+/** A department asks ሒሳብና ንብረት to approve something it bought (አዲስ የተገዛ ንብረት ለማጸደቅ). */
+export async function requestProperty(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const dept = text(fd, 'owner_dept');
+  const name = text(fd, 'name');
+  const condition = text(fd, 'condition');
+  const qty = num(fd, 'qty');
+  const price = num(fd, 'price');
+  const registered_on = text(fd, 'registered_on');
+  const source = text(fd, 'source');
+  if (!isDeptCode(dept)) return { error: 'ክፍል ይምረጡ።' };
+  if (!name) return { error: 'የዕቃውን ስም ያስገቡ።' };
+  if (!(condition in ITEM_CONDITION)) return { error: 'ሁኔታ ይምረጡ።' };
+  if (qty === null || Number.isNaN(qty) || !Number.isInteger(qty) || qty < 1) return { error: 'ብዛት ያስገቡ።' };
+  if (Number.isNaN(price)) return { error: 'ዋጋ ትክክል አይደለም።' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(registered_on)) return { error: 'የተመዘገበበትን ቀን ይምረጡ።' };
+  if (!source) return { error: 'ምንጩን ይምረጡ።' };
+  const supabase = await createClient();
+  const { error } = await supabase.from('property_requests').insert({
+    dept, name, condition, qty, price, registered_on, source, note: text(fd, 'note') || null,
+  });
+  if (error) return { error: error.message.includes('row-level') ? 'ፈቃድ የለዎትም።' : error.message };
+  refresh();
+  return { ok: 'ለሒሳብና ንብረት ለማጸደቅ ተልኳል።' };
+}
+export async function withdrawPropertyRequest(id: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('property_requests').delete({ count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+}
+export async function approvePropertyRequest(id: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('approve_property_request', { p_id: id });
+  if (error) return { error: error.message.includes('only') ? 'ፈቃድ የለዎትም።' : error.message.includes('pending') ? 'ቀድሞ ተወስኗል።' : error.message };
+  refresh();
+}
+export async function rejectPropertyRequest(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const reason = text(fd, 'reason');
+  if (reason.length < 3) return { error: 'ምክንያቱን ይጻፉ።' };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('reject_property_request', { p_id: text(fd, 'id'), p_reason: reason });
+  if (error) return { error: error.message.includes('only') ? 'ፈቃድ የለዎትም።' : error.message.includes('pending') ? 'ቀድሞ ተወስኗል።' : error.message };
+  refresh();
+  return { ok: 'ተመልሷል።' };
 }
 
 /** የተገዙ ዕቃዎች መዝገብ — ልማትና በጎ አድራጎት records what was bought (the sell price is set when published). */

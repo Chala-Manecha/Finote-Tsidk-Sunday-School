@@ -4,11 +4,12 @@ import type { DeptMoneySummary } from '@/lib/money-data';
 
 /** One row per department: ጸደቀ / የወጣ / ከራስ ወጪ / ተመላሽ / ገቢ, with totals. */
 export function DeptMoneySummaryTable({
-  rows, detailHref, showEarned = true,
+  rows, detailHref, showEarned = true, showSelf = true,
 }: {
   rows: DeptMoneySummary[];
   detailHref?: (dept: string) => string;
   showEarned?: boolean;
+  showSelf?: boolean;
 }) {
   const total = rows.reduce(
     (t, r) => ({
@@ -24,7 +25,7 @@ export function DeptMoneySummaryTable({
         <thead>
           <tr>
             <th>ክፍል</th><th className="num">የጸደቀ</th><th className="num">የወጣ</th>
-            <th className="num">ከራስ ወጪ</th><th className="num">ተመላሽ</th>
+            {showSelf && <th className="num">ከራስ ወጪ</th>}<th className="num">ተመላሽ</th>
             {showEarned && <th className="num">ገቢ</th>}
             {detailHref && <th className="no-print"></th>}
           </tr>
@@ -35,7 +36,7 @@ export function DeptMoneySummaryTable({
               <td>{DEPT_NAME[r.dept]}</td>
               <td className="num">{formatBirr(r.approved)}</td>
               <td className="num">{formatBirr(r.spent)}</td>
-              <td className="num">{formatBirr(r.self_contributed)}</td>
+              {showSelf && <td className="num">{formatBirr(r.self_contributed)}</td>}
               <td className="num">{formatBirr(r.refund)}</td>
               {showEarned && <td className="num">{formatBirr(r.earned)}</td>}
               {detailHref && (
@@ -51,7 +52,7 @@ export function DeptMoneySummaryTable({
               <td>ጠቅላላ</td>
               <td className="num">{formatBirr(total.approved)}</td>
               <td className="num">{formatBirr(total.spent)}</td>
-              <td className="num">{formatBirr(total.self_contributed)}</td>
+              {showSelf && <td className="num">{formatBirr(total.self_contributed)}</td>}
               <td className="num">{formatBirr(total.refund)}</td>
               {showEarned && <td className="num">{formatBirr(total.earned)}</td>}
               {detailHref && <td className="no-print" />}

@@ -32,7 +32,7 @@ export async function UsageView({ dept, d }: { dept: string; d?: string }) {
         <div className="stat-card"><b>{formatBirr(wallet.opening)}</b>መነሻ ሂሳብ{wallet.asOf ? ` (${formatEc(wallet.asOf)})` : ''}</div>
         <div className="stat-card"><b>{formatBirr(walletIn)}</b>ገቢ + ተመላሽ</div>
         <div className="stat-card"><b>{formatBirr(walletOut)}</b>የተከፈለ</div>
-        <div className="stat-card"><b>{formatBirr(selfTotal)}</b>ጠቅላላ ከራስ ወጪ</div>
+        {dept !== 'audit' && <div className="stat-card"><b>{formatBirr(selfTotal)}</b>ጠቅላላ ከራስ ወጪ</div>}
         <div className="stat-card"><b>{formatBirr(refundTotal)}</b>ጠቅላላ ተመላሽ</div>
       </div>
       {dept === 'finance' && (
@@ -46,7 +46,7 @@ export async function UsageView({ dept, d }: { dept: string; d?: string }) {
         </MediaForm>
       </details>
       )}
-      <DeptMoneySummaryTable rows={rows} detailHref={(x) => `${base}&d=${x}`} />
+      <DeptMoneySummaryTable rows={rows} detailHref={(x) => `${base}&d=${x}`} showSelf={dept !== 'audit'} />
 
       {d && (
         <>
@@ -60,7 +60,7 @@ export async function UsageView({ dept, d }: { dept: string; d?: string }) {
                 <span className={`pill ${STATUS_PILL[r.status]}`}>{MONEY_STATUS[r.status]}</span>
               </div>
               <p className="small muted" style={{ margin: '4px 0' }}>
-                የጸደቀ {formatBirr(r.amount)} · የወጣ {formatBirr(r.spent)} · ተመላሽ {formatBirr(r.refund)} · ከራስ ወጪ {formatBirr(r.self_contributed)}
+                የጸደቀ {formatBirr(r.amount)} · የወጣ {formatBirr(r.spent)} · ተመላሽ {formatBirr(r.refund)}{dept !== 'audit' && ` · ከራስ ወጪ ${formatBirr(r.self_contributed)}`}
               </p>
               {r.lines.length > 0 ? (
                 <table>

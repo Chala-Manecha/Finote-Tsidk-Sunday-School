@@ -784,4 +784,25 @@ select pg_temp.must_fail($q$select public.request_my_departure('moved', 'ሁለ�
 reset role;
 select pg_temp.must_equal((select count(*) from public.member_departures where self_requested and member_id = '10000000-0000-0000-0000-0000000000e1'), 1, 'self request stored');
 
+-- ---------- property requests: departments ask, ሒሳብና ንብረት approves ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+insert into public.property_requests (dept, name, qty, price) values ('mezmur', 'ማይክራፎን', 2, 1500);
+select pg_temp.must_fail($q$insert into public.property_requests (dept, name, qty) values ('hr', 'x', 1)$q$);
+select pg_temp.must_fail($q$insert into public.property_requests (dept, name, qty, status) values ('mezmur', 'x', 1, 'approved')$q$);
+select pg_temp.must_fail($q$select public.approve_property_request((select id from public.property_requests where name = 'ማይክራፎን'))$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+select public.approve_property_request((select id from public.property_requests where name = 'ማይክራፎን'));
+select pg_temp.must_equal((select count(*) from public.dept_property where name = 'ማይክራፎን' and owner_dept = 'mezmur' and source = 'አዲስ በክፍሉ የገዛ'), 1, 'approved request joins property');
+select pg_temp.must_equal((select count(*) from public.property_log where item_name = 'ማይክራፎን' and kind = 'added' and value = 3000), 1, 'approval logged for audit');
+select pg_temp.must_fail($q$select public.approve_property_request((select id from public.property_requests where name = 'ማይክራፎን'))$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+insert into public.property_requests (dept, name, qty) values ('mezmur', 'ከበሮ ማስቀመጫ', 1);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+select pg_temp.must_fail($q$select public.reject_property_request((select id from public.property_requests where name = 'ከበሮ ማስቀመጫ'), '')$q$);
+select public.reject_property_request((select id from public.property_requests where name = 'ከበሮ ማስቀመጫ'), 'ደረሰኝ የለውም');
+select pg_temp.must_equal((select count(*) from public.property_requests where status = 'rejected'), 1, 'request rejected');
+reset role;
+
 \echo ALL RLS TESTS PASSED

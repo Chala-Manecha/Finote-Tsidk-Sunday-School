@@ -102,7 +102,7 @@ export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string;
         </table>
       </div>
       <p className="small muted">
-        ቀሪ ሂሳብ = መነሻ ቀሪ + የጸደቀ ገቢ − የተከፈለ ገንዘብ + የተመለሰ ተመላሽ። ከራስ ወጪ ከሰንበት ትምህርት ቤቱ ካዝና ስላልወጣ እዚህ አይቆጠርም፤ በክፍላት ደረጃ ግን እንደ አስተዋጽኦ ይቆጠራል።
+        ቀሪ ሂሳብ = መነሻ ቀሪ + የጸደቀ ገቢ − የተከፈለ ገንዘብ + የተመለሰ ተመላሽ።{dept !== 'audit' && ' ከራስ ወጪ ከሰንበት ትምህርት ቤቱ ካዝና ስላልወጣ እዚህ አይቆጠርም።'}
       </p>
       <StatementSignatures />
       {dept === 'audit' && (

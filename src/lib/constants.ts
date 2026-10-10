@@ -163,6 +163,10 @@ export const ITEM_CONDITION: Record<ItemCondition, string> = {
 export const FEEDBACK_STATUS = { unseen: 'አልታየም', seen: 'ታይቷል' } as const;
 
 export type PropertyLogKind = 'added' | 'maintained' | 'lost';
+/** Where a ንብረት came from (any other text is allowed too). */
+export const PROPERTY_SOURCES = ['የተተካ', 'አዲስ በክፍሉ የገዛ', 'ካለፈው የተረከበ'] as const;
+export const PROPERTY_SOURCE_INHERITED = 'ካለፈው የተረከበ';
+
 export const PROPERTY_LOG_KIND: Record<PropertyLogKind, string> = {
   added: 'ንብረት በመጨመር',
   maintained: 'ንብረት አያያዝ',
