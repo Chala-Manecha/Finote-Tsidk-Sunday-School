@@ -62,7 +62,7 @@ export default async function YearEnd({ params, searchParams }: {
         <button className="btn sm">አሳይ</button>
       </form>
       <p className="small muted">
-        የመዛወሪያ ደንብ፦ የዓመት አማካይ ≥ {year.promote_min_average} እና የወደቁ ኮርሶች ≤ {year.max_failed_courses} (በ“የትምህርት ዘመን” ትር ይቀየራል)። ውሳኔውን ለየብቻ መቀየር ይቻላል።
+        የመዛወሪያ ደንብ፦ የዓመት አማካይ ≥ {year.promote_min_average} እና የወደቁ ኮርሶች ≤ {year.max_failed_courses} (በ“የትምህርት ዘመን” ትር ይቀየራል)። ውሳኔውን ለየብቻ መቀየር ይቻላል። የተማሪውን ስም ሲጫኑ ሊታተም የሚችል የዓመት ውጤት ካርድ ይከፈታል።
       </p>
       {rows.length > 0 && (ready
         ? <p className="alert ok">✓ የሁለቱም ሴሚስተሮች ውጤቶች ጸድቀዋል።</p>
@@ -102,7 +102,7 @@ export default async function YearEnd({ params, searchParams }: {
               return (
                 <tr key={r.member_id} className={honour ? 'top' : ''}>
                   <td className="rank">{honour ? MEDAL[r.rank! - 1] : ''}{r.rank ?? '—'}</td>
-                  <td>{r.full_name}<div className="small muted">{r.reg_no}</div></td>
+                  <td><Link className="link" href={`/staff/report-card/${year.id}/${r.member_id}`} title="የዓመት ውጤት ካርድ">{r.full_name}</Link><div className="small muted">{r.reg_no}</div></td>
                   <td className="num">{r.sem1_average ?? '—'}</td>
                   <td className="num">{r.sem2_average ?? '—'}</td>
                   <td className="num"><b>{r.year_average ?? '—'}</b></td>
