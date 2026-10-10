@@ -70,7 +70,9 @@ export function MarksGrid({ offeringId, students, marks, weights, locked, attend
   );
 }
 
-export function ClassAttendanceForm({ offeringId, students, today }: { offeringId: string; students: Student[]; today: string }) {
+export function ClassAttendanceForm({ offeringId, students, today, initial = {} }: {
+  offeringId: string; students: Student[]; today: string; initial?: Record<string, string>;
+}) {
   const [state, action, pending] = useActionState<FormState & { n?: number }, FormData>(
     async (prev, fd) => { const r = await saveClassAttendance(prev, fd); return { ...r, n: (prev.n ?? 0) + (r.ok ? 1 : 0) }; }, {});
   return (
@@ -84,9 +86,9 @@ export function ClassAttendanceForm({ offeringId, students, today }: { offeringI
             {students.map((s) => (
               <tr key={s.id}>
                 <td>{s.full_name}<input type="hidden" name="member_id" value={s.id} /></td>
-                <td><input type="radio" name={`att_${s.id}`} value="present" defaultChecked aria-label="ተገኝቷል" /></td>
-                <td><input type="radio" name={`att_${s.id}`} value="half" aria-label="ግማሽ" /></td>
-                <td><input type="radio" name={`att_${s.id}`} value="absent" aria-label="ቀሪ" /></td>
+                <td><input type="radio" name={`att_${s.id}`} value="present" defaultChecked={(initial[s.id] ?? 'present') === 'present'} aria-label="ተገኝቷል" /></td>
+                <td><input type="radio" name={`att_${s.id}`} value="half" defaultChecked={initial[s.id] === 'half'} aria-label="ግማሽ" /></td>
+                <td><input type="radio" name={`att_${s.id}`} value="absent" defaultChecked={initial[s.id] === 'absent'} aria-label="ቀሪ" /></td>
               </tr>
             ))}
           </tbody>

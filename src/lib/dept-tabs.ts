@@ -64,6 +64,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'lost-members', label: 'የጠፉ አባላት', ready: true },
     { slug: 'departures', label: 'መልቀቂያዎች', ready: true },
     { slug: 'results', label: 'የትምህርት ውጤቶች እና ማጠቃለያ', ready: true },
+    { slug: 'course-attendance', label: 'የኮርስ ክትትል', ready: true },
     { slug: 'reports', label: 'ሪፖርቶች', ready: true },
   ],
   education: [
@@ -71,6 +72,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'classes', label: 'ክፍሎችና ተማሪዎች', ready: true },
     { slug: 'courses', label: 'ኮርሶችና መምህራን', ready: true },
     { slug: 'results', label: 'የተማሪ ውጤት', ready: true },
+    { slug: 'course-attendance', label: 'የኮርስ ክትትል', ready: true },
     { slug: 'year-end', label: 'የዓመት ማጠቃለያ', ready: true },
     { slug: 'exams', label: 'የፈተና ፈቃድና ድጋሚ ፈተና', ready: true },
     { slug: 'student-accounts', label: 'የመግቢያ ኮድ ድጋፍ', ready: true },
@@ -101,14 +103,14 @@ const OFFICE_GROUPS: [string, string[]][] = [
 
 const EDUCATION_GROUPS: [string, string[]][] = [
   ['የትምህርት ዘመን', ['academic', 'classes', 'courses']],
-  ['ውጤቶች', ['results', 'exams', 'year-end', 'student-accounts']],
+  ['ውጤትና ክትትል', ['results', 'course-attendance', 'exams', 'year-end', 'student-accounts']],
   ['አብነትና ወረብ', ['attendance', 'abnet', 'wereb-admin']],
   ['የክፍሉ', ['members', 'duty', 'property', 'money', 'request-event', 'feedback']],
 ];
 const AUDIT_GROUPS: [string, string[]][] = [
   ['ገንዘብ', ['money-report', 'contributions', 'receipts', 'donations']],
   ['አባላት', ['lost-members', 'departures']],
-  ['ትምህርት', ['results']],
+  ['ትምህርት', ['results', 'course-attendance']],
   ['ሪፖርቶች', ['reports']],
   ['የክፍሉ', ['members', 'property', 'money', 'request-event', 'feedback']],
 ];

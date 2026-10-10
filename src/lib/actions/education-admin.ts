@@ -376,6 +376,31 @@ export async function saveCourseDetails(_: FormState, fd: FormData): Promise<For
   return { ok: 'ተቀምጧል።' };
 }
 
+/** ትምህርት ክፍል marks the teachers of each course for one day (empty = not recorded). */
+export async function saveTeacherAttendance(_: FormState, fd: FormData): Promise<FormState> {
+  await requireDept('education');
+  const att_date = text(fd, 'att_date');
+  if (!DATE_RE.test(att_date)) return { error: 'ቀን ይምረጡ።' };
+  const keys = fd.getAll('key').map(String).filter((k) => /^[0-9a-f-]{36}_[0-9a-f-]{36}$/i.test(k));
+  const supabase = await createClient();
+  const up: { offering_id: string; member_id: string; att_date: string; status: string; note: string | null }[] = [];
+  for (const k of keys) {
+    const [offering_id, member_id] = k.split('_');
+    const status = text(fd, `s_${k}`);
+    if (['present', 'late', 'absent', 'excused'].includes(status)) {
+      up.push({ offering_id, member_id, att_date, status, note: text(fd, `n_${k}`) || null });
+    } else {
+      await supabase.from('teacher_attendance').delete().eq('offering_id', offering_id).eq('member_id', member_id).eq('att_date', att_date);
+    }
+  }
+  if (up.length) {
+    const { error } = await supabase.from('teacher_attendance').upsert(up, { onConflict: 'offering_id,member_id,att_date' });
+    if (error) return { error: explain(error.message) };
+  }
+  refresh();
+  return { ok: `${up.length} መምህር(ራን) ተመዝግበዋል።` };
+}
+
 // ---------- exam permissions ----------
 
 export async function grantExemption(_: FormState, fd: FormData): Promise<FormState> {

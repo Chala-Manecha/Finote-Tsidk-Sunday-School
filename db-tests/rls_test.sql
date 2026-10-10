@@ -805,4 +805,21 @@ select public.reject_property_request((select id from public.property_requests w
 select pg_temp.must_equal((select count(*) from public.property_requests where status = 'rejected'), 1, 'request rejected');
 reset role;
 
+-- ---------- teacher attendance + class attendance summary ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+insert into public.teacher_attendance (offering_id, member_id, att_date, status)
+  values ('92000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-0000000000e2', '2026-09-27', 'late');
+select pg_temp.must_equal((select attended from public.class_attendance_summary('91000000-0000-0000-0000-000000000001', '3')
+  where member_id = '10000000-0000-0000-0000-0000000000e1' and offering_id = '92000000-0000-0000-0000-000000000003'), 1, 'summary counts attendance');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+select pg_temp.must_fail($q$insert into public.teacher_attendance (offering_id, member_id, att_date, status) values ('92000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-0000000000e2', '2026-09-28', 'present')$q$);
+select pg_temp.must_equal((select count(*) from public.class_attendance_summary('91000000-0000-0000-0000-000000000001', '3')), 0, 'summary hidden from other departments');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+select pg_temp.must_equal((select count(*) from public.teacher_attendance), 1, 'teacher sees own attendance');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*) from public.teacher_attendance), 0, 'others do not');
+reset role;
+
 \echo ALL RLS TESTS PASSED

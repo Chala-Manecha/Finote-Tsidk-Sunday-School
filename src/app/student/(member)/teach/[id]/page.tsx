@@ -11,8 +11,9 @@ import { submitOffering } from '@/lib/actions/teaching';
 type Offering = { id: string; name: string; class_level: string; status: OfferingStatus; book_path: string | null; book_name: string | null; semester_id: string };
 
 /** A teacher's own class: reference book, attendance, marks, submit for approval. */
-export default async function TeachPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TeachPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ d?: string }> }) {
   const { id } = await params;
+  const { d } = await searchParams;
   const me = await requireMember();
   const supabase = await createClient();
   const { data: isTeacher } = await supabase.rpc('is_teacher_of', { p_offering: id });
@@ -44,6 +45,18 @@ export default async function TeachPage({ params }: { params: Promise<{ id: stri
   const attendance = Object.fromEntries(attendanceList.map((a) => [a.id, a.pct]));
   const barredIds = attendanceList.filter((a) => a.barred).map((a) => a.id);
   const makeupIds = (grants ?? []).filter((g) => !g.used_at).map((g) => g.member_id as string);
+  const editDate = d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : todayIsoAddis();
+  const editSession = (sessions ?? []).find((x) => x.session_date === editDate);
+  const [{ data: prior }, { data: counts }, { data: mine }] = await Promise.all([
+    editSession ? supabase.from('class_attendance').select('member_id, status').eq('session_id', editSession.id) : Promise.resolve({ data: [] }),
+    (sessions ?? []).length
+      ? supabase.from('class_attendance').select('session_id, status').in('session_id', sessions!.map((x) => x.id))
+      : Promise.resolve({ data: [] }),
+    supabase.from('teacher_attendance').select('att_date, status, note').eq('offering_id', id).eq('member_id', me.memberId).order('att_date', { ascending: false }),
+  ]);
+  const initial = Object.fromEntries(((prior ?? []) as { member_id: string; status: string }[]).map((x) => [x.member_id, x.status]));
+  const presentOf = (sid: string) => ((counts ?? []) as { session_id: string; status: string }[]).filter((x) => x.session_id === sid && x.status !== 'absent').length;
+  const T_STATUS: Record<string, string> = { present: 'ተገኝቷል', late: 'አርፍዷል', absent: 'ቀሪ', excused: 'በፈቃድ' };
   const book = offering.book_path ? (await supabase.storage.from('edu-books').createSignedUrl(offering.book_path, 3600)).data?.signedUrl : null;
   const weights: Record<ComponentKey, number> = { quiz: s.w_quiz, notebook: s.w_notebook, participation: s.w_participation, mid: s.w_mid, final: s.w_final };
   const locked = offering.status !== 'draft';
@@ -79,10 +92,34 @@ export default async function TeachPage({ params }: { params: Promise<{ id: stri
 
       <section className="card">
         <h2 className="section" style={{ marginTop: 0 }}>የክፍል ክትትል</h2>
-        <ClassAttendanceForm offeringId={id} students={students} today={todayIsoAddis()} />
+        {editSession && <p className="alert ok small">የ{formatEc(editDate)} ክትትል ተይዟል — ማስተካከል ይችላሉ።</p>}
+        <ClassAttendanceForm key={editDate} offeringId={id} students={students} today={editDate} initial={initial} />
         {(sessions ?? []).length > 0 && (
-          <p className="small muted" style={{ marginTop: 10 }}>
-            የተያዙ ቀናት ({sessions!.length})፦ {sessions!.slice(0, 12).map((x) => formatEc(x.session_date)).join('፣ ')}
+          <>
+            <h3 className="section">የተያዙ ቀናት ({sessions!.length})</h3>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>ቀን</th><th className="num">የተገኙ</th><th /></tr></thead>
+                <tbody>
+                  {sessions!.map((x) => (
+                    <tr key={x.id}>
+                      <td>{formatEc(x.session_date, { weekday: true })}</td>
+                      <td className="num">{presentOf(x.id)}/{students.length}</td>
+                      <td><Link className="link small" href={`?d=${x.session_date}`} scroll={false}>አስተካክል</Link></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <h2 className="section" style={{ marginTop: 0 }}>የእኔ ክትትል (በትምህርት ክፍል የተያዘ)</h2>
+        {(mine ?? []).length === 0 ? <p className="muted small">እስካሁን አልተመዘገበም።</p> : (
+          <p className="small">
+            {(mine ?? []).map((x) => `${formatEc(x.att_date)}፦ ${T_STATUS[x.status]}${x.note ? ` (${x.note})` : ''}`).join(' · ')}
           </p>
         )}
       </section>
