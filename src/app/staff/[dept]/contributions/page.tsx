@@ -58,7 +58,7 @@ export default async function AuditRanking({
   return (
     <div className="statement">
       <PeriodTabs base="/staff/audit/contributions" active={period} />
-      <StatementHeader title="የክፍላት አስተዋጽኦ ደረጃ" subtitle={range.label} />
+      <StatementHeader title="የክፍላት ገቢ ወጪ" subtitle={range.label} />
 
       {best && worst && best.net !== worst.net && (
         <div className="summary-grid">
@@ -73,7 +73,7 @@ export default async function AuditRanking({
         <table>
           <thead>
             <tr>
-              <th className="rank">ደረጃ</th><th>ክፍል</th>
+              <th className="rank">ተ.ቁ</th><th>ክፍል</th>
               <th className="num">ገቢ</th><th className="num">ከራስ ወጪ</th>
               <th className="num">የወጣ (የተጣራ)</th><th className="num">የተጣራ አስተዋጽኦ</th>
             </tr>
@@ -108,7 +108,7 @@ export default async function AuditRanking({
         <table>
           <thead>
             <tr>
-              <th className="rank">ደረጃ</th><th>ክፍል</th>
+              <th className="rank">ተ.ቁ</th><th>ክፍል</th>
               <th className="num">ንብረት በመጨመር (+)</th><th className="num">ንብረት አያያዝ (+)</th>
               <th className="num">የጎደለ ንብረት (−)</th><th className="num">የተጣራ</th>
             </tr>

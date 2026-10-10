@@ -11,7 +11,7 @@ import { saveSaleItem, deleteSaleItem, saveShopSettings, markSold } from '@/lib/
 
 type S = {
   id: string; name: string; qty: number; sold_qty: number; price: number | null; buy_price: number | null;
-  description: string | null; image_path: string | null; bought_on: string | null; sold_on: string | null;
+  description: string | null; image_path: string | null; image2_path: string | null; bought_on: string | null; sold_on: string | null;
 };
 const SHOP_SOURCE = 'የሱቅ ሽያጭ';
 
@@ -28,8 +28,13 @@ function Fields({ s }: { s?: S }) {
         <div className="field"><label>የመሸጫ ዋጋ (የአንዱ፣ ብር)</label><input name="price" type="number" min={0} step="0.01" required defaultValue={s?.price ?? ''} /></div>
         <div className="field"><span className="label">የተገዛበት ቀን (ዓ.ም)</span><EcDatePicker name="bought_on" defaultIso={s?.bought_on ?? todayIsoAddis()} yearsBack={2} yearsForward={0} required /></div>
         <div className="field">
-          <label>ምስል {s?.image_path ? '(ለመቀየር ብቻ)' : ''}</label>
+          <label>ምስል 1 {s?.image_path ? '(ለመቀየር ብቻ)' : ''}</label>
           <input name="image" type="file" accept="image/*" />
+        </div>
+        <div className="field">
+          <label>ምስል 2 (አማራጭ) {s?.image2_path ? '(ለመቀየር ብቻ)' : ''}</label>
+          <input name="image2" type="file" accept="image/*" />
+          {s?.image2_path && <label className="check" style={{ margin: 0 }}><input type="checkbox" name="remove_image2" /> ሁለተኛውን ምስል አጥፋ</label>}
         </div>
       </div>
       <div className="field"><label>መግለጫ</label><input name="description" defaultValue={s?.description ?? ''} placeholder="መጠን፣ ቀለም…" /></div>
@@ -42,7 +47,7 @@ export default async function SaleItems({ params }: { params: Promise<{ dept: st
   if (dept !== 'development') notFound();
   const supabase = await createClient();
   const [{ data }, { data: shop }, { data: reports }] = await Promise.all([
-    supabase.from('sale_items').select('id, name, qty, sold_qty, price, buy_price, description, image_path, bought_on, sold_on').order('created_at', { ascending: false }),
+    supabase.from('sale_items').select('id, name, qty, sold_qty, price, buy_price, description, image_path, image2_path, bought_on, sold_on').order('created_at', { ascending: false }),
     supabase.from('shop_settings').select('phone, telegram').maybeSingle(),
     supabase.from('earnings').select('amount, status').eq('dept', 'development').eq('source', SHOP_SOURCE).neq('status', 'rejected'),
   ]);
@@ -83,7 +88,7 @@ export default async function SaleItems({ params }: { params: Promise<{ dept: st
       </details>
 
       <h3 className="section">ክምችት — የተገዙ ዕቃዎችን መዝግብ</h3>
-      <MediaForm action={saveSaleItem} submitLabel="+ መዝግብ" fileField="image" folder="shop" resize><Fields /></MediaForm>
+      <MediaForm action={saveSaleItem} submitLabel="+ መዝግብ" fileField={['image', 'image2']} folder="shop" resize><Fields /></MediaForm>
       <div className="table-wrap">
         <table>
           <thead>
@@ -98,7 +103,7 @@ export default async function SaleItems({ params }: { params: Promise<{ dept: st
               return (
                 <tr key={s.id}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <td>{s.image_path ? <img className="thumb" src={mediaUrl(supabase, s.image_path)!} alt="" /> : <span className="muted small">—</span>}</td>
+                  <td><div className="thumbs">{[s.image_path, s.image2_path].filter(Boolean).map((p) => <img key={p} className="thumb" src={mediaUrl(supabase, p)!} alt="" />)}{!s.image_path && !s.image2_path && <span className="muted small">—</span>}</div></td>
                   <td>{s.name}{s.description && <div className="small muted">{s.description}</div>}</td>
                   <td className="num">
                     {s.qty}
@@ -128,7 +133,7 @@ export default async function SaleItems({ params }: { params: Promise<{ dept: st
                       <details>
                         <summary className="btn sm secondary">አርም</summary>
                         <div style={{ marginTop: 8, minWidth: 300 }}>
-                          <MediaForm action={saveSaleItem} submitLabel="ለውጥ አስቀምጥ" resetOnSuccess={false} fileField="image" folder="shop" resize><Fields s={s} /></MediaForm>
+                          <MediaForm action={saveSaleItem} submitLabel="ለውጥ አስቀምጥ" resetOnSuccess={false} fileField={['image', 'image2']} folder="shop" resize><Fields s={s} /></MediaForm>
                         </div>
                       </details>
                       {s.sold_qty === 0 && <ActionButton action={deleteSaleItem.bind(null, s.id)} label="አጥፋ" className="btn sm danger" confirmText="ማጥፋት ይፈልጋሉ?" />}

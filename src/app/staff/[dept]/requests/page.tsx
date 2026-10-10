@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchRequests, type RequestRow } from '@/lib/money-data';
 import { RequestsTable } from '@/components/requests-table';
 import { PrintButton } from '@/components/print-button';
+import { BalanceCard } from '@/components/balance-card';
 
 /** ሒሳብና ንብረት's tracker: every request grouped by where it stands. */
 export default async function FinanceRequests({ params }: { params: Promise<{ dept: string }> }) {
@@ -22,9 +23,10 @@ export default async function FinanceRequests({ params }: { params: Promise<{ de
   return (
     <>
       <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-        <h2 className="section" style={{ margin: 0 }}>የገንዘብ ጥያቄዎች ክትትል</h2>
+        <h2 className="section" style={{ margin: 0 }}>ወጪ ለማጽደቅ</h2>
         <PrintButton />
       </div>
+      <BalanceCard supabase={supabase} note="ሲከፈል ከዚህ ይቀነሳል። ከቀሪ ሂሳቡ በላይ መክፈል አይቻልም።" />
       <p className="muted small">
         ጥያቄ → ጽሕፈት ቤት ያጸድቃል → ሒሳብና ንብረት ይከፍላል (የወጪ ማዘዣ ይዘጋጃል) → ክፍሉ ተረክቦ ይፈርማል (ወደ ኦዲት ይሄዳል) → ወጪ ሪፖርት → ሒሳብና ንብረት ያጸድቃል (ይዘጋል)
       </p>

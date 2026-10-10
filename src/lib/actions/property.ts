@@ -65,7 +65,12 @@ export async function saveSaleItem(_: FormState, fd: FormData): Promise<FormStat
   const supabase = await createClient();
   const rawImg = text(fd, 'image_path');
   const image_path = rawImg.startsWith('shop/') ? rawImg : undefined;
-  const row = { name, qty, buy_price, price, bought_on, description: text(fd, 'description') || null, ...(image_path ? { image_path } : {}) };
+  const rawImg2 = text(fd, 'image2_path');
+  const image2_path = rawImg2.startsWith('shop/') ? rawImg2 : fd.get('remove_image2') === 'on' ? null : undefined;
+  const row = {
+    name, qty, buy_price, price, bought_on, description: text(fd, 'description') || null,
+    ...(image_path ? { image_path } : {}), ...(image2_path !== undefined ? { image2_path } : {}),
+  };
   const { error, count } = id
     ? await supabase.from('sale_items').update(row, { count: 'exact' }).eq('id', id)
     : await supabase.from('sale_items').insert(row, { count: 'exact' });

@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { AuditEduTabs } from '@/components/audit-edu-tabs';
 import { createClient } from '@/lib/supabase/server';
 import { CONDUCT, classLabel, gradeOf, isClassLevel, semesterLabel, type ResultRow } from '@/lib/education';
 import { loadTerms } from '@/lib/edu-data';
@@ -32,6 +33,7 @@ export default async function Results({ params, searchParams }: {
 
   return (
     <>
+      {dept === 'audit' && <AuditEduTabs current="results" />}
       <div className="btn-row" style={{ justifyContent: 'space-between' }}>
         <h2 className="section" style={{ margin: 0 }}>ውጤቶች — {classLabel(cls)} · {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
         <PrintButton />

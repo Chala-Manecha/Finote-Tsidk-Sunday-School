@@ -127,7 +127,11 @@ export async function payRequest(_: FormState, fd: FormData): Promise<FormState>
   const supabase = await createClient();
   const { error, count } = await supabase.from('money_requests')
     .update({ status: 'paid', pay_method, pay_reference }, { count: 'exact' }).eq('id', id);
-  if (error) return { error: error.message.includes('only') ? 'ፈቃድ የለዎትም።' : error.message };
+  if (error) {
+    const low = error.message.match(/insufficient_funds:(-?[\d.]+)/);
+    if (low) return { error: `በቂ ገንዘብ የለም። ያለው ቀሪ ሂሳብ ${Number(low[1]).toLocaleString('en-US', { minimumFractionDigits: 2 })} ብር ነው — ከዚህ በላይ መክፈል አይቻልም።` };
+    return { error: error.message.includes('only') ? 'ፈቃድ የለዎትም።' : error.message };
+  }
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
   refresh();
   return { ok: 'ተከፍሏል፤ የወጪ ማዘዣ ተዘጋጅቷል።' };

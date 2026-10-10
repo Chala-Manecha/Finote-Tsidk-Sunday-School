@@ -2,6 +2,9 @@
 -- (see README → Tests). Every block either succeeds or raises.
 \set ON_ERROR_STOP 1
 
+-- The school has money to pay requests with (payments are blocked beyond the balance).
+update public.wallet_settings set opening_balance = 1000000 where id;
+
 -- helper: expect the statement in `sql` to fail
 create or replace function pg_temp.must_fail(sql text) returns void language plpgsql as $$
 begin
@@ -725,5 +728,21 @@ select public.delete_member((select id from public.members where full_name = '�
 select pg_temp.must_equal((select count(*) from public.members where full_name = 'ቀለም ለማ መኮንን'), 0, 'HR deletes a member without history');
 select pg_temp.must_fail($q$select public.delete_member((select m.id from public.members m join public.attendance a on a.member_id = m.id limit 1))$q$);
 reset role;
+
+-- ---------- round 6: payments cannot exceed the balance ----------
+reset role;
+select set_config('request.jwt.claim.role', '', false);
+select set_config('request.jwt.claim.sub', '', false);
+insert into public.money_requests (id, dept, amount, reason, status)
+values ('70000000-0000-0000-0000-000000000001', 'mezmur', 5000000, 'ከሂሳቡ በላይ', 'approved');
+select pg_temp.must_fail($q$update public.money_requests set status = 'paid', paid_at = now(), pay_method = 'cash'
+  where id = '70000000-0000-0000-0000-000000000001'$q$);
+update public.wallet_settings set opening_balance = 0, as_of = null where id;
+update public.money_requests set amount = greatest(public.wallet_balance() + 1, 1) where id = '70000000-0000-0000-0000-000000000001';
+select pg_temp.must_fail($q$update public.money_requests set status = 'paid', paid_at = now(), pay_method = 'cash'
+  where id = '70000000-0000-0000-0000-000000000001'$q$);
+update public.wallet_settings set opening_balance = 1000000 where id;
+update public.money_requests set status = 'paid', paid_at = now(), pay_method = 'cash' where id = '70000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select count(*) from public.money_requests where id = '70000000-0000-0000-0000-000000000001' and status = 'paid'), 1, 'payment within the balance goes through');
 
 \echo ALL RLS TESTS PASSED

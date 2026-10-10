@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AuditEduTabs } from '@/components/audit-edu-tabs';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, DECISION, classLabel, isClassLevel, type AcademicYear, type YearRow } from '@/lib/education';
 import { MediaForm } from '@/components/media-form';
@@ -29,6 +30,7 @@ export default async function YearEnd({ params, searchParams }: {
 
   return (
     <>
+      {dept === 'audit' && <AuditEduTabs current="year-end" />}
       <div className="btn-row" style={{ justifyContent: 'space-between' }}>
         <h2 className="section" style={{ margin: 0 }}>የዓመት ማጠቃለያ — {classLabel(cls)} · {year.ec_year} ዓ.ም</h2>
         <PrintButton />

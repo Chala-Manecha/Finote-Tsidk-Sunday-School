@@ -43,11 +43,11 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   schedule: [{ slug: 'events', label: 'ቀጠሮዎች', ready: true }],
   finance: [
-    { slug: 'requests', label: 'የገንዘብ ጥያቄዎች ክትትል', ready: true },
-    { slug: 'earnings', label: 'የተገኘ ገንዘብ ለማጸደቅ', ready: true },
+    { slug: 'requests', label: 'ወጪ ለማጽደቅ', ready: true },
+    { slug: 'earnings', label: 'ገቢ ለማጽደቅ', ready: true },
     { slug: 'donations', label: 'እርዳታዎች', ready: true },
     { slug: 'receipts', label: 'ደረሰኞች', ready: true },
-    { slug: 'tracking', label: 'የገንዘብ ክትትል', ready: true },
+    { slug: 'tracking', label: 'የክፍላት ገንዘብ አጠቃቀም', ready: true },
     { slug: 'ledger', label: 'የገንዘብ መዝገብ', ready: true },
     { slug: 'property-log', label: 'የንብረት መዝገብ', ready: true },
   ],
@@ -56,15 +56,13 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'duty', label: 'አባል መድብ', ready: true },
   ],
   audit: [
-    { slug: 'contributions', label: 'የክፍላት ደረጃ', ready: true },
+    { slug: 'contributions', label: 'የክፍላት ገቢ ወጪ', ready: true },
     { slug: 'ledger', label: 'የገንዘብ መዝገብ', ready: true },
-    { slug: 'money-review', label: 'የገንዘብ ጥያቄዎች ክትትል', ready: true },
     { slug: 'receipts', label: 'ደረሰኞች', ready: true },
     { slug: 'donations', label: 'የእርዳታ መዝገብ', ready: true },
     { slug: 'lost-members', label: 'የጠፉ አባላት', ready: true },
     { slug: 'departures', label: 'መልቀቂያዎች', ready: true },
-    { slug: 'results', label: 'የትምህርት ውጤቶች', ready: true },
-    { slug: 'year-end', label: 'የዓመት ማጠቃለያ', ready: true },
+    { slug: 'results', label: 'የትምህርት ውጤቶች እና ማጠቃለያ', ready: true },
     { slug: 'reports', label: 'ሪፖርቶች', ready: true },
   ],
   education: [
@@ -106,13 +104,25 @@ const EDUCATION_GROUPS: [string, string[]][] = [
   ['አብነትና ወረብ', ['attendance', 'abnet', 'wereb-admin']],
   ['የክፍሉ', ['members', 'duty', 'property', 'money', 'request-event', 'feedback']],
 ];
+const AUDIT_GROUPS: [string, string[]][] = [
+  ['ገንዘብ', ['contributions', 'ledger', 'receipts', 'donations']],
+  ['አባላት', ['lost-members', 'departures']],
+  ['ትምህርት', ['results']],
+  ['ሪፖርቶች', ['reports']],
+  ['የክፍሉ', ['members', 'property', 'money', 'request-event', 'feedback']],
+];
+const FINANCE_GROUPS: [string, string[]][] = [
+  ['ለማጽደቅ', ['requests', 'earnings', 'donations']],
+  ['መዛግብት', ['receipts', 'tracking', 'ledger', 'property-log']],
+  ['የክፍሉ', ['members', 'property', 'request-event', 'feedback']],
+];
 const HR_GROUPS: [string, string[]][] = [
   ['ምዝገባ', ['register', 'applications', 'age-groups', 'members']],
   ['ክትትል', ['overview', 'attendance', 'lost-members', 'departures']],
   ['ምደባና አመራር', ['duty', 'all-duties', 'leadership']],
   ['የክፍሉ', ['property', 'money', 'request-event', 'feedback']],
 ];
-const GROUPS: Partial<Record<DeptCode, [string, string[]][]>> = { office: OFFICE_GROUPS, education: EDUCATION_GROUPS, hr: HR_GROUPS };
+const GROUPS: Partial<Record<DeptCode, [string, string[]][]>> = { office: OFFICE_GROUPS, education: EDUCATION_GROUPS, hr: HR_GROUPS, audit: AUDIT_GROUPS, finance: FINANCE_GROUPS };
 
 export function tabsFor(dept: DeptCode): Tab[] {
   const all = [...specific[dept], ...shared(dept)];

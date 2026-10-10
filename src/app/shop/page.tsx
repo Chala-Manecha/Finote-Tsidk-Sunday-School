@@ -6,12 +6,12 @@ import { PublicHeader } from '@/components/public-header';
 
 export const metadata: Metadata = { title: 'ለመግዛት' };
 
-type S = { id: string; name: string; qty: number; sold_qty: number; price: number | null; description: string | null; image_path: string | null };
+type S = { id: string; name: string; qty: number; sold_qty: number; price: number | null; description: string | null; image_path: string | null; image2_path: string | null };
 
 export default async function ShopPage() {
   const supabase = await createClient();
   const [{ data }, { data: shop }] = await Promise.all([
-    supabase.from('sale_items').select('id, name, qty, sold_qty, price, description, image_path').order('name'),
+    supabase.from('sale_items').select('id, name, qty, sold_qty, price, description, image_path, image2_path').order('name'),
     supabase.from('shop_settings').select('phone, telegram').maybeSingle(),
   ]);
   // In stock first, sold-out last
@@ -34,13 +34,18 @@ export default async function ShopPage() {
           {items.map((s) => {
             const left = s.qty - s.sold_qty;
             const sold = left <= 0;
-            const img = mediaUrl(supabase, s.image_path);
+            const imgs = [s.image_path, s.image2_path].map((p) => mediaUrl(supabase, p)).filter((u): u is string => !!u);
             return (
               <article key={s.id} className={`shop-card ${sold ? 'sold' : ''}`}>
                 <div className="shop-img">
-                  {img ? (
-                    <a href={img} target="_blank" rel="noopener noreferrer" title="ለማየት"><img src={img} alt={s.name} loading="lazy" /></a>
+                  {imgs.length > 0 ? (
+                    <div className="shop-slides">
+                      {imgs.map((u, i) => (
+                        <a key={u} href={u} target="_blank" rel="noopener noreferrer" title="ለማየት"><img src={u} alt={`${s.name} ${i + 1}`} loading="lazy" /></a>
+                      ))}
+                    </div>
                   ) : <span className="muted small">ምስል የለም</span>}
+                  {imgs.length > 1 && <span className="slide-count">1/2 ⇆</span>}
                   {sold && <span className="sold-badge">ተሽጧል</span>}
                 </div>
                 <div className="shop-body">

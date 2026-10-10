@@ -5,6 +5,7 @@ import { DEPT_NAME, EARNING_STATUS, STATUS_PILL, formatBirr, type EarningStatus 
 import { formatEc } from '@/lib/ethiopian-calendar';
 import { ActionButton } from '@/components/action-button';
 import { decideEarning } from '@/lib/actions/money';
+import { BalanceCard } from '@/components/balance-card';
 
 type E = {
   id: string; dept: string; amount: number; source: string; earned_on: string;
@@ -26,7 +27,8 @@ export default async function FinanceEarnings({ params }: { params: Promise<{ de
 
   return (
     <>
-      <h2 className="section" style={{ marginTop: 0 }}>የተገኘ ገንዘብ ለማጸደቅ ({pending.length})</h2>
+      <h2 className="section" style={{ marginTop: 0 }}>ገቢ ለማጽደቅ ({pending.length})</h2>
+      <BalanceCard supabase={supabase} note="ገቢው ሲጸድቅ ወደዚህ ይደመራል፤ ደረሰኝ ይዘጋጃል እና ኦዲት ያየዋል።" />
       <div className="table-wrap">
         <table>
           <thead>

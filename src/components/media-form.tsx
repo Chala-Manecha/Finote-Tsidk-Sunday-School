@@ -14,7 +14,7 @@ export function MediaForm({
   action, fileField, folder, bucket = 'media', resize = false, submitLabel, card = true, resetOnSuccess = true, children,
 }: {
   action: Action;
-  fileField?: string;
+  fileField?: string | string[];
   folder?: string;
   bucket?: string;
   resize?: boolean;
@@ -37,15 +37,15 @@ export function MediaForm({
     e.preventDefault();
     setErr(null);
     const fd = new FormData(e.currentTarget);
-    if (fileField && folder) {
-      const f = fd.get(fileField);
-      fd.delete(fileField);
+    for (const field of fileField && folder ? (Array.isArray(fileField) ? fileField : [fileField]) : []) {
+      const f = fd.get(field);
+      fd.delete(field);
       if (f instanceof File && f.size > 0) {
         try {
           setUploading(true);
           const blob = resize && f.type.startsWith('image/') ? await resizeImage(f) : f;
-          fd.set(`${fileField}_path`, await uploadTo(bucket, folder, blob, f.name));
-          fd.set(`${fileField}_name`, f.name);
+          fd.set(`${field}_path`, await uploadTo(bucket, folder!, blob, f.name));
+          fd.set(`${field}_name`, f.name);
         } catch (x) {
           setErr((x as Error).message);
           return;

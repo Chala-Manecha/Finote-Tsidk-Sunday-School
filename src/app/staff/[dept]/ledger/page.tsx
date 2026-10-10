@@ -5,6 +5,8 @@ import { formatEc } from '@/lib/ethiopian-calendar';
 import { isPeriod, resolveRange } from '@/lib/periods';
 import { loadWallet, signed } from '@/lib/ledger';
 import { StatementHeader, StatementSignatures, PeriodTabs } from '@/components/statement';
+import { RequestsTable } from '@/components/requests-table';
+import { BalanceCard } from '@/components/balance-card';
 
 const KIND = { income: 'ገቢ', paid: 'ወጪ (ተከፈለ)', refund: 'ተመላሽ' } as const;
 
@@ -22,6 +24,7 @@ export default async function AuditLedger({
   const supabase = await createClient();
   const range = await resolveRange(supabase, period);
   const wallet = await loadWallet(supabase);
+  const toReview = wallet.requests.filter((r) => r.status === 'paid' && r.received_at && !r.audited_at);
 
   // Wallet balance is school-wide; the department filter only narrows the rows.
   const startFrom = wallet.asOf ?? '0000-01-01';
@@ -98,6 +101,14 @@ export default async function AuditLedger({
         ቀሪ ሂሳብ = መነሻ ቀሪ + የጸደቀ ገቢ − የተከፈለ ገንዘብ + የተመለሰ ተመላሽ። ከራስ ወጪ ከሰንበት ትምህርት ቤቱ ካዝና ስላልወጣ እዚህ አይቆጠርም፤ በክፍላት ደረጃ ግን እንደ አስተዋጽኦ ይቆጠራል።
       </p>
       <StatementSignatures />
+      {dept === 'audit' && (
+        <div className="no-print" style={{ marginTop: 24 }}>
+          <BalanceCard supabase={supabase} />
+          <h3 className="section">ኦዲት ያላያቸው ክፍያዎች ({toReview.length})</h3>
+          <p className="muted small">ክፍሉ ገንዘቡን ተረክቦ የፈረመባቸው ክፍያዎች። ተመልክተው “✓ ተመልክቻለሁ” ይጫኑ፤ ችግር ካለ ምልክት ያድርጉ።</p>
+          {toReview.length > 0 ? <RequestsTable rows={toReview} mode="audit" /> : <p className="muted">ሁሉም ታይቷል።</p>}
+        </div>
+      )}
     </div>
   );
 }

@@ -35,7 +35,7 @@ export default async function FinanceTracking({
   return (
     <>
       <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-        <h2 className="section" style={{ margin: 0 }}>የገንዘብ ክትትል</h2>
+        <h2 className="section" style={{ margin: 0 }}>የክፍላት ገንዘብ አጠቃቀም</h2>
         <PrintButton />
       </div>
       <div className="stat-cards">
