@@ -277,7 +277,11 @@ insert into public.prayer_schedule (program, days, times) values ('ምዕራፍ'
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
 insert into public.dept_assignees (dept, full_name, sex) values ('mezmur', 'ሀ', 'male')
   on conflict (dept) do update set full_name = excluded.full_name;
-insert into public.dept_property (name, qty, condition, owner_dept) values ('ከበሮ', 3, 'old', 'mezmur');
+-- round 7: ሒሳብና ንብረት manages department property; ጽሕፈት ቤት only views it
+select pg_temp.must_fail($q$insert into public.dept_property (name, qty, condition, owner_dept) values ('x', 1, 'old', 'mezmur')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
+insert into public.dept_property (name, qty, condition, owner_dept, note) values ('ከበሮ', 3, 'old', 'mezmur', 'ሁለቱ ጠጅ ይፈልጋሉ');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
 select pg_temp.must_fail($q$insert into public.abnet_sessions (subjects, days, times, teacher) values ('{ቅኔ}', '{1}', '{x}', 'y')$q$);
 select pg_temp.must_fail($q$insert into public.sale_items (name, qty) values ('x', 1)$q$);
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
@@ -286,7 +290,7 @@ select pg_temp.must_fail($q$insert into public.dept_property (name, qty, conditi
 select pg_temp.must_equal((select count(*) from public.dept_property where owner_dept = 'mezmur'), 1, 'mezmur sees its property');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
 insert into public.dept_property (name, qty, condition, owner_dept) values ('ካዝና', 1, 'new', 'finance');
-select pg_temp.must_fail($q$insert into public.dept_property (name, qty, condition, owner_dept) values ('x', 1, 'new', 'hr')$q$);
+insert into public.dept_property (name, qty, condition, owner_dept) values ('ወንበር', 1, 'new', 'hr');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
 insert into public.abnet_sessions (subjects, days, times, teacher) values ('{ቅኔ,ዜማ}', '{1,3}', '{ጠዋት 12:00 ጀምሮ}', 'የኔታ አእምሮ');
 insert into public.edu_plan (course_name) values ('ሥርዓተ ቤተክርስቲያን');
@@ -760,5 +764,24 @@ insert into public.expense_lines (request_id, amount, reason, spent_on) values
 update public.money_requests set spend_approved_at = now() where id in ('70000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000003');
 select pg_temp.must_equal((select count(*) from public.money_requests where id = '70000000-0000-0000-0000-000000000002' and auto_audited and audited_at is not null), 1, 'clean payment audited automatically');
 select pg_temp.must_equal((select count(*) from public.money_requests where id = '70000000-0000-0000-0000-000000000003' and audited_at is null), 1, 'overspend left for audit');
+
+-- ---------- round 7: heads open their department; members ask for መልቀቂያ ----------
+reset role;
+select set_config('request.jwt.claim.role', '', false);
+select set_config('request.jwt.claim.sub', '', false);
+update public.dept_assignees set member_id = '10000000-0000-0000-0000-0000000000e2' where dept = 'mezmur';
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+select pg_temp.must_equal((select public.has_dept('mezmur')::int), 1, 'head opens own department');
+select pg_temp.must_equal((select public.has_dept('finance')::int), 0, 'head does not open other departments');
+select pg_temp.must_equal((select cardinality(public.my_head_depts())), 1, 'head departments listed');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select public.has_dept('mezmur')::int), 0, 'ordinary member has no department');
+select public.request_my_departure('moved', 'ወደ ሌላ ከተማ ተዛውሬያለሁ', null);
+select pg_temp.must_equal((select count(*) from public.my_departures() where status = 'pending'), 1, 'member sees own request');
+select pg_temp.must_fail($q$select public.request_my_departure('moved', 'ሁለተኛ ጥያቄ', null)$q$);
+reset role;
+select pg_temp.must_equal((select count(*) from public.member_departures where self_requested and member_id = '10000000-0000-0000-0000-0000000000e1'), 1, 'self request stored');
 
 \echo ALL RLS TESTS PASSED

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { ageFromIso } from '@/lib/ethiopian-calendar';
 import {
-  DEPARTMENTS, DEPT_NAME, MEMBER_STATUS, SEX, WORK_STATUS, TITLES, memberTypeLabel,
+  DEPT_NAME, MEMBER_STATUS, SEX, WORK_STATUS, TITLES, memberTypeLabel,
 } from '@/lib/constants';
 import { PrintButton } from './print-button';
 
@@ -40,7 +40,7 @@ export async function MemberTable({
   linkToDetail: boolean;
 }) {
   const supabase = await createClient();
-  const dept = fixedDept ?? filters.dept;
+  const dept = fixedDept;
 
   let query = supabase
     .from('members')
@@ -101,17 +101,6 @@ export async function MemberTable({
             ))}
           </select>
         </div>
-        {!fixedDept && (
-          <div className="field">
-            <label htmlFor="dept">ክፍል</label>
-            <select id="dept" name="dept" defaultValue={filters.dept ?? ''}>
-              <option value="">ሁሉም ክፍል</option>
-              {DEPARTMENTS.map((d) => (
-                <option key={d.code} value={d.code}>{d.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
         <label className="check" style={{ margin: 0, alignSelf: 'center' }}>
           <input type="checkbox" name="inactive" value="1" defaultChecked={filters.inactive === '1'} /> የተሰረዙ (ያልነቁ) ብቻ
         </label>

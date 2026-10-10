@@ -7,10 +7,10 @@ export function EduPicker({ action, years, semesters, semesterId, classLevel, wi
   return (
     <form className="toolbar no-print" action={action}>
       <div className="field">
-        <label htmlFor="s">ወሰነ ትምህርት</label>
+        <label htmlFor="s">ሴሚስተር</label>
         <select id="s" name="s" defaultValue={semesterId}>
           {years.map((y) => semesters.filter((s) => s.year_id === y.id).map((s) => (
-            <option key={s.id} value={s.id}>{y.ec_year} ዓ.ም · {semesterLabel(s.no)}{s.is_active ? ' (ንቁ)' : ''}</option>
+            <option key={s.id} value={s.id}>{y.ec_year} ዓ.ም · {semesterLabel(s.no)}{s.is_active ? ' (ክፍት)' : ''}</option>
           )))}
         </select>
       </div>

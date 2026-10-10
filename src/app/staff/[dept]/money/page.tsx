@@ -10,6 +10,7 @@ import { ActionButton } from '@/components/action-button';
 import { RequestMoneyForm, ExpenseForm, EarningForm } from '@/components/money-forms';
 import { withdrawRequest, deleteExpense, deleteEarning } from '@/lib/actions/money';
 import { ReceiveForm } from '@/components/pay-form';
+import { ShopProfit } from '@/components/shop-profit';
 
 const VIEWS = {
   request: 'ገንዘብ ለመጠየቅ',
@@ -34,6 +35,7 @@ export default async function DeptMoneyPage({
   return (
     <>
       <h2 className="section" style={{ marginTop: 0 }}>የገንዘብ አስተዳደር</h2>
+      {dept === 'development' && <ShopProfit supabase={supabase} />}
       <div className="subtabs no-print">
         {(Object.keys(VIEWS) as View[]).map((k) => (
           <Link scroll={false} key={k} href={`/staff/${dept}/money?view=${k}`} className={`btn sm ${k === view ? 'green' : 'secondary'}`}>

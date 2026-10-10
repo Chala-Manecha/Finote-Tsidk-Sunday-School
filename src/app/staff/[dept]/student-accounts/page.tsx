@@ -23,10 +23,10 @@ export default async function StudentAccounts({ params, searchParams }: {
 
   return (
     <>
-      <h2 className="section" style={{ marginTop: 0 }}>የተማሪ መለያዎች</h2>
+      <h2 className="section" style={{ marginTop: 0 }}>የመግቢያ ኮድ ድጋፍ</h2>
       <p className="muted small">
-        ተማሪዎች /student/register ላይ በመመዝገቢያ ቁጥራቸውና በስልካቸው ራሳቸው ይመዘገባሉ። ፒን 5 ጊዜ ከተሳሳተ መለያው ይቆለፋል — እዚህ ይክፈቱት።
-        ፒኑን የረሳ ተማሪ “ዳግም አስጀምር” ሲጫን እንደገና ይመዘገባል (ውጤቱ አይጠፋም)።
+        አባላት ሲመዘገቡ በፈጠሩት 6 አሃዝ ኮድ ይገባሉ — እዚህ መለያ መፍጠር አያስፈልግም። ይህ ገጽ ለድጋፍ ብቻ ነው፦
+        ኮዱ 5 ጊዜ ከተሳሳተ መለያው ይቆለፋል — “ክፈት” ይጫኑ። ኮዱን የረሳ አባል “ዳግም አስጀምር” ሲጫን በመመዝገቢያ ቁጥሩና በስልኩ አዲስ ኮድ ይፈጥራል (ውጤቱ አይጠፋም)።
       </p>
       <div className="stat-cards"><div className="stat-card"><b>{rows.length}</b>መለያዎች</div><div className="stat-card"><b>{locked}</b>የተቆለፉ</div></div>
       <form className="toolbar" action="/staff/education/student-accounts">
@@ -48,7 +48,7 @@ export default async function StudentAccounts({ params, searchParams }: {
                   <div className="btn-row">
                     {r.locked_at && <ActionButton action={unlockAccount.bind(null, r.member_id)} label="ክፈት" className="btn sm green" />}
                     <ActionButton action={resetAccount.bind(null, r.member_id)} label="ዳግም አስጀምር" className="btn sm secondary"
-                      confirmText="መለያው ይሰረዛል፤ ተማሪው በመመዝገቢያ ቁጥሩና በስልኩ እንደገና ይመዘገባል። ይቀጥል?" />
+                      confirmText="የድሮው ኮድ ይሰረዛል፤ አባሉ በመመዝገቢያ ቁጥሩና በስልኩ እንደገና ይመዘገባል። ይቀጥል?" />
                   </div>
                 </td>
               </tr>

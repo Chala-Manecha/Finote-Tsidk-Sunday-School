@@ -19,7 +19,7 @@ export default async function TeacherHome() {
   const list = (rows: O[]) => (
     <div className="table-wrap">
       <table>
-        <thead><tr><th>ኮርስ</th><th>ክፍል</th><th>ወሰነ ትምህርት</th><th>ሁኔታ</th></tr></thead>
+        <thead><tr><th>ኮርስ</th><th>ክፍል</th><th>ሴሚስተር</th><th>ሁኔታ</th></tr></thead>
         <tbody>
           {rows.map((o) => (
             <tr key={o.id}>

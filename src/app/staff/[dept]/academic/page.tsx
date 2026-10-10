@@ -20,8 +20,8 @@ export default async function Academic({ params }: { params: Promise<{ dept: str
 
   return (
     <>
-      <h2 className="section" style={{ marginTop: 0 }}>የትምህርት ዘመንና ወሰነ ትምህርት</h2>
-      <p className="muted small">እያንዳንዱ ዓመት 2 ወሰነ ትምህርት አለው። የውጤት ነጥቦቹ (ድምር 100) እና ማለፊያው እዚህ ይወሰናሉ፤ መምህራንና ተማሪዎች ያዩታል።</p>
+      <h2 className="section" style={{ marginTop: 0 }}>የትምህርት ዘመንና ሴሚስተር</h2>
+      <p className="muted small">እያንዳንዱ ዓመት 2 ሴሚስተር አለው። የውጤት ነጥቦቹ (ድምር 100) እና ማለፊያው እዚህ ይወሰናሉ፤ መምህራንና ተማሪዎች ያዩታል።</p>
       <MediaForm action={createYear} submitLabel="+ አዲስ የትምህርት ዘመን ክፈት">
         <div className="field" style={{ maxWidth: 240 }}><label>ዓ.ም</label><input name="ec_year" type="number" min={2000} max={2100} required placeholder="2019" /></div>
       </MediaForm>
@@ -29,8 +29,8 @@ export default async function Academic({ params }: { params: Promise<{ dept: str
       {years.map((yr) => (
         <section key={yr.id} className="card" style={{ marginBottom: 14 }}>
           <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-            <h3 style={{ margin: 0 }}>{yr.ec_year} ዓ.ም {yr.is_active && <span className="pill present">ንቁ</span>}</h3>
-            {!yr.is_active && <ActionButton action={activateYear.bind(null, yr.id)} label="ንቁ አድርግ" className="btn sm secondary" />}
+            <h3 style={{ margin: 0 }}>{yr.ec_year} ዓ.ም {yr.is_active && <span className="pill present">ክፍት</span>}</h3>
+            {!yr.is_active && <ActionButton action={activateYear.bind(null, yr.id)} label="ክፈት" className="btn sm secondary" />}
           </div>
           <MediaForm action={saveYearRules} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false}>
             <input type="hidden" name="id" value={yr.id} />
@@ -42,7 +42,7 @@ export default async function Academic({ params }: { params: Promise<{ dept: str
           {semesters.filter((x) => x.year_id === yr.id).map((x) => (
             <details key={x.id} style={{ marginTop: 10 }} open={x.is_active}>
               <summary>
-                <b>{semesterLabel(x.no)}</b> {x.is_active && <span className="pill present">ንቁ</span>}{' '}
+                <b>{semesterLabel(x.no)}</b> {x.is_active && <span className="pill present">ክፍት</span>}{' '}
                 <span className="small muted">ፈተና {x.w_quiz} · ደብተር {x.w_notebook} · ተሣትፎ {x.w_participation} · አጋማሽ {x.w_mid} · ዋና {x.w_final} · ማለፊያ {x.pass_mark}</span>
               </summary>
               <MediaForm action={saveSemester} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false}>
@@ -70,7 +70,7 @@ export default async function Academic({ params }: { params: Promise<{ dept: str
                   </div>
                 </div>
               </MediaForm>
-              {!x.is_active && <ActionButton action={activateSemester.bind(null, x.id)} label="ይህን ወሰነ ትምህርት ንቁ አድርግ" className="btn sm secondary" />}
+              {!x.is_active && <ActionButton action={activateSemester.bind(null, x.id)} label="ይህን ሴሚስተር ክፈት" className="btn sm secondary" />}
             </details>
           ))}
         </section>

@@ -10,7 +10,7 @@ export default async function DeptProperty({ params }: { params: Promise<{ dept:
   const { dept } = await params;
   if (!isDeptCode(dept)) notFound();
   const supabase = await createClient();
-  const { data } = await supabase.from('dept_property').select('id, name, qty, price, condition, owner_dept')
+  const { data } = await supabase.from('dept_property').select('id, name, qty, price, condition, owner_dept, note')
     .eq('owner_dept', dept).order('name');
   const isFinance = dept === 'finance';
   return (

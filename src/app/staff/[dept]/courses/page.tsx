@@ -108,7 +108,7 @@ export default async function Courses({ params, searchParams }: {
           </div>
         </section>
       ))}
-      {rows.length === 0 && <p className="muted">ለዚህ ወሰነ ትምህርት ኮርስ አልተጨመረም።</p>}
+      {rows.length === 0 && <p className="muted">ለዚህ ሴሚስተር ኮርስ አልተጨመረም።</p>}
     </>
   );
 }

@@ -10,12 +10,12 @@ import { DecideDepartureForm } from '@/components/departure-forms';
 import { requestDeparture, withdrawDeparture, reinstateMember } from '@/lib/actions/people';
 
 type D = {
-  id: string; member_id: string; leave_date: string; reason_text: string; reason_category: LeaveReason;
+  id: string; member_id: string; leave_date: string; reason_text: string; reason_category: LeaveReason; self_requested: boolean;
   status: DepartureStatus; commendation: string | null; decision_note: string | null; requested_at: string;
   decided_at: string | null; cert_no: string | null; print_count: number; reinstated_at: string | null;
   members: { full_name: string; reg_no: string } | null;
 };
-const COLS = 'id, member_id, leave_date, reason_text, reason_category, status, commendation, decision_note, requested_at, decided_at, cert_no, print_count, reinstated_at, members(full_name, reg_no)';
+const COLS = 'id, member_id, leave_date, self_requested, reason_text, reason_category, status, commendation, decision_note, requested_at, decided_at, cert_no, print_count, reinstated_at, members(full_name, reg_no)';
 
 /** HR requests · ጽሕፈት ቤት approves · ኦዲት tracks. */
 export default async function Departures({ params }: { params: Promise<{ dept: string }> }) {
@@ -76,7 +76,7 @@ export default async function Departures({ params }: { params: Promise<{ dept: s
             <div key={r.id} className="card" style={{ marginBottom: 12 }}>
               <b>{r.members?.full_name}</b> <span className="small muted">{r.members?.reg_no}</span>
               <p className="small" style={{ margin: '6px 0' }}>
-                {formatEc(r.leave_date)} · {LEAVE_REASON[r.reason_category]} — “{r.reason_text}”
+                {formatEc(r.leave_date)} · {LEAVE_REASON[r.reason_category]} — “{r.reason_text}”{r.self_requested && <span className="pill" style={{ marginInlineStart: 6 }}>በራሳቸው የጠየቁ</span>}
               </p>
               <DecideDepartureForm id={r.id} name={r.members?.full_name ?? ''} />
             </div>

@@ -28,7 +28,7 @@ export default async function CoursePage() {
       <main className="page">
         <h1 className="title">ኮርስ</h1>
         {!s ? (
-          <p className="muted">የዚህ ወሰነ ትምህርት ኮርሶች በቅርቡ ይገለጻሉ።</p>
+          <p className="muted">የዚህ ሴሚስተር ኮርሶች በቅርቡ ይገለጻሉ።</p>
         ) : (
           <>
             <p className="muted">{s.ec_year} ዓ.ም · {semesterLabel(s.semester_no)}</p>

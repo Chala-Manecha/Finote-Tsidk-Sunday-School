@@ -75,7 +75,7 @@ export default async function StudentHome() {
           <p className="small muted">
             የውጤት አያያዝ፦ ፈተና {s.w_quiz} · ደብተር {s.w_notebook} · ተሣትፎ {s.w_participation} · አጋማሽ {s.w_mid} · ዋና {s.w_final} = 100 · ማለፊያ {s.pass_mark}
           </p>
-          {rows.length === 0 ? <p className="muted">ለዚህ ወሰነ ትምህርት ኮርሶች ገና አልተዘጋጁም።</p> : (
+          {rows.length === 0 ? <p className="muted">ለዚህ ሴሚስተር ኮርሶች ገና አልተዘጋጁም።</p> : (
             <div className="table-wrap">
               <table>
                 <thead><tr><th>ኮርስ</th>{COMPONENTS.map((c) => <th key={c.key} className="num">{c.label}</th>)}<th className="num">ድምር</th><th>ደረጃ</th><th className="num">ክትትል</th></tr></thead>

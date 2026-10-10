@@ -34,7 +34,7 @@ export async function createYear(_: FormState, fd: FormData): Promise<FormState>
   if (error) return { error: explain(error.message) };
   await supabase.from('semesters').insert([{ year_id: y.id, no: 1 }, { year_id: y.id, no: 2 }]);
   refresh();
-  return { ok: `${ec_year} ዓ.ም ተከፍቷል (2 ወሰነ ትምህርት)።` };
+  return { ok: `${ec_year} ዓ.ም ተከፍቷል (2 ሴሚስተር)።` };
 }
 
 export async function activateYear(id: string) {
@@ -121,7 +121,7 @@ export async function addCourse(_: FormState, fd: FormData): Promise<FormState> 
   const semester_id = text(fd, 'semester_id');
   const class_level = text(fd, 'class_level');
   const name = text(fd, 'name');
-  if (!UUID_RE.test(semester_id)) return { error: 'ወሰነ ትምህርት ይምረጡ።' };
+  if (!UUID_RE.test(semester_id)) return { error: 'ሴሚስተር ይምረጡ።' };
   if (!isClassLevel(class_level)) return { error: 'ክፍል ይምረጡ።' };
   if (name.length < 2) return { error: 'የኮርሱን ስም ያስገቡ።' };
   const supabase = await createClient();

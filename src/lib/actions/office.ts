@@ -85,30 +85,23 @@ export async function deleteHistory(id: string) {
 export async function saveAssignee(_: FormState, fd: FormData): Promise<FormState> {
   await requireStaff();
   const dept = text(fd, 'dept');
-  const full_name = text(fd, 'full_name');
-  const sex = text(fd, 'sex');
+  const name = text(fd, 'full_name').replace(/\s+/g, ' ');
   if (!(dept in DEPT_NAME)) return { error: 'ክፍል ይምረጡ።' };
-  if (!full_name) return { error: 'ስም ያስገቡ።' };
-  if (sex !== 'male' && sex !== 'female') return { error: 'ፆታ ይምረጡ።' };
-  const newPath = pathIn(fd, 'photo', 'assignees');
+  if (!name) return { error: 'ስም ያስገቡ።' };
   const supabase = await createClient();
+  // The head must be a registered (active) member — picked by their full name.
+  const { data: found } = await supabase.from('members').select('id, full_name, sex').eq('is_active', true).ilike('full_name', name).limit(2);
+  if (!found || found.length === 0) return { error: 'ይህ ስም አልተመዘገበም!' };
+  if (found.length > 1) return { error: 'በዚህ ስም ከአንድ በላይ አባል አለ፤ ሙሉ ስሙን (ከአያት ስም ጋር) ያስገቡ።' };
+  const m = found[0];
   const { data: old } = await supabase.from('dept_assignees').select('photo_path').eq('dept', dept).maybeSingle();
-  // HR's leadership list (active term) is the source of the head's name.
-  const { data: term } = await supabase.from('leadership_terms').select('id').eq('is_active', true).maybeSingle();
-  const { data: head } = term
-    ? await supabase.from('leadership_roles').select('members(full_name, sex)').eq('term_id', term.id).eq('dept', dept).eq('role', 'head').maybeSingle()
-    : { data: null };
-  const hm = (head as unknown as { members: { full_name: string; sex: string } | null } | null)?.members;
-  const row = {
-    dept, full_name: hm?.full_name ?? full_name, sex: hm?.sex ?? sex,
-    user_id: text(fd, 'user_id') || null,
-    photo_path: newPath ?? old?.photo_path ?? null,
-  };
-  const { error } = await supabase.from('dept_assignees').upsert(row);
-  if (error) { if (newPath) await removeMedia(newPath); return { error: error.message }; }
-  if (newPath) await removeMedia(old?.photo_path);
+  const { error } = await supabase.from('dept_assignees').upsert({
+    dept, full_name: m.full_name, sex: m.sex, member_id: m.id, user_id: null, photo_path: null,
+  });
+  if (error) return { error: error.message.includes('row-level') ? 'ፈቃድ የለዎትም።' : error.message };
+  await removeMedia(old?.photo_path);
   refresh();
-  return { ok: 'ተቀምጧል።' };
+  return { ok: `${m.full_name} የ${DEPT_NAME[dept]} ኃላፊ ሆነዋል። በራሳቸው መለያ ቁጥርና ኮድ ገብተው የክፍሉን ገጽ ያያሉ።` };
 }
 export async function deleteAssignee(dept: string) {
   await requireStaff();

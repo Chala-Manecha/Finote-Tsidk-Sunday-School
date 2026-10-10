@@ -40,6 +40,7 @@ export async function SiteFooter() {
             <Link href="/departments">ክፍሎቻችን</Link>
             <Link href="/donate">ለመርዳት</Link>
             <Link href="/verify">ሰነድ ማረጋገጫ</Link>
+            <Link href="/student/leave" className="small muted">መልቀቂያ ለመጠየቅ</Link>
           </div>
           {links.length > 0 && (
             <div>

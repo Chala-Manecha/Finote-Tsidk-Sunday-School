@@ -11,7 +11,7 @@ type S = { id: string; name: string; qty: number; sold_qty: number; price: numbe
 export default async function ShopPage() {
   const supabase = await createClient();
   const [{ data }, { data: shop }] = await Promise.all([
-    supabase.from('sale_items').select('id, name, qty, sold_qty, price, description, image_path, image2_path').order('name'),
+    supabase.from('sale_items').select('id, name, qty, sold_qty, price, description, image_path, image2_path').eq('published', true).order('name'),
     supabase.from('shop_settings').select('phone, telegram').maybeSingle(),
   ]);
   // In stock first, sold-out last

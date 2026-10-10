@@ -2,7 +2,6 @@
 import { revalidatePath } from 'next/cache';
 import { requireStaff } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { ABNET_SUBJECTS, ABNET_TIMES } from '@/lib/constants';
 import type { FormState } from '@/components/media-form';
 
 const text = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
@@ -71,14 +70,40 @@ export async function deleteCourseSession(id: string) { return remove('course_se
 // ---------- አብነት ----------
 export async function saveAbnet(_: FormState, fd: FormData): Promise<FormState> {
   await requireStaff();
-  const subjects = fd.getAll('subjects').map(String).filter((s) => (ABNET_SUBJECTS as readonly string[]).includes(s));
-  const times = fd.getAll('times').map(String).filter((s) => (ABNET_TIMES as readonly string[]).includes(s));
+  const id = text(fd, 'id') || null;
+  const subject = text(fd, 'subject');
+  const day_text = text(fd, 'day_text');
+  const time_text = text(fd, 'time_text');
   const teacher = text(fd, 'teacher');
-  const d = days(fd);
-  if (subjects.length === 0) return { error: 'ቢያንስ አንድ ትምህርት ይምረጡ።' };
-  if (d.length === 0) return { error: 'ቢያንስ አንድ ቀን ይምረጡ።' };
-  if (times.length === 0) return { error: 'ሰዓት ይምረጡ።' };
-  if (!teacher) return { error: 'መምህር ይምረጡ።' };
-  return save('abnet_sessions', text(fd, 'id') || null, { subjects, days: d, times, teacher }, 'ተጨምሯል።');
+  if (!subject) return { error: 'የሚሰጡ ትምህርቶችን ያስገቡ።' };
+  if (!day_text) return { error: 'ቀን ያስገቡ።' };
+  if (!time_text) return { error: 'ሰዐት ያስገቡ።' };
+  if (!teacher) return { error: 'መምህር ያስገቡ።' };
+  const upload = (k: string) => { const v = text(fd, `${k}_path`); return v.startsWith('abnet/') ? v : undefined; };
+  const audio = upload('audio') ?? (fd.get('remove_audio') === 'on' ? null : undefined);
+  const file = upload('file') ?? (fd.get('remove_file') === 'on' ? null : undefined);
+  const supabase = await createClient();
+  const { data: old } = id
+    ? await supabase.from('abnet_sessions').select('audio_path, file_path').eq('id', id).maybeSingle()
+    : { data: null };
+  const row = {
+    subject, day_text, time_text, teacher,
+    ...(audio !== undefined ? { audio_path: audio } : {}), ...(file !== undefined ? { file_path: file } : {}),
+  };
+  const res = await save('abnet_sessions', id, row, 'ተጨምሯል።');
+  if (!res.error && old) {
+    const gone = [audio !== undefined && old.audio_path, file !== undefined && old.file_path]
+      .filter((x): x is string => !!x && x !== audio && x !== file);
+    if (gone.length) await supabase.storage.from('media').remove(gone);
+  }
+  return res;
 }
-export async function deleteAbnet(id: string) { return remove('abnet_sessions', id); }
+export async function deleteAbnet(id: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { data: old } = await supabase.from('abnet_sessions').select('audio_path, file_path').eq('id', id).maybeSingle();
+  const res = await remove('abnet_sessions', id);
+  const paths = [old?.audio_path, old?.file_path].filter((x): x is string => !!x);
+  if (!res?.error && paths.length) await supabase.storage.from('media').remove(paths);
+  return res;
+}

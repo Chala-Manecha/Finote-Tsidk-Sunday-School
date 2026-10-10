@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AuditEduTabs } from '@/components/audit-edu-tabs';
 import { createClient } from '@/lib/supabase/server';
-import { CLASS_LEVELS, DECISION, classLabel, isClassLevel, type AcademicYear, type YearRow } from '@/lib/education';
+import { CLASS_LEVELS, DECISION, classLabel, isClassLevel, semesterLabel, type AcademicYear, type ResultRow, type YearRow } from '@/lib/education';
 import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { PrintButton } from '@/components/print-button';
@@ -12,7 +12,7 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 
 /** ትምህርት ክፍል: both semesters, yearly average, rank, promotion, honours. */
 export default async function YearEnd({ params, searchParams }: {
-  params: Promise<{ dept: string }>; searchParams: Promise<{ y?: string; c?: string }>;
+  params: Promise<{ dept: string }>; searchParams: Promise<{ y?: string; c?: string; m?: string }>;
 }) {
   const { dept } = await params;
   if (dept !== 'education' && dept !== 'audit') notFound();
@@ -27,6 +27,21 @@ export default async function YearEnd({ params, searchParams }: {
   const rows = (data ?? []) as YearRow[];
   const ready = rows[0]?.ready ?? false;
   const base = `/staff/${dept}/year-end`;
+  const here = `${base}?y=${year.id}&c=${cls}`;
+
+  // የወደቁ ኮርሶች of the clicked student (both semesters of this year).
+  const picked = sp.m ? rows.find((r) => r.member_id === sp.m) : undefined;
+  let failed: { sem: number; course: string; total: number; pass: number }[] = [];
+  if (picked) {
+    const { data: sems } = await supabase.from('semesters').select('id, no, pass_mark').eq('year_id', year.id).order('no');
+    const per = await Promise.all((sems ?? []).map(async (x) => {
+      const { data: r } = await supabase.rpc('semester_results', { p_semester: x.id, p_class: cls });
+      return ((r ?? []) as ResultRow[])
+        .filter((y) => y.member_id === picked.member_id && Number(y.total) < Number(x.pass_mark))
+        .map((y) => ({ sem: x.no as number, course: y.course, total: Number(y.total), pass: Number(x.pass_mark) }));
+    }));
+    failed = per.flat();
+  }
 
   return (
     <>
@@ -50,13 +65,33 @@ export default async function YearEnd({ params, searchParams }: {
         የመዛወሪያ ደንብ፦ የዓመት አማካይ ≥ {year.promote_min_average} እና የወደቁ ኮርሶች ≤ {year.max_failed_courses} (በ“የትምህርት ዘመን” ትር ይቀየራል)። ውሳኔውን ለየብቻ መቀየር ይቻላል።
       </p>
       {rows.length > 0 && (ready
-        ? <p className="alert ok">✓ የሁለቱም ወሰነ ትምህርቶች ውጤቶች ጸድቀዋል።</p>
-        : <p className="small muted">የሁለቱም ወሰነ ትምህርቶች ሁሉም ኮርሶች ሲጸድቁ የዓመት ትራንስክሪፕትና የክብር ሰርተፍኬት ይከፈታሉ።</p>)}
+        ? <p className="alert ok">✓ የሁለቱም ሴሚስተሮች ውጤቶች ጸድቀዋል።</p>
+        : <p className="small muted">የሁለቱም ሴሚስተሮች ሁሉም ኮርሶች ሲጸድቁ የዓመት ትራንስክሪፕትና የክብር ሰርተፍኬት ይከፈታሉ።</p>)}
+      {picked && (
+        <section className="card" style={{ marginBottom: 14 }}>
+          <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+            <h3 style={{ margin: 0 }}>{picked.full_name} — የወደቁባቸው ኮርሶች</h3>
+            <Link className="btn sm secondary no-print" href={here} scroll={false}>✕ ዝጋ</Link>
+          </div>
+          {failed.length === 0 ? <p className="muted">የወደቁበት ኮርስ የለም።</p> : (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>ሴሚስተር</th><th>ኮርስ</th><th className="num">ውጤት</th><th className="num">ማለፊያ</th></tr></thead>
+                <tbody>
+                  {failed.map((f, i) => (
+                    <tr key={`${f.sem}-${f.course}-${i}`}><td>{semesterLabel(f.sem)}</td><td>{f.course}</td><td className="num neg">{f.total}</td><td className="num">{f.pass}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th className="rank">ደረጃ</th><th>ተማሪ</th><th className="num">1ኛ ወሰነ ት.</th><th className="num">2ኛ ወሰነ ት.</th>
+              <th className="rank">ደረጃ</th><th>ተማሪ</th><th className="num">1ኛ ሴሚስተር</th><th className="num">2ኛ ሴሚስተር</th>
               <th className="num">የዓመት አማካይ</th><th className="num">የወደቁ</th><th>ውሳኔ</th>
               {dept === 'education' && <th className="no-print" />}
             </tr>
@@ -71,7 +106,9 @@ export default async function YearEnd({ params, searchParams }: {
                   <td className="num">{r.sem1_average ?? '—'}</td>
                   <td className="num">{r.sem2_average ?? '—'}</td>
                   <td className="num"><b>{r.year_average ?? '—'}</b></td>
-                  <td className={`num ${r.failed_courses ? 'neg' : ''}`}>{r.failed_courses ?? '—'}</td>
+                  <td className={`num ${r.failed_courses ? 'neg' : ''}`}>
+                    {r.failed_courses ? <Link className="link" scroll={false} href={`${here}&m=${r.member_id}`} title="የወደቁባቸውን ኮርሶች እይ">{r.failed_courses}</Link> : (r.failed_courses ?? '—')}
+                  </td>
                   <td>
                     {dept === 'education' ? (
                       <MediaForm action={setYearDecision} submitLabel="✓" card={false} resetOnSuccess={false}>

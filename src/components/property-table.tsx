@@ -4,7 +4,7 @@ import { ActionButton } from './action-button';
 import { saveProperty, deleteProperty } from '@/lib/actions/property';
 
 export type PropertyRow = {
-  id: string; name: string; qty: number; price: number | null; condition: ItemCondition; owner_dept: string;
+  id: string; name: string; qty: number; price: number | null; condition: ItemCondition; owner_dept: string; note?: string | null;
 };
 
 /** Fields for a ንብረት row. `fixedDept` hides the department picker. */
@@ -34,6 +34,7 @@ export function PropertyFields({ row, fixedDept }: { row?: PropertyRow; fixedDep
           </div>
         )}
       </div>
+      <div className="field"><label>ተጨማሪ መረጃ</label><textarea name="note" rows={2} defaultValue={row?.note ?? ''} placeholder="ለምሳሌ፦ ያለበት ቦታ፣ ጥገና የሚያስፈልገው…" /></div>
     </>
   );
 }
@@ -57,7 +58,7 @@ export function PropertyTable({
         <tbody>
           {rows.map((r) => (
             <tr key={r.id}>
-              <td>{r.name}</td>
+              <td>{r.name}{r.note && <div className="small muted" style={{ whiteSpace: 'pre-line' }}>{r.note}</div>}</td>
               <td className="num">{r.qty}</td>
               <td className="num">{r.price == null ? '—' : formatBirr(r.price)}</td>
               <td>{ITEM_CONDITION[r.condition]}</td>

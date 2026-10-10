@@ -1,5 +1,4 @@
 import { formatEc } from '@/lib/ethiopian-calendar';
-import { ABNET_SUBJECTS, ABNET_TEACHERS, ABNET_TIMES } from '@/lib/constants';
 import { MediaForm } from './media-form';
 import { EcDatePicker } from './ec-date-picker';
 import { ActionButton } from './action-button';
@@ -14,7 +13,12 @@ export type Plan = {
   mid_mark: number | null; final_mark: number | null; notebook_mark: number | null; attendance_mark: number | null;
 };
 export type CourseSession = { id: string; name: string; class_name: string | null; teacher: string | null; days: number[] };
-export type Abnet = { id: string; subjects: string[]; days: number[]; times: string[]; teacher: string };
+export type Abnet = {
+  id: string; subjects: string[]; days: number[]; times: string[]; teacher: string;
+  subject: string | null; day_text: string | null; time_text: string | null;
+  audio_path: string | null; file_path: string | null; audio_url?: string | null; file_url?: string | null;
+};
+export const ABNET_COLS = 'id, subjects, days, times, teacher, subject, day_text, time_text, audio_path, file_path';
 
 function Edit({ children }: { children: React.ReactNode }) {
   return (
@@ -126,31 +130,26 @@ export function CourseSessionTable({ rows, editable }: { rows: CourseSession[]; 
 }
 
 // ---------- አብነት ----------
-function Checks({ name, options, selected = [] }: { name: string; options: readonly string[]; selected?: string[] }) {
-  return (
-    <div className="check-grid">
-      {options.map((o) => (
-        <label key={o} className="check" style={{ margin: 0 }}>
-          <input type="checkbox" name={name} value={o} defaultChecked={selected.includes(o)} /> {o}
-        </label>
-      ))}
-    </div>
-  );
-}
 
 export function AbnetFields({ a }: { a?: Abnet }) {
   return (
     <>
       {a && <input type="hidden" name="id" value={a.id} />}
-      <div className="field"><span className="label">የሚሰጡ ትምህርቶች</span><Checks name="subjects" options={ABNET_SUBJECTS} selected={a?.subjects} /></div>
-      <div className="field"><span className="label">ቀን</span><DayChecks name="days" selected={a?.days} /></div>
-      <div className="field"><span className="label">ሰዐት</span><Checks name="times" options={ABNET_TIMES} selected={a?.times} /></div>
-      <div className="field">
-        <label>መምህር</label>
-        <select name="teacher" required defaultValue={a?.teacher ?? ''}>
-          <option value="" disabled>ይምረጡ</option>
-          {ABNET_TEACHERS.map((t) => <option key={t}>{t}</option>)}
-        </select>
+      <div className="form-grid">
+        <div className="field"><label>የሚሰጡ ትምህርቶች</label><input name="subject" required defaultValue={a?.subject ?? ''} placeholder="ለምሳሌ፦ ንባብ፣ ቅኔ" /></div>
+        <div className="field"><label>ቀን</label><input name="day_text" required defaultValue={a?.day_text ?? (a?.days?.length ? dayNames(a.days) : '')} placeholder="ለምሳሌ፦ ቅዳሜና እሑድ" /></div>
+        <div className="field"><label>ሰዐት</label><input name="time_text" required defaultValue={a?.time_text ?? ''} placeholder="ለምሳሌ፦ ከሰዓት 8:00–10:00" /></div>
+        <div className="field"><label>መምህር</label><input name="teacher" required defaultValue={a?.teacher ?? ''} /></div>
+        <div className="field">
+          <label>ድምፅ (አማራጭ) {a?.audio_path ? '(ለመቀየር ብቻ)' : ''}</label>
+          <input name="audio" type="file" accept="audio/*" />
+          {a?.audio_path && <label className="check" style={{ margin: 0 }}><input type="checkbox" name="remove_audio" /> ድምፁን አጥፋ</label>}
+        </div>
+        <div className="field">
+          <label>ፋይል (አማራጭ) {a?.file_path ? '(ለመቀየር ብቻ)' : ''}</label>
+          <input name="file" type="file" accept=".pdf,.doc,.docx,image/*" />
+          {a?.file_path && <label className="check" style={{ margin: 0 }}><input type="checkbox" name="remove_file" /> ፋይሉን አጥፋ</label>}
+        </div>
       </div>
     </>
   );
@@ -164,11 +163,18 @@ export function AbnetTable({ rows, editable }: { rows: Abnet[]; editable?: boole
         <tbody>
           {rows.map((a) => (
             <tr key={a.id}>
-              <td>{a.subjects.join('፣ ')}</td><td>{dayNames(a.days)}</td><td>{a.times.join('፣ ')}</td><td>{a.teacher}</td>
+              <td>
+                {a.subject || a.subjects.join('፣ ')}
+                {a.audio_url && <audio controls preload="none" src={a.audio_url} style={{ display: 'block', width: '100%', maxWidth: 280, marginTop: 4 }} />}
+                {a.file_url && <div><a className="link small" href={a.file_url} target="_blank" rel="noopener noreferrer">📄 ፋይሉን ክፈት</a></div>}
+              </td>
+              <td>{a.day_text || dayNames(a.days)}</td>
+              <td>{a.time_text || a.times.join('፣ ')}</td>
+              <td>{a.teacher}</td>
               {editable && (
                 <td>
                   <div className="btn-row">
-                    <Edit><MediaForm action={saveAbnet} submitLabel="ለውጥ አስቀምጥ" resetOnSuccess={false}><AbnetFields a={a} /></MediaForm></Edit>
+                    <Edit><MediaForm action={saveAbnet} submitLabel="ለውጥ አስቀምጥ" resetOnSuccess={false} fileField={['audio', 'file']} folder="abnet"><AbnetFields a={a} /></MediaForm></Edit>
                     <ActionButton action={deleteAbnet.bind(null, a.id)} label="አጥፋ" className="btn sm danger" confirmText="ማጥፋት ይፈልጋሉ?" />
                   </div>
                 </td>

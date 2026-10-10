@@ -4,6 +4,7 @@ import { requireStaff, canAccess } from '@/lib/auth';
 import { DEPT_NAME, isDeptCode } from '@/lib/constants';
 import { tabsFor } from '@/lib/dept-tabs';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { TabNav } from './tab-nav';
 
 export default async function DeptLayout({
@@ -19,19 +20,21 @@ export default async function DeptLayout({
   if (!canAccess(staff, dept)) notFound();
 
   const supabase = await createClient();
-  const { data: assignee } = await supabase
-    .from('dept_assignees')
-    .select('full_name, sex, photo_path, user_id')
-    .eq('dept', dept)
-    .maybeSingle();
+  const [{ data: assignee }, { data: myMemberId }] = await Promise.all([
+    supabase.from('dept_assignees').select('sex, member_id').eq('dept', dept).maybeSingle(),
+    supabase.rpc('current_member_id'),
+  ]);
 
-  // Greeting goes to the signed-in person; the assignee photo shows when it's them.
-  const sex = staff.sex ?? (assignee?.user_id === staff.userId ? assignee.sex : null);
+  // The head's registration photo shows when the head is the one signed in.
+  const isHead = !!assignee?.member_id && assignee.member_id === myMemberId;
+  const sex = staff.sex ?? (isHead ? assignee!.sex : null);
   const suffix = sex === 'female' ? 'ሽ' : 'ህ';
-  const photo =
-    assignee?.user_id === staff.userId && assignee.photo_path
-      ? supabase.storage.from('media').getPublicUrl(assignee.photo_path).data.publicUrl
-      : null;
+  let photo: string | null = null;
+  if (isHead) {
+    const admin = createAdminClient();
+    const { data: m } = await admin.from('members').select('photo_path').eq('id', assignee!.member_id).maybeSingle();
+    if (m?.photo_path) photo = (await admin.storage.from('member-docs').createSignedUrl(m.photo_path, 3600)).data?.signedUrl ?? null;
+  }
 
   return (
     <>
@@ -39,6 +42,7 @@ export default async function DeptLayout({
         <Link href="/staff">ሁሉም ክፍሎች</Link> › {DEPT_NAME[dept]}
       </div>
       <div className="banner no-print">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         {photo && <img src={photo} alt="" />}
         <div>
           <div className="serif">

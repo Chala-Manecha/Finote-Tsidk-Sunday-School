@@ -29,7 +29,7 @@ export async function saveProperty(_: FormState, fd: FormData): Promise<FormStat
   if (!(condition in ITEM_CONDITION)) return { error: 'ሁኔታ ይምረጡ።' };
   if (qty === null || Number.isNaN(qty) || !Number.isInteger(qty)) return { error: 'ብዛት ያስገቡ።' };
   if (Number.isNaN(price)) return { error: 'ዋጋ ትክክል አይደለም።' };
-  const row = { name, owner_dept, condition, qty, price };
+  const row = { name, owner_dept, condition, qty, price, note: text(fd, 'note') || null };
   const supabase = await createClient();
   const { error, count } = id
     ? await supabase.from('dept_property').update(row, { count: 'exact' }).eq('id', id)
@@ -48,7 +48,7 @@ export async function deleteProperty(id: string) {
   refresh();
 }
 
-/** የሽያጭ ዕቃዎች — ልማትና በጎ አድራጎት's stock: what was bought, at what price, and what it sells for. */
+/** የተገዙ ዕቃዎች መዝገብ — ልማትና በጎ አድራጎት records what was bought (the sell price is set when published). */
 export async function saveSaleItem(_: FormState, fd: FormData): Promise<FormState> {
   await requireStaff();
   const id = text(fd, 'id') || null;
@@ -60,7 +60,7 @@ export async function saveSaleItem(_: FormState, fd: FormData): Promise<FormStat
   if (!name) return { error: 'የዕቃውን ስም ያስገቡ።' };
   if (qty === null || Number.isNaN(qty) || !Number.isInteger(qty) || qty < 1) return { error: 'ብዛት ያስገቡ።' };
   if (buy_price === null || Number.isNaN(buy_price)) return { error: 'የተገዛበትን ዋጋ ያስገቡ።' };
-  if (price === null || Number.isNaN(price)) return { error: 'የመሸጫ ዋጋ ያስገቡ።' };
+  if (Number.isNaN(price)) return { error: 'የመሸጫ ዋጋ ትክክል አይደለም።' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(bought_on)) return { error: 'የተገዛበትን ቀን ይምረጡ።' };
   const supabase = await createClient();
   const rawImg = text(fd, 'image_path');
@@ -68,7 +68,8 @@ export async function saveSaleItem(_: FormState, fd: FormData): Promise<FormStat
   const rawImg2 = text(fd, 'image2_path');
   const image2_path = rawImg2.startsWith('shop/') ? rawImg2 : fd.get('remove_image2') === 'on' ? null : undefined;
   const row = {
-    name, qty, buy_price, price, bought_on, description: text(fd, 'description') || null,
+    name, qty, buy_price, bought_on, description: text(fd, 'description') || null,
+    ...(price !== null ? { price } : {}),
     ...(image_path ? { image_path } : {}), ...(image2_path !== undefined ? { image2_path } : {}),
   };
   const { error, count } = id
@@ -107,6 +108,31 @@ export async function deleteSaleItem(id: string) {
   if (error) return { error: error.message };
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
   refresh();
+}
+
+/** የሽያጭ ዕቃዎች: put a registered item on the public ለመግዛት page with its sell price. */
+export async function publishSaleItem(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const id = text(fd, 'id');
+  const price = num(fd, 'price');
+  if (price === null || Number.isNaN(price) || price < 0) return { error: 'የመሸጫ ዋጋ ያስገቡ።' };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('sale_items').update({ price, published: true }, { count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message.includes('row-level') ? 'ፈቃድ የለዎትም።' : error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+  revalidatePath('/shop');
+  return { ok: 'ለሽያጭ ወጥቷል።' };
+}
+
+export async function unpublishSaleItem(id: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('sale_items').update({ published: false }, { count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+  revalidatePath('/shop');
 }
 
 /** ልማትና በጎ አድራጎት: the contact shown on the public ለመግዛት page. */

@@ -23,20 +23,33 @@ export const getStaff = cache(async (): Promise<Staff | null> => {
   const userId = claims?.claims?.sub;
   if (!userId) return null;
 
-  const { data: profile } = await supabase
-    .from('staff_profiles')
-    .select('user_id, username, full_name, sex, is_admin, is_active, staff_departments(dept)')
-    .eq('user_id', userId)
-    .maybeSingle();
+  const [{ data: profile }, { data: headDepts }] = await Promise.all([
+    supabase
+      .from('staff_profiles')
+      .select('user_id, username, full_name, sex, is_admin, is_active, staff_departments(dept)')
+      .eq('user_id', userId)
+      .maybeSingle(),
+    // A member set as ክፍል ኃላፊ by ጽሕፈት ቤት opens that department with their own login.
+    supabase.rpc('my_head_depts'),
+  ]);
+  const heads = ((headDepts ?? []) as DeptCode[]);
+  const active = profile && profile.is_active ? profile : null;
+  if (!active && heads.length === 0) return null;
 
-  if (!profile || !profile.is_active) return null;
+  if (!active) {
+    const { data: me } = await supabase.rpc('my_member_profile');
+    const p = (me as { full_name: string }[] | null)?.[0];
+    const { data: a } = await supabase.from('dept_assignees').select('sex').in('dept', heads).limit(1).maybeSingle();
+    return { userId, username: '', fullName: p?.full_name ?? '', sex: (a?.sex as Staff['sex']) ?? null, isAdmin: false, depts: heads };
+  }
+  const own = (active.staff_departments ?? []).map((d: { dept: DeptCode }) => d.dept);
   return {
     userId,
-    username: profile.username,
-    fullName: profile.full_name,
-    sex: profile.sex,
-    isAdmin: profile.is_admin,
-    depts: (profile.staff_departments ?? []).map((d: { dept: DeptCode }) => d.dept),
+    username: active.username,
+    fullName: active.full_name,
+    sex: active.sex,
+    isAdmin: active.is_admin,
+    depts: [...new Set([...own, ...heads])],
   };
 });
 

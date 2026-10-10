@@ -18,7 +18,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'money-approvals', label: 'የገንዘብ ጥያቄ ማጸደቂያ', ready: true },
     { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: true },
     { slug: 'assignees', label: 'ክፍል ኃላፊዎች', ready: true },
-    { slug: 'staff-access', label: 'የአመራሮች መግቢያ ፈቃድ', ready: true },
+    { slug: 'staff-access', label: 'የሲስተሙ አስተዳዳሪዎች', ready: true },
     { slug: 'feedback-tracker', label: 'የአስተያየት ክትትል', ready: true },
     { slug: 'terms', label: 'የአመራር ቡድን', ready: true },
     { slug: 'departures', label: 'የመልቀቂያ ጥያቄዎች', ready: true },
@@ -48,9 +48,11 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'donations', label: 'እርዳታዎች', ready: true },
     { slug: 'receipts', label: 'ደረሰኞች', ready: true },
     { slug: 'money-report', label: 'የገንዘብ ሪፖርት', ready: true },
+    { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: true },
     { slug: 'property-log', label: 'የንብረት መዝገብ', ready: true },
   ],
   development: [
+    { slug: 'purchases', label: 'የተገዙ ዕቃዎች መዝገብ', ready: true },
     { slug: 'sale-items', label: 'የሽያጭ ዕቃዎች', ready: true },
     { slug: 'duty', label: 'አባል መድብ', ready: true },
   ],
@@ -68,10 +70,10 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'academic', label: 'የትምህርት ዘመን', ready: true },
     { slug: 'classes', label: 'ክፍሎችና ተማሪዎች', ready: true },
     { slug: 'courses', label: 'ኮርሶችና መምህራን', ready: true },
-    { slug: 'results', label: 'የወሰነ ትምህርት ውጤቶች', ready: true },
+    { slug: 'results', label: 'የተማሪ ውጤት', ready: true },
     { slug: 'year-end', label: 'የዓመት ማጠቃለያ', ready: true },
     { slug: 'exams', label: 'የፈተና ፈቃድና ድጋሚ ፈተና', ready: true },
-    { slug: 'student-accounts', label: 'የተማሪ መለያዎች', ready: true },
+    { slug: 'student-accounts', label: 'የመግቢያ ኮድ ድጋፍ', ready: true },
     { slug: 'attendance', label: 'ክትትል መያዝ (አብነት)', ready: true },
     { slug: 'abnet', label: 'አብነት', ready: true },
     { slug: 'wereb-admin', label: 'ወረብ አስተዳደር', ready: true },
@@ -92,9 +94,9 @@ const specific: Record<DeptCode, Tab[]> = {
 const OFFICE_GROUPS: [string, string[]][] = [
   ['አባላት', ['roster', 'departures', 'members']],
   ['ገንዘብና ንብረት', ['money-approvals', 'dept-property', 'money', 'property']],
-  ['ክፍል ኃላፊዎች', ['assignees', 'staff-access']],
+  ['ክፍል ኃላፊዎች', ['assignees']],
   ['መርሐ ግብሮች', ['request-event']],
-  ['አስተዳደር', ['terms', 'feedback-tracker', 'feedback']],
+  ['አስተዳደር', ['terms', 'staff-access', 'feedback-tracker', 'feedback']],
 ];
 
 const EDUCATION_GROUPS: [string, string[]][] = [
@@ -112,7 +114,8 @@ const AUDIT_GROUPS: [string, string[]][] = [
 ];
 const FINANCE_GROUPS: [string, string[]][] = [
   ['ለማጽደቅ', ['requests', 'earnings', 'donations']],
-  ['ሪፖርትና መዛግብት', ['money-report', 'receipts', 'property-log']],
+  ['ሪፖርትና መዛግብት', ['money-report', 'receipts']],
+  ['ንብረት', ['dept-property', 'property-log']],
   ['የክፍሉ', ['members', 'property', 'request-event', 'feedback']],
 ];
 const HR_GROUPS: [string, string[]][] = [

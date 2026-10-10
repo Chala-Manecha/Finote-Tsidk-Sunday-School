@@ -29,7 +29,7 @@ export type YearRow = {
   year_average: number | null; failed_courses: number | null; rank: number | null; class_size: number;
   auto_decision: Decision; decision: Decision | null; remark: string | null; ready: boolean;
 };
-export const semesterLabel = (no: number) => (no === 1 ? '1ኛ ወሰነ ትምህርት' : '2ኛ ወሰነ ትምህርት');
+export const semesterLabel = (no: number) => (no === 1 ? '1ኛ ሴሚስተር' : '2ኛ ሴሚስተር');
 
 /** ደረጃ for a total out of 100. */
 export function gradeOf(total: number, pass: number): { label: string; passed: boolean } {

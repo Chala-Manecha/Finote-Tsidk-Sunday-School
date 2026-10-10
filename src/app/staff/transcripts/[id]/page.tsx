@@ -62,7 +62,7 @@ export default async function TranscriptPage({ params }: { params: Promise<{ id:
             ['ፆታ', SEX[m.sex as keyof typeof SEX]],
             ['ክፍል', `${classLabel(enr.class_level)} · ${STUDY_MODE[(enr.study_mode ?? 'regular') as keyof typeof STUDY_MODE]}`],
             ['የትምህርት ዘመን', `${s.academic_years.ec_year} ዓ.ም`],
-            ['ወሰነ ትምህርት', semesterLabel(s.no)],
+            ['ሴሚስተር', semesterLabel(s.no)],
             ['አገልግሎት የጀመሩበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም` : '—'],
             ['የተሰጠበት', formatEc(t.issued_at)],
           ]} />
