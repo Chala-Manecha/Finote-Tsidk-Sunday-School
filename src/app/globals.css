@@ -789,3 +789,8 @@ output.readonly { display: block; padding: 8px 10px; border: 1px dashed var(--fi
   .report-card:last-of-type { break-after: auto; }
   .rc-table tr { break-inside: avoid; }
 }
+.assign-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 10px 0; box-shadow: var(--shadow); }
+.assign-bar input[type=search] { flex: 1 1 200px; }
+.assign-bar select { width: auto; }
+tr.picked td { background: #EEF4F8; }
+.setup-steps ol { margin: 8px 0 0; padding-inline-start: 22px; display: grid; gap: 8px; }

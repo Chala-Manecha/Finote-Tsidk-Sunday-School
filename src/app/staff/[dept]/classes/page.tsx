@@ -1,11 +1,10 @@
-import { STUDY_MODE } from '@/lib/constants';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, classLabel } from '@/lib/education';
 import { loadTerms } from '@/lib/edu-data';
-import { MediaForm } from '@/components/media-form';
+import { ClassAssigner, type AssignRow } from '@/components/class-assigner';
 import { ActionButton } from '@/components/action-button';
-import { assignClass, enrollAllMembers } from '@/lib/actions/education-admin';
+import { enrollAllMembers, carryOverYear } from '@/lib/actions/education-admin';
 
 type E = { id: string; member_id: string; class_level: string | null; study_mode: string; self_registered: boolean; members: { full_name: string; reg_no: string } | null };
 
@@ -27,49 +26,50 @@ export default async function Classes({ params, searchParams }: {
   const rows = filter === 'all' ? all : filter === 'none' ? all.filter((e) => !e.class_level) : all.filter((e) => e.class_level === filter);
   const count = (c: string | null) => all.filter((e) => e.class_level === c).length;
 
+  const prevYear = years.filter((x) => x.ec_year < year.ec_year).sort((a, b) => b.ec_year - a.ec_year)[0];
+  const assignRows: AssignRow[] = rows.map((e) => ({
+    id: e.id, name: e.members?.full_name ?? '', regNo: e.members?.reg_no ?? '', classLevel: e.class_level, mode: e.study_mode, self: e.self_registered,
+  }));
+  const link = (c: string) => `?y=${year.id}&c=${c}`;
+
   return (
     <>
-      <h2 className="section" style={{ marginTop: 0 }}>ክፍሎችና ተማሪዎች — {year.ec_year} ዓ.ም</h2>
-      <p className="muted small">እያንዳንዱ ተማሪ <b>መደበኛ</b> ወይም <b>የርቀት</b> ነው (የርቀት ተማሪዎች ዝቅተኛ የክትትል ግዴታቸው በ“የትምህርት ዘመን” ይወሰናል)። ተማሪዎች ራሳቸው ይመዘገባሉ፤ ሁሉንም አባላት በአንድ ጊዜ ማስገባትም ይቻላል። ከዚያ ለእያንዳንዱ ክፍል ይመድቡ።</p>
-      <div className="btn-row">
-        <ActionButton action={enrollAllMembers.bind(null, year.id)} label="ሁሉንም ንቁ አባላት አስገባ" className="btn sm secondary"
-          confirmText={`ያልተመዘገቡ ንቁ አባላት ሁሉ ለ${year.ec_year} ዓ.ም ይግቡ?`} />
+      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+        <h2 className="section" style={{ margin: 0 }}>ክፍሎችና ተማሪዎች — {year.ec_year} ዓ.ም</h2>
+        <form className="btn-row no-print" action="/staff/education/classes">
+          <select name="y" defaultValue={year.id} aria-label="ዓመት">{years.map((x) => <option key={x.id} value={x.id}>{x.ec_year} ዓ.ም</option>)}</select>
+          <button className="btn sm secondary">ቀይር</button>
+        </form>
       </div>
+
+      <section className="card setup-steps">
+        <b>የዓመቱ ዝግጅት</b>
+        <ol>
+          {prevYear && (
+            <li>
+              <ActionButton action={carryOverYear.bind(null, year.id)} label={`በ${prevYear.ec_year} ዓ.ም ውሳኔ መሠረት መድብ`} className="btn sm green"
+                confirmText={`ተዛውረዋል → ቀጣዩ ክፍል፣ ይደግማሉ → ያው ክፍል። መደበኛ/የርቀት እንዳለ ይቆያል። ቀድሞ የተመደቡት አይነኩም። ይቀጥል?`} />
+              <span className="small muted"> ባለፈው ዓመት የነበሩ ተማሪዎችን በዓመት ማጠቃለያው ውሳኔ ያስገባል።</span>
+            </li>
+          )}
+          <li>
+            <ActionButton action={enrollAllMembers.bind(null, year.id)} label="አዲስ አባላትን አስገባ" className="btn sm secondary"
+              confirmText={`በ${year.ec_year} ዓ.ም ያልገቡ ንቁ አባላት ሁሉ (ያልተመደቡ ሆነው) ይግቡ?`} />
+            <span className="small muted"> ገና ያልገቡ ንቁ አባላትን ያለ ክፍል ያስገባል።</span>
+          </li>
+          <li><span className="small">ከታች ያልተመደቡትን ምረጥ → ክፍል ምረጥ → <b>ለተመረጡት ተግብር</b>።</span></li>
+        </ol>
+      </section>
+
       <div className="subtabs no-print" style={{ marginTop: 10 }}>
-        <a className={`btn sm ${filter === 'none' ? 'green' : 'secondary'}`} href={`?y=${year.id}&c=none`}>ያልተመደቡ ({count(null)})</a>
+        <a className={`btn sm ${filter === 'none' ? 'green' : 'secondary'}`} href={link('none')}>ያልተመደቡ ({count(null)})</a>
         {CLASS_LEVELS.map((c) => (
-          <a key={c} className={`btn sm ${filter === c ? 'green' : 'secondary'}`} href={`?y=${year.id}&c=${c}`}>{classLabel(c)} ({count(c)})</a>
+          <a key={c} className={`btn sm ${filter === c ? 'green' : 'secondary'}`} href={link(c)}>{classLabel(c)} ({count(c)})</a>
         ))}
-        <a className={`btn sm ${filter === 'all' ? 'green' : 'secondary'}`} href={`?y=${year.id}&c=all`}>ሁሉም ({all.length})</a>
+        <a className={`btn sm ${filter === 'all' ? 'green' : 'secondary'}`} href={link('all')}>ሁሉም ({all.length})</a>
       </div>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>ተማሪ</th><th>ምዝገባ</th><th>ክፍል · መደበኛ / የርቀት</th></tr></thead>
-          <tbody>
-            {rows.map((e) => (
-              <tr key={e.id}>
-                <td>{e.members?.full_name}<div className="small muted">{e.members?.reg_no}</div></td>
-                <td className="small">{e.self_registered ? 'በራሱ' : 'በትምህርት ክፍል'}</td>
-                <td>
-                  <MediaForm action={assignClass} submitLabel="መድብ" card={false} resetOnSuccess={false}>
-                    <input type="hidden" name="id" value={e.id} />
-                    <div className="btn-row">
-                      <select name="class_level" defaultValue={e.class_level ?? ''} aria-label="ክፍል">
-                        <option value="">— ያልተመደበ —</option>
-                        {CLASS_LEVELS.map((c) => <option key={c} value={c}>{classLabel(c)}</option>)}
-                      </select>
-                      <select name="study_mode" defaultValue={e.study_mode} aria-label="መርሐ ግብር">
-                        {Object.entries(STUDY_MODE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                      </select>
-                    </div>
-                  </MediaForm>
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && <tr><td colSpan={3} className="muted">የለም።</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      <ClassAssigner key={`${year.id}-${filter}`} rows={assignRows} />
+      <p className="small muted">የርቀት ተማሪዎች ዝቅተኛ የክትትል ግዴታቸው በ“የትምህርት ዘመን” ትር ይወሰናል። የክፍል መምህራን በዚያው ክፍል ተማሪ ሆነው መመዝገብ የለባቸውም።</p>
     </>
   );
 }

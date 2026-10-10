@@ -4,7 +4,7 @@ import { semesterLabel, type AcademicYear, type Semester } from '@/lib/education
 import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { EcDatePicker } from '@/components/ec-date-picker';
-import { createYear, activateYear, saveSemester, activateSemester, saveYearRules } from '@/lib/actions/education-admin';
+import { createYear, activateYear, saveSemester, activateSemester, saveYearRules, copySemesterRules } from '@/lib/actions/education-admin';
 
 /** ትምህርት ክፍል: academic years, the two semesters, weights and pass mark. */
 export default async function Academic({ params }: { params: Promise<{ dept: string }> }) {
@@ -70,7 +70,14 @@ export default async function Academic({ params }: { params: Promise<{ dept: str
                   </div>
                 </div>
               </MediaForm>
-              {!x.is_active && <ActionButton action={activateSemester.bind(null, x.id)} label="ይህን ሴሚስተር ክፈት" className="btn sm secondary" />}
+              <div className="btn-row">
+                {!x.is_active && <ActionButton action={activateSemester.bind(null, x.id)} label="ይህን ሴሚስተር ክፈት" className="btn sm secondary" />}
+                {x.no === 2 && (() => {
+                  const first = semesters.find((z) => z.year_id === yr.id && z.no === 1);
+                  return first ? <ActionButton action={copySemesterRules.bind(null, first.id, x.id)} label="ነጥቦቹን እንደ 1ኛ ሴሚስተር አድርግ" className="btn sm secondary"
+                    confirmText="የውጤት ነጥቦች፣ ማለፊያና ዝቅተኛ ክትትል ከ1ኛ ሴሚስተር ይቀዳሉ (ቀኖቹ አይቀየሩም)። ይቀጥል?" /> : null;
+                })()}
+              </div>
             </details>
           ))}
         </section>

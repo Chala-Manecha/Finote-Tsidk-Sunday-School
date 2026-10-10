@@ -7,7 +7,7 @@ import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { ReasonForm } from '@/components/reason-form';
 import {
-  addCourse, deleteCourse, approveCourse, unlockCourse, saveCourseDetails,
+  addCourse, deleteCourse, approveCourse, unlockCourse, saveCourseDetails, copyCourses,
 } from '@/lib/actions/education-admin';
 import { DayChecks } from '@/components/day-checks';
 
@@ -40,12 +40,24 @@ export default async function Courses({ params, searchParams }: {
   const order = (c: string) => CLASS_LEVELS.indexOf(c as (typeof CLASS_LEVELS)[number]);
   rows.sort((a, b) => order(a.class_level) - order(b.class_level) || a.name.localeCompare(b.name));
   const pending = rows.filter((r) => r.status === 'submitted').length;
+  // The semester just before this one (1ኛ → last year's 2ኛ, 2ኛ → this year's 1ኛ).
+  const ordered = semesters.map((x) => ({ ...x, ec: years.find((yy) => yy.id === x.year_id)?.ec_year ?? 0 }))
+    .sort((a, b) => a.ec - b.ec || a.no - b.no);
+  const at = ordered.findIndex((x) => x.id === semester.id);
+  const prevSem = at > 0 ? ordered[at - 1] : null;
 
   return (
     <>
       <h2 className="section" style={{ marginTop: 0 }}>ኮርሶችና መምህራን — {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
       <EduPicker action="/staff/education/courses" years={years} semesters={semesters} semesterId={semester.id} classLevel={cls} />
       {pending > 0 && <p className="alert ok">ለማጽደቅ የቀረቡ ኮርሶች፦ {pending}</p>}
+      {prevSem && (
+        <div className="btn-row no-print" style={{ margin: '8px 0' }}>
+          <ActionButton action={copyCourses.bind(null, prevSem.id, semester.id)} label={`ከ${prevSem.ec} ዓ.ም ${semesterLabel(prevSem.no)} ኮርሶችን ቅዳ`} className="btn sm secondary"
+            confirmText="ኮርሶቹ ከመምህራን፣ ቀንና ሰዓት እና መጽሐፍ ጋር ይቀዳሉ (ያሉት አይደገሙም)። ይቀጥል?" />
+          <span className="small muted">ሁሉንም ኮርሶች እንደገና ከመጻፍ ይልቅ ከቀደመው ሴሚስተር ቅዳ፤ ከዚያ የተለወጠውን ብቻ አስተካክል።</span>
+        </div>
+      )}
 
       <MediaForm action={addCourse} submitLabel="+ ኮርስ ጨምር">
         <input type="hidden" name="semester_id" value={semester.id} />
