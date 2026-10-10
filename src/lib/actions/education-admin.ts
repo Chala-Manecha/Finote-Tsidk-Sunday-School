@@ -140,44 +140,6 @@ export async function deleteCourse(id: string) {
   refresh();
 }
 
-export async function assignTeacher(_: FormState, fd: FormData): Promise<FormState> {
-  await requireDept('education');
-  const offering_id = text(fd, 'offering_id');
-  const member_id = text(fd, 'member_id');
-  if (!UUID_RE.test(offering_id) || !UUID_RE.test(member_id)) return { error: 'መምህር ይምረጡ።' };
-  const supabase = await createClient();
-  const { error } = await supabase.from('offering_teachers').insert({ offering_id, member_id });
-  if (error) return { error: explain(error.message) };
-  refresh();
-  return { ok: 'መምህሩ ተመድቧል።' };
-}
-
-export async function removeTeacher(offeringId: string, memberId: string) {
-  await requireDept('education');
-  const supabase = await createClient();
-  const { error } = await supabase.from('offering_teachers').delete().eq('offering_id', offeringId).eq('member_id', memberId);
-  if (error) return { error: explain(error.message) };
-  refresh();
-}
-
-export async function saveBook(_: FormState, fd: FormData): Promise<FormState> {
-  await requireDept('education');
-  const id = text(fd, 'id');
-  const path = text(fd, 'book_path');
-  if (!path.startsWith('books/')) return { error: 'ፋይል ይምረጡ።' };
-  const supabase = await createClient();
-  const { data: old } = await supabase.from('course_offerings').select('book_path').eq('id', id).maybeSingle();
-  const { error, count } = await supabase.from('course_offerings')
-    .update({ book_path: path, book_name: text(fd, 'book_name') || null }, { count: 'exact' }).eq('id', id);
-  if (error || !count) {
-    await supabase.storage.from('edu-books').remove([path]);
-    return { error: explain(error?.message ?? 'ፈቃድ የለዎትም።') };
-  }
-  if (old?.book_path && old.book_path !== path) await supabase.storage.from('edu-books').remove([old.book_path]);
-  refresh();
-  return { ok: 'መጽሐፉ ተጭኗል።' };
-}
-
 export async function approveCourse(id: string) {
   await requireDept('education');
   const supabase = await createClient();
@@ -268,17 +230,42 @@ export async function saveYearRules(_: FormState, fd: FormData): Promise<FormSta
   return { ok: 'ተቀምጧል።' };
 }
 
-export async function saveCourseSchedule(_: FormState, fd: FormData): Promise<FormState> {
+/** One form per course: teachers (add one / remove ticked), days + time, reference book — saved together. */
+export async function saveCourseDetails(_: FormState, fd: FormData): Promise<FormState> {
   await requireDept('education');
-  const days = fd.getAll('days').map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  const id = text(fd, 'id');
+  if (!UUID_RE.test(id)) return { error: 'ኮርሱ አልተገኘም።' };
   const supabase = await createClient();
-  const { error, count } = await supabase.from('course_offerings')
-    .update({ days, time_text: text(fd, 'time_text') || null }, { count: 'exact' }).eq('id', text(fd, 'id'));
-  if (error) return { error: explain(error.message) };
-  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  const days = fd.getAll('days').map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  const book = text(fd, 'book_path');
+  const { data: old } = await supabase.from('course_offerings').select('book_path').eq('id', id).maybeSingle();
+  const row = {
+    days, time_text: text(fd, 'time_text') || null,
+    ...(book.startsWith('books/') ? { book_path: book, book_name: text(fd, 'book_name') || null } : {}),
+  };
+  const { error, count } = await supabase.from('course_offerings').update(row, { count: 'exact' }).eq('id', id);
+  if (error || !count) {
+    if (book.startsWith('books/')) await supabase.storage.from('edu-books').remove([book]);
+    return { error: explain(error?.message ?? 'ፈቃድ የለዎትም።') };
+  }
+  if (book.startsWith('books/') && old?.book_path && old.book_path !== book) await supabase.storage.from('edu-books').remove([old.book_path]);
+
+  const drop = fd.getAll('remove_teacher').map(String).filter((x) => UUID_RE.test(x));
+  if (drop.length) {
+    const { error: e } = await supabase.from('offering_teachers').delete().eq('offering_id', id).in('member_id', drop);
+    if (e) return { error: explain(e.message) };
+  }
+  const add = text(fd, 'member_id');
+  if (UUID_RE.test(add) && !drop.includes(add)) {
+    const { error: e } = await supabase.from('offering_teachers').insert({ offering_id: id, member_id: add });
+    if (e && !e.message.includes('duplicate') && !e.message.includes('unique')) {
+      refresh();
+      return { error: explain(e.message) };
+    }
+  }
   refresh();
   revalidatePath('/course');
-  return { ok: '✓' };
+  return { ok: 'ተቀምጧል።' };
 }
 
 // ---------- exam permissions ----------

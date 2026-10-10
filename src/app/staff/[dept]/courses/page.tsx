@@ -7,7 +7,7 @@ import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { ReasonForm } from '@/components/reason-form';
 import {
-  addCourse, deleteCourse, assignTeacher, removeTeacher, saveBook, approveCourse, unlockCourse, saveCourseSchedule,
+  addCourse, deleteCourse, approveCourse, unlockCourse, saveCourseDetails,
 } from '@/lib/actions/education-admin';
 import { DayChecks } from '@/components/day-checks';
 
@@ -72,40 +72,33 @@ export default async function Courses({ params, searchParams }: {
               {o.status === 'draft' && <ActionButton action={deleteCourse.bind(null, o.id)} label="አጥፋ" className="btn sm danger" confirmText="ኮርሱን ማጥፋት ይፈልጋሉ?" />}
             </div>
           </div>
-          <div className="form-grid" style={{ marginTop: 8 }}>
-            <div>
-              <div className="small muted">መምህር(ራን)</div>
-              {o.offering_teachers.map((t) => (
-                <div key={t.member_id} className="btn-row">
-                  <span>{t.members?.full_name}</span>
-                  <ActionButton action={removeTeacher.bind(null, o.id, t.member_id)} label="×" className="btn sm secondary" confirmText="መምህሩን ማንሳት ይፈልጋሉ?" />
-                </div>
-              ))}
-              <MediaForm action={assignTeacher} submitLabel="+ መምህር መድብ" card={false}>
-                <input type="hidden" name="offering_id" value={o.id} />
-                <select name="member_id" required defaultValue="" aria-label="መምህር">
-                  <option value="" disabled>አባል ይምረጡ</option>
+          <MediaForm action={saveCourseDetails} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false} fileField="book" folder="books" bucket="edu-books">
+            <input type="hidden" name="id" value={o.id} />
+            <div className="form-grid" style={{ marginTop: 8 }}>
+              <div className="field">
+                <span className="label">መምህር(ራን)</span>
+                {o.offering_teachers.map((t) => (
+                  <label key={t.member_id} className="check" style={{ margin: 0 }}>
+                    {t.members?.full_name} <input type="checkbox" name="remove_teacher" value={t.member_id} /> <span className="small muted">አንሳ</span>
+                  </label>
+                ))}
+                <select name="member_id" defaultValue="" aria-label="መምህር">
+                  <option value="">{o.offering_teachers.length ? '+ ሌላ መምህር (አማራጭ)' : 'መምህር ይምረጡ'}</option>
                   {(members ?? []).map((m) => <option key={m.id} value={m.id}>{m.full_name} · {m.reg_no}</option>)}
                 </select>
-              </MediaForm>
-            </div>
-            <div>
-              <div className="small muted">የትምህርት ቀንና ሰዓት (በ“ኮርስ” ገጽ ላይ ይታያል)</div>
-              <MediaForm action={saveCourseSchedule} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false}>
-                <input type="hidden" name="id" value={o.id} />
+              </div>
+              <div className="field">
+                <span className="label">የትምህርት ቀንና ሰዓት</span>
                 <DayChecks name="days" selected={o.days} />
                 <input name="time_text" defaultValue={o.time_text ?? ''} placeholder="ለምሳሌ፦ ጠዋት 3:00–4:30" aria-label="ሰዓት" style={{ marginTop: 6 }} />
-              </MediaForm>
+              </div>
+              <div className="field">
+                <span className="label">ማጣቀሻ መጽሐፍ (ለመምህሩ ብቻ)</span>
+                <div className="small">{o.book_name ?? (o.book_path ? 'ተጭኗል' : 'አልተጫነም')}</div>
+                <input name="book" type="file" accept=".pdf,.doc,.docx,application/pdf" aria-label="መጽሐፍ" />
+              </div>
             </div>
-            <div>
-              <div className="small muted">ማጣቀሻ መጽሐፍ (ለመምህሩ ብቻ)</div>
-              <div>{o.book_name ?? (o.book_path ? 'ተጭኗል' : 'አልተጫነም')}</div>
-              <MediaForm action={saveBook} submitLabel="ጫን" card={false} fileField="book" folder="books" bucket="edu-books">
-                <input type="hidden" name="id" value={o.id} />
-                <input name="book" type="file" accept=".pdf,.doc,.docx,application/pdf" required aria-label="መጽሐፍ" />
-              </MediaForm>
-            </div>
-          </div>
+          </MediaForm>
         </section>
       ))}
       {rows.length === 0 && <p className="muted">ለዚህ ሴሚስተር ኮርስ አልተጨመረም።</p>}
