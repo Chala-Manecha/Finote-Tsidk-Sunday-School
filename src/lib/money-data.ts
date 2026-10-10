@@ -22,6 +22,7 @@ export type RequestRow = {
   received_at: string | null;
   received_name: string | null;
   audited_at: string | null;
+  auto_audited?: boolean;
   spent: number;
   refund: number;          // ተመላሽ
   self_contributed: number; // ከራስ ወጪ
@@ -35,7 +36,7 @@ export async function fetchRequests(
 ): Promise<RequestRow[]> {
   let q = supabase
     .from('money_requests')
-    .select('id, dept, amount, reason, needed_by, status, audit_flag, audit_note, requested_at, decided_at, paid_at, spend_approved_at, term_id, pay_method, pay_reference, voucher_no, received_at, received_name, audited_at, expense_lines(id, amount, reason, spent_on)')
+    .select('id, dept, amount, reason, needed_by, status, audit_flag, audit_note, requested_at, decided_at, paid_at, spend_approved_at, term_id, pay_method, pay_reference, voucher_no, received_at, received_name, audited_at, auto_audited, expense_lines(id, amount, reason, spent_on)')
     .order('requested_at', { ascending: false });
   if (opts.dept) q = q.eq('dept', opts.dept);
   if (opts.statuses) q = q.in('status', opts.statuses);

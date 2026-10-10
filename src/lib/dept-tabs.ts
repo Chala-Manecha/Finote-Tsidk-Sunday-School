@@ -47,8 +47,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'earnings', label: 'ገቢ ለማጽደቅ', ready: true },
     { slug: 'donations', label: 'እርዳታዎች', ready: true },
     { slug: 'receipts', label: 'ደረሰኞች', ready: true },
-    { slug: 'tracking', label: 'የክፍላት ገንዘብ አጠቃቀም', ready: true },
-    { slug: 'ledger', label: 'የገንዘብ መዝገብ', ready: true },
+    { slug: 'money-report', label: 'የገንዘብ ሪፖርት', ready: true },
     { slug: 'property-log', label: 'የንብረት መዝገብ', ready: true },
   ],
   development: [
@@ -57,7 +56,7 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   audit: [
     { slug: 'contributions', label: 'የክፍላት ገቢ ወጪ', ready: true },
-    { slug: 'ledger', label: 'የገንዘብ መዝገብ', ready: true },
+    { slug: 'money-report', label: 'የገንዘብ ሪፖርት', ready: true },
     { slug: 'receipts', label: 'ደረሰኞች', ready: true },
     { slug: 'donations', label: 'የእርዳታ መዝገብ', ready: true },
     { slug: 'lost-members', label: 'የጠፉ አባላት', ready: true },
@@ -105,7 +104,7 @@ const EDUCATION_GROUPS: [string, string[]][] = [
   ['የክፍሉ', ['members', 'duty', 'property', 'money', 'request-event', 'feedback']],
 ];
 const AUDIT_GROUPS: [string, string[]][] = [
-  ['ገንዘብ', ['contributions', 'ledger', 'receipts', 'donations']],
+  ['ገንዘብ', ['money-report', 'contributions', 'receipts', 'donations']],
   ['አባላት', ['lost-members', 'departures']],
   ['ትምህርት', ['results']],
   ['ሪፖርቶች', ['reports']],
@@ -113,7 +112,7 @@ const AUDIT_GROUPS: [string, string[]][] = [
 ];
 const FINANCE_GROUPS: [string, string[]][] = [
   ['ለማጽደቅ', ['requests', 'earnings', 'donations']],
-  ['መዛግብት', ['receipts', 'tracking', 'ledger', 'property-log']],
+  ['ሪፖርትና መዛግብት', ['money-report', 'receipts', 'property-log']],
   ['የክፍሉ', ['members', 'property', 'request-event', 'feedback']],
 ];
 const HR_GROUPS: [string, string[]][] = [

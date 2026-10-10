@@ -2,9 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import {
-  DEPT_NAME, ITEM_CONDITION, MEMBER_STATUS, WORK_STATUS, formatBirr, type ItemCondition,
+  DEPT_NAME, ITEM_CONDITION, MEMBER_STATUS, WORK_STATUS, type ItemCondition,
 } from '@/lib/constants';
-import { formatEc } from '@/lib/ethiopian-calendar';
 import { PERIODS, isPeriod, resolveRange, type Period } from '@/lib/periods';
 import { PrintButton } from '@/components/print-button';
 
@@ -21,19 +20,14 @@ export default async function AuditReports({
   const supabase = await createClient();
   const { from, to, label } = await resolveRange(supabase, period);
 
-  const [{ data: members }, { data: property }, { data: earnings }, { data: expenses }] = await Promise.all([
+
+  const [{ data: members }, { data: property }] = await Promise.all([
     supabase.from('members').select('id, full_name, member_status, work_status, phone, created_at').eq('is_active', true).order('full_name'),
     supabase.from('dept_property').select('id, name, qty, condition, owner_dept'),
-    supabase.from('earnings').select('dept, amount, source, earned_on').eq('status', 'approved').gte('earned_on', from).lte('earned_on', to),
-    supabase.from('expense_lines').select('amount, reason, spent_on, money_requests(dept)').gte('spent_on', from).lte('spent_on', to),
   ]);
 
   const m = members ?? [];
   const newInPeriod = m.filter((x) => x.created_at.slice(0, 10) >= from && x.created_at.slice(0, 10) <= to).length;
-  const incomeTotal = (earnings ?? []).reduce((s, e) => s + Number(e.amount), 0);
-  type Ex = { amount: number; reason: string; spent_on: string; money_requests: { dept: string } | null };
-  const ex = (expenses ?? []) as unknown as Ex[];
-  const expenseTotal = ex.reduce((s, e) => s + Number(e.amount), 0);
 
   const show = sp.show;
   const base = `/staff/audit/reports?p=${period}`;
@@ -95,30 +89,9 @@ export default async function AuditReports({
       )}
 
       <h3 className="section">Financial Report</h3>
-      <div className="stat-cards">
-        {card('f-in', formatBirr(incomeTotal), 'ጠቅላላ ገቢ')}
-        {card('f-out', formatBirr(expenseTotal), 'ጠቅላላ ወጪ')}
-      </div>
-      {show === 'f-in' && (
-        <table>
-          <thead><tr><th>ክፍል</th><th className="num">መጠን</th><th>ምንጭ</th><th>ቀን</th></tr></thead>
-          <tbody>
-            {(earnings ?? []).map((e, i) => (
-              <tr key={i}><td>{DEPT_NAME[e.dept]}</td><td className="num">{formatBirr(e.amount)}</td><td>{e.source}</td><td>{formatEc(e.earned_on)}</td></tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {show === 'f-out' && (
-        <table>
-          <thead><tr><th>ክፍል</th><th className="num">መጠን</th><th>ምክንያት</th><th>ቀን</th></tr></thead>
-          <tbody>
-            {ex.map((e, i) => (
-              <tr key={i}><td>{DEPT_NAME[e.money_requests?.dept ?? '']}</td><td className="num">{formatBirr(e.amount)}</td><td>{e.reason}</td><td>{formatEc(e.spent_on)}</td></tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <p className="small">ገቢ፣ ወጪ፣ ቀሪ ሂሳብ እና የክፍላት ገንዘብ አጠቃቀም በአንድ ቦታ ይገኛሉ፦{' '}
+        <Link className="link" href={`/staff/audit/money-report?p=${period}`}>የገንዘብ ሪፖርት →</Link>
+      </p>
     </>
   );
 }

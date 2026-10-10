@@ -745,4 +745,20 @@ update public.wallet_settings set opening_balance = 1000000 where id;
 update public.money_requests set status = 'paid', paid_at = now(), pay_method = 'cash' where id = '70000000-0000-0000-0000-000000000001';
 select pg_temp.must_equal((select count(*) from public.money_requests where id = '70000000-0000-0000-0000-000000000001' and status = 'paid'), 1, 'payment within the balance goes through');
 
+-- ---------- round 6b: automatic audit ----------
+select pg_temp.must_equal((select count(*) from public.receipts where audited_at is null and voided_at is null), 0, 'receipts are audited when issued');
+reset role;
+select set_config('request.jwt.claim.role', '', false);
+select set_config('request.jwt.claim.sub', '', false);
+update public.wallet_settings set opening_balance = 1000000 where id;
+insert into public.money_requests (id, dept, amount, reason, status, paid_at, pay_method, received_at, received_name)
+values ('70000000-0000-0000-0000-000000000002', 'mezmur', 500, 'ንጹሕ', 'paid', now(), 'cash', now(), 'x'),
+       ('70000000-0000-0000-0000-000000000003', 'mezmur', 500, 'ከበጀት በላይ', 'paid', now(), 'cash', now(), 'x');
+insert into public.expense_lines (request_id, amount, reason, spent_on) values
+  ('70000000-0000-0000-0000-000000000002', 400, 'ግዢ', current_date),
+  ('70000000-0000-0000-0000-000000000003', 700, 'ግዢ', current_date);
+update public.money_requests set spend_approved_at = now() where id in ('70000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000003');
+select pg_temp.must_equal((select count(*) from public.money_requests where id = '70000000-0000-0000-0000-000000000002' and auto_audited and audited_at is not null), 1, 'clean payment audited automatically');
+select pg_temp.must_equal((select count(*) from public.money_requests where id = '70000000-0000-0000-0000-000000000003' and audited_at is null), 1, 'overspend left for audit');
+
 \echo ALL RLS TESTS PASSED
