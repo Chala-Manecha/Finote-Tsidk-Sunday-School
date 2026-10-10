@@ -1,11 +1,15 @@
 import { formatEc } from '@/lib/ethiopian-calendar';
 import { MediaForm } from './media-form';
+import { MultiSelect } from './multi-select';
+import { ABNET_SUBJECTS } from '@/lib/constants';
 import { EcDatePicker } from './ec-date-picker';
 import { ActionButton } from './action-button';
 import { DayChecks, dayNames } from './day-checks';
 import {
   savePlan, deletePlan, saveCourseSession, deleteCourseSession, saveAbnet, deleteAbnet,
 } from '@/lib/actions/education';
+
+const SUBJECT_OPTIONS = ABNET_SUBJECTS.map((x) => ({ value: x, label: x }));
 
 export type Plan = {
   id: string; course_name: string; class_name: string | null; teacher: string | null;
@@ -136,7 +140,11 @@ export function AbnetFields({ a }: { a?: Abnet }) {
     <>
       {a && <input type="hidden" name="id" value={a.id} />}
       <div className="form-grid">
-        <div className="field"><label>የሚሰጡ ትምህርቶች</label><input name="subject" required defaultValue={a?.subject ?? ''} placeholder="ለምሳሌ፦ ንባብ፣ ቅኔ" /></div>
+        <div className="field">
+          <span className="label">የሚሰጡ ትምህርቶች</span>
+          <MultiSelect name="subject" options={SUBJECT_OPTIONS} allowCustom placeholder="ይምረጡ ወይም ይጻፉ"
+            defaultValue={(a?.subject ?? a?.subjects.join('፣ ') ?? '').split('፣').map((x) => x.trim()).filter(Boolean)} />
+        </div>
         <div className="field"><label>ቀን</label><input name="day_text" required defaultValue={a?.day_text ?? (a?.days?.length ? dayNames(a.days) : '')} placeholder="ለምሳሌ፦ ቅዳሜና እሑድ" /></div>
         <div className="field"><label>ሰዐት</label><input name="time_text" required defaultValue={a?.time_text ?? ''} placeholder="ለምሳሌ፦ ከሰዓት 8:00–10:00" /></div>
         <div className="field"><label>መምህር</label><input name="teacher" required defaultValue={a?.teacher ?? ''} /></div>

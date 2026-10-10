@@ -5,7 +5,7 @@ type Option = { value: string; label: string };
 
 /** Field that looks like a text input and opens a list of check boxes (values submitted under `name`). */
 export function MultiSelect({
-  name, options, defaultValue = [], max, placeholder = 'ይምረጡ', id,
+  name, options: base, defaultValue = [], max, placeholder = 'ይምረጡ', id, allowCustom = false,
 }: {
   name: string;
   options: readonly Option[];
@@ -13,8 +13,21 @@ export function MultiSelect({
   max?: number;
   placeholder?: string;
   id?: string;
+  /** Also lets the user type a value that is not in the list. */
+  allowCustom?: boolean;
 }) {
+  const [extra, setExtra] = useState<Option[]>(
+    allowCustom ? defaultValue.filter((v) => v && !base.some((o) => o.value === v)).map((v) => ({ value: v, label: v })) : []);
+  const options = [...base, ...extra];
   const [picked, setPicked] = useState<string[]>(defaultValue.filter((v) => options.some((o) => o.value === v)));
+  const [draft, setDraft] = useState('');
+  const addCustom = () => {
+    const v = draft.trim();
+    if (!v) return;
+    if (!options.some((o) => o.value === v)) setExtra([...extra, { value: v, label: v }]);
+    if (!picked.includes(v) && !(max && picked.length >= max)) setPicked([...picked, v]);
+    setDraft('');
+  };
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -45,6 +58,15 @@ export function MultiSelect({
               </label>
             );
           })}
+          {allowCustom && (
+            <div className="btn-row" style={{ padding: '6px 8px 2px', flexWrap: 'nowrap' }}>
+              <input
+                value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="ሌላ ይጻፉ…" aria-label="ሌላ"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } }}
+              />
+              <button type="button" className="btn sm secondary" onClick={addCustom}>+ ጨምር</button>
+            </div>
+          )}
         </div>
       )}
       {picked.map((v) => <input key={v} type="hidden" name={name} value={v} />)}

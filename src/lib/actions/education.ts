@@ -71,7 +71,7 @@ export async function deleteCourseSession(id: string) { return remove('course_se
 export async function saveAbnet(_: FormState, fd: FormData): Promise<FormState> {
   await requireStaff();
   const id = text(fd, 'id') || null;
-  const subject = text(fd, 'subject');
+  const subject = [...new Set(fd.getAll('subject').map((x) => String(x).trim()).filter(Boolean))].join('፣ ');
   const day_text = text(fd, 'day_text');
   const time_text = text(fd, 'time_text');
   const teacher = text(fd, 'teacher');
