@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { MemberTable } from '@/components/member-table';
+import { MemberStats } from '@/components/member-stats';
 
 export default async function OfficeRosterPage({
   params,
@@ -13,6 +14,7 @@ export default async function OfficeRosterPage({
   return (
     <>
       <h2 className="section" style={{ marginTop: 0 }}>የአባላት ዝርዝር</h2>
+      <MemberStats basePath="/staff/office/roster" />
       <MemberTable basePath="/staff/office/roster" filters={await searchParams} linkToDetail />
     </>
   );

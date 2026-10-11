@@ -794,3 +794,16 @@ output.readonly { display: block; padding: 8px 10px; border: 1px dashed var(--fi
 .assign-bar select { width: auto; }
 tr.picked td { background: #EEF4F8; }
 .setup-steps ol { margin: 8px 0 0; padding-inline-start: 22px; display: grid; gap: 8px; }
+
+/* ---------- Home page: light blue ---------- */
+body:has(.hero) { background: #EAF4FC; }
+.hero:not(.has-photo) {
+  background: radial-gradient(1100px 520px at 15% 0%, #7FC0EC 0%, transparent 60%), linear-gradient(160deg, #2F78B5 0%, #3E8CC8 55%, #5FA8DC 100%);
+}
+.hero.has-photo::before { background: linear-gradient(180deg, rgba(30, 90, 140, .55), rgba(25, 75, 120, .72)); }
+.promote-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; border-inline-start: 5px solid var(--green); }
+.member-stats { display: grid; gap: 6px; margin-bottom: 16px; }
+.member-stats h3 { margin: 10px 0 0; font-size: .95rem; color: var(--gold); }
+.member-stats .stat-card.total { text-align: start; display: flex; align-items: baseline; gap: 10px; }
+.member-stats .stat-card.total b { display: inline; font-size: 1.8rem; }
+.stat-card small { display: block; font-size: .72rem; color: var(--muted); margin-top: 2px; }

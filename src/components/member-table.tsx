@@ -2,11 +2,11 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { ageFromIso } from '@/lib/ethiopian-calendar';
 import {
-  DEPT_NAME, MEMBER_STATUS, SEX, WORK_STATUS, TITLES, memberTypeLabel,
+  DEPT_NAME, MEMBER_STATUS, SEX, WORK_STATUS, TITLES, memberTypeLabel, MEMBER_TYPE,
 } from '@/lib/constants';
 import { PrintButton } from './print-button';
 
-type Filters = { q?: string; status?: string; work?: string; dept?: string; group?: string; inactive?: string };
+type Filters = { q?: string; status?: string; work?: string; dept?: string; group?: string; type?: string; inactive?: string };
 
 type Row = {
   id: string;
@@ -60,6 +60,7 @@ export async function MemberTable({
   }
   if (filters.status) query = query.eq('member_status', filters.status);
   if (filters.work) query = query.eq('work_status', filters.work);
+  if (filters.type && filters.type in MEMBER_TYPE) query = query.eq('member_type', filters.type);
   if (filters.group) query = filters.group === 'none' ? query.is('age_group', null) : query.eq('age_group', filters.group);
 
   const [{ data, error }, { data: groups }] = await Promise.all([
@@ -90,6 +91,13 @@ export async function MemberTable({
             <option value="">ሁሉም</option>
             {(groups ?? []).map((g) => <option key={g.code} value={g.code}>{g.name}</option>)}
             <option value="none">ያልተመደቡ (የትውልድ ቀን የሌላቸው)</option>
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="type">የአባልነት ሁኔታ</label>
+          <select id="type" name="type" defaultValue={filters.type ?? ''}>
+            <option value="">ሁሉም</option>
+            {Object.entries(MEMBER_TYPE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
         <div className="field">

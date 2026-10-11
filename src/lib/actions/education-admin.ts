@@ -176,6 +176,37 @@ export async function carryOverYear(yearId: string) {
   if (!placed) return { error: `የሚመደብ ተማሪ አልተገኘም (የ${prev.ec_year} ዓ.ም ውሳኔ ያላቸው፣ ገና ያልተመደቡ)።${graduated ? ` ${graduated} 12ኛን ያጠናቀቁ።` : ''}` };
 }
 
+/**
+ * Year-end, done by hand: move the students who passed (ተዛውረዋል) into the next class of the next academic year.
+ * `memberIds` empty = every passed student of that class.
+ */
+export async function promoteToNext(yearId: string, cls: string, memberIds: string[] = []) {
+  await requireDept('education');
+  if (!isClassLevel(cls)) return { error: 'ክፍል ይምረጡ።' };
+  const supabase = await createClient();
+  const [{ data: years }, { data: rows }] = await Promise.all([
+    supabase.from('academic_years').select('id, ec_year').order('ec_year'),
+    supabase.rpc('year_results', { p_year: yearId, p_class: cls }),
+  ]);
+  const at = (years ?? []).findIndex((y) => y.id === yearId);
+  const next = at >= 0 ? years![at + 1] : undefined;
+  if (!next) return { error: 'የሚቀጥለው የትምህርት ዘመን ገና አልተከፈተም — መጀመሪያ በ“የትምህርት ዘመን” ትር ይክፈቱት።' };
+  const res = (rows ?? []) as { member_id: string; decision: string | null; auto_decision: string; ready: boolean }[];
+  if (!res[0]?.ready) return { error: 'የሁለቱም ሴሚስተሮች ኮርሶች ገና አልጸደቁም።' };
+  const target = NEXT_CLASS[cls];
+  if (!target) return { error: '12ኛ ክፍል የመጨረሻው ነው።' };
+  const passed = res.filter((r) => (r.decision ?? r.auto_decision) === 'promoted' && (!memberIds.length || memberIds.includes(r.member_id)));
+  if (!passed.length) return { error: 'ያለፈ ተማሪ የለም።' };
+  const { data: mode } = await supabase.from('enrollments').select('member_id, study_mode').eq('year_id', yearId).in('member_id', passed.map((r) => r.member_id));
+  const modeOf = new Map((mode ?? []).map((m) => [m.member_id as string, m.study_mode as string]));
+  const { error } = await supabase.from('enrollments').upsert(
+    passed.map((r) => ({ year_id: next.id, member_id: r.member_id, class_level: target, study_mode: modeOf.get(r.member_id) ?? 'regular' })),
+    { onConflict: 'year_id,member_id' },
+  );
+  if (error) return { error: explain(error.message) };
+  refresh();
+}
+
 /** Copy courses (with teachers, days/time and book) from another semester into this one; existing names are skipped. */
 export async function copyCourses(fromId: string, toId: string) {
   await requireDept('education');

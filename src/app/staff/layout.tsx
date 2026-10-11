@@ -14,7 +14,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         <RoleSwitch />
         <nav>
           <Link href="/staff">ሁሉም ክፍሎች</Link>
-          {staff.isAdmin && <Link href="/staff/admin/accounts">መለያዎች</Link>}
+          {staff.isAdmin && <Link href="/staff/office/staff-access">የሲስተሙ አስተዳዳሪዎች</Link>}
         </nav>
         <span className="chip-user">{staff.fullName}</span>
         <form action={logout}>
