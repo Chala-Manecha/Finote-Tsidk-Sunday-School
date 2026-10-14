@@ -99,14 +99,14 @@ export default async function Home() {
     ),
     departments: (
       <div id="departments">
-        {head('አገልግሎቶች', 'ክፍሎቻችን እና አገልግሎቶቻችን')}
+        {head('አገልግሎቶች', 'ክፍሎቻችን እና አገልግሎቶቻችን', 'በሰንበት ትምህርት ቤታችን የሚሰጡ ዋና ዋና ትምህርቶችና የአገልግሎት ክፍሎች።')}
         <div className="service-cards">
           {SERVICES.map((x) => (
             <Link key={x.href} href={x.href} className="service-card">
               <span className="mvv-icon">{x.icon}</span>
               <h3>{x.title}</h3>
               <p className="muted">{x.text}</p>
-              <span className="more">ተጨማሪ →</span>
+              <span className="more">ተጨማሪ ያንብቡ →</span>
             </Link>
           ))}
         </div>
@@ -117,9 +117,13 @@ export default async function Home() {
     ),
     welcome: (
       <div className="welcome-card">
-        <h2>{s?.welcome_title || `እንኳን ወደ ${SCHOOL_NAME} በሰላም መጡ።`}</h2>
-        <p style={{ whiteSpace: 'pre-line' }}>{s?.welcome_text || 'ለመመዝገብ ወደ ቢሮ ቁጥር 7 በአካል ይሂዱ።'}</p>
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
+        <div>
+          <span className="eyebrow">እንኳን ደህና መጡ</span>
+          <h2>{s?.welcome_title || `እንኳን ወደ ${SCHOOL_NAME} በሰላም መጡ።`}</h2>
+          <p style={{ whiteSpace: 'pre-line' }}>{s?.welcome_text || 'ለመመዝገብ ወደ ቢሮ ቁጥር 7 በአካል ይሂዱ።'}</p>
+        </div>
+        <div className="welcome-actions">
+          {regOpen === true && <Link href="/register" className="btn green">📝 አባል ይሁኑ</Link>}
           <Link href="/login" className="btn">የአባል መግቢያ</Link>
           <Link href="/feedback" className="btn secondary">አስተያየት ይስጡ</Link>
         </div>
@@ -136,28 +140,36 @@ export default async function Home() {
     ),
     contact: (
       <div id="contact">
-        {head('ያግኙን', 'አድራሻችን', 'ለማንኛውም ጥያቄ ይደውሉልን ወይም በአካል ይጎብኙን።')}
-        <div className="contact-cards">
-          <a className="contact-card" href={`tel:${phone.replace(/\s/g, '')}`}><span className="mvv-icon">📞</span><b>ስልክ</b><span dir="ltr">{phone}</span></a>
-          <a className="contact-card" href={`mailto:${email}`}><span className="mvv-icon">✉️</span><b>ኢሜይል</b><span dir="ltr">{email}</span></a>
-          <div className="contact-card"><span className="mvv-icon">📍</span><b>አድራሻ</b><span>{address}</span><span className="small muted">{CHURCH_NAME}</span></div>
-        </div>
-        {Number.isFinite(lat) && Number.isFinite(lng) && (
-          <div className="map-card">
-            <iframe
-              title="ካርታ"
-              src={`https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-            <a className="btn" href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`} target="_blank" rel="noopener noreferrer">
-              በGoogle Maps ይክፈቱ ↗
-            </a>
+        {head('ያግኙን', 'አድራሻችን', 'ለማንኛውም ጥያቄ ይደውሉልን፣ ይጻፉልን ወይም በአካል ይጎብኙን።')}
+        <div className="contact-split">
+          <div className="contact-list">
+            <a className="contact-row" href={`tel:${phone.replace(/\s/g, '')}`}><span className="mvv-icon">📞</span><span><b>ስልክ</b><span dir="ltr">{phone}</span></span></a>
+            <a className="contact-row" href={`mailto:${email}`}><span className="mvv-icon">✉️</span><span><b>ኢሜይል</b><span dir="ltr">{email}</span></span></a>
+            <div className="contact-row"><span className="mvv-icon">📍</span><span><b>አድራሻ</b><span>{address}</span><span className="small muted">{CHURCH_NAME}</span></span></div>
+            {links.length > 0 && (
+              <div className="contact-social">
+                <b>ይከተሉን</b>
+                <SocialButtons links={links} />
+              </div>
+            )}
           </div>
-        )}
+          {Number.isFinite(lat) && Number.isFinite(lng) && (
+            <div className="map-card">
+              <iframe
+                title="ካርታ"
+                src={`https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <a className="btn secondary" href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`} target="_blank" rel="noopener noreferrer">
+                በGoogle Maps ይክፈቱ ↗
+              </a>
+            </div>
+          )}
+        </div>
       </div>
     ),
-    social: links.length > 0 ? (
+    social: links.length > 0 && !sections.some((x) => x.key === 'contact') ? (
       <div className="center">
         {head('ይከተሉን', 'ማኅበራዊ ሚዲያ')}
         <SocialButtons links={links} />
@@ -239,8 +251,12 @@ export default async function Home() {
           </div>
         </section>
       )}
-      <main className="home">
-        {sections.map((x) => blocks[x.key] ? <section key={x.key} className={`home-sec reveal sec-${x.key}`}>{blocks[x.key]}</section> : null)}
+      <main className="home-bands">
+        {sections.filter((x) => blocks[x.key]).map((x, i) => (
+          <section key={x.key} className={`band ${i % 2 ? 'band-alt' : ''} sec-${x.key}`}>
+            <div className="wrap reveal">{blocks[x.key]}</div>
+          </section>
+        ))}
       </main>
       <ScrollReveal />
     </>

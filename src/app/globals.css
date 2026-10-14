@@ -807,3 +807,103 @@ body:has(.hero) { background: #EAF4FC; }
 .member-stats .stat-card.total { text-align: start; display: flex; align-items: baseline; gap: 10px; }
 .member-stats .stat-card.total b { display: inline; font-size: 1.8rem; }
 .stat-card small { display: block; font-size: .72rem; color: var(--muted); margin-top: 2px; }
+
+/* =====================================================================
+   Home page — full-width bands, one grid, calmer cards (overrides above)
+   ===================================================================== */
+body:has(.hero) { background: #fff; }
+.home-bands { display: block; }
+.band { padding: 76px 22px; background: #fff; }
+.band.band-alt { background: #EEF6FC; }
+.band .wrap { max-width: 1160px; margin: 0 auto; }
+.band + .band { border-top: 1px solid #E3EEF7; }
+
+/* Section heading: eyebrow, title with a short accent line, subtitle */
+.sec-head { text-align: center; max-width: 680px; margin: 0 auto 40px; }
+.sec-head h2 { position: relative; padding-bottom: 14px; margin-bottom: 10px; }
+.sec-head h2::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 56px; height: 3px; border-radius: 3px; background: #3E8CC8; transform: translateX(-50%); }
+.sec-head p { font-size: .98rem; line-height: 1.8; }
+.eyebrow { color: #2F78B5; background: #E1EEF9; letter-spacing: .04em; }
+
+/* Cards: same radius, padding and shadow everywhere; hover = lift + blue edge (no black) */
+.mvv, .service-cards { gap: 24px; align-items: stretch; }
+.mvv-card, .service-card, .contact-row, .map-card, .about, .welcome-card {
+  border-radius: 18px; border: 1px solid #E1EAF2; box-shadow: 0 1px 2px rgba(16, 40, 70, .04), 0 8px 24px rgba(16, 40, 70, .06);
+}
+.mvv-card, .service-card { padding: 28px 26px; text-align: start; }
+.mvv-card .mvv-icon { background: #D7E9F8; }
+.mvv-icon { background: #E1EEF9; border-radius: 50%; }
+.service-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.service-card:hover { background: #fff; color: inherit; transform: translateY(-4px); border-color: #9CC6E8; box-shadow: 0 14px 34px rgba(30, 90, 140, .14); }
+.service-card:hover p { color: var(--muted); }
+.service-card:hover .more { color: #2F78B5; }
+.service-card:hover .mvv-icon { background: #E1EEF9; }
+.service-card .more { color: #2F78B5; }
+.dept-chips { margin-top: 30px; }
+.dept-chips a { border-color: #D5E5F2; }
+.dept-chips a:hover { background: #2F78B5; border-color: #2F78B5; color: #fff; }
+
+/* About: split, image side tinted */
+.about { padding: 0; overflow: hidden; gap: 0; grid-template-columns: 1.35fr 1fr; }
+.about > div:first-child { padding: 44px; }
+.about-side { background: linear-gradient(160deg, #EAF4FC, #D8EAF8); padding: 36px 28px; height: 100%; justify-content: center; }
+.about-stats div { background: #fff; border-color: #D5E5F2; }
+.about-stats b { color: #2F78B5; }
+
+/* Welcome: text left, actions right */
+.welcome-card { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; align-items: center; text-align: start; padding: 36px 40px; }
+.welcome-card p { margin: 0; max-width: none; }
+.welcome-actions { display: flex; flex-direction: column; gap: 10px; }
+.welcome-actions .btn { justify-content: center; text-align: center; padding: 12px 18px; border-radius: 12px; }
+
+/* Donate band: blue, not black */
+.cta-band { background: linear-gradient(120deg, #1F5F95, #3E8CC8 60%, #5FA8DC); border-radius: 22px; padding: 40px 44px; box-shadow: 0 16px 40px rgba(30, 90, 140, .25); }
+.cta-band .btn.light:hover { background: #fff; color: #1F5F95; }
+
+/* Contact: list left, map right */
+.contact-split { display: grid; grid-template-columns: 1fr 1.4fr; gap: 24px; align-items: stretch; }
+.contact-list { display: flex; flex-direction: column; gap: 14px; }
+.contact-row { display: flex; align-items: center; gap: 14px; background: #fff; padding: 16px 18px; transition: border-color .2s, transform .2s; }
+.contact-row > span:last-child { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.contact-row b { font-size: .82rem; color: var(--muted); font-weight: 600; }
+a.contact-row:hover { border-color: #9CC6E8; transform: translateX(3px); }
+.contact-social { margin-top: 4px; }
+.contact-social b { display: block; font-size: .82rem; color: var(--muted); margin-bottom: 8px; }
+.contact-social .social-buttons { margin: 0; }
+.map-card { margin-top: 0; min-height: 340px; }
+.map-card iframe { flex: 1; height: auto; min-height: 300px; }
+.map-card .btn { margin: 12px; }
+
+/* Photos strip: its own white band */
+.photo-band { max-width: none; padding: 34px 22px 30px; background: #fff; border-bottom: 1px solid #E3EEF7; }
+.photo-band-head, .photo-band .marquee { max-width: 1160px; margin-inline: auto; }
+
+/* Footer: deep blue to match the page */
+.site-footer { background: #12324D; color: #DCE9F4; margin-top: 0; border-top: none; }
+.site-footer .muted, .footer-copy { color: rgba(220, 233, 244, .7); }
+.footer-grid a:hover { color: #fff; }
+.footer-h { color: #fff; }
+.footer-copy { border-top-color: rgba(255, 255, 255, .12); }
+
+/* Scroll reveal: section rises, then its cards follow one after another */
+.reveal { transition: opacity .6s ease, transform .6s ease; }
+.reveal.pending { opacity: 0; transform: translateY(28px); }
+.reveal .mvv > *, .reveal .service-cards > *, .reveal .contact-list > *, .reveal .about-stats > * {
+  transition: opacity .55s ease, transform .55s ease;
+}
+.reveal.pending .mvv > *, .reveal.pending .service-cards > *, .reveal.pending .contact-list > *, .reveal.pending .about-stats > * {
+  opacity: 0; transform: translateY(18px);
+}
+.reveal :is(.mvv, .service-cards, .contact-list, .about-stats) > :nth-child(2) { transition-delay: .12s; }
+.reveal :is(.mvv, .service-cards, .contact-list, .about-stats) > :nth-child(3) { transition-delay: .24s; }
+.reveal :is(.mvv, .service-cards, .contact-list, .about-stats) > :nth-child(4) { transition-delay: .36s; }
+
+@media (max-width: 860px) {
+  .band { padding: 52px 18px; }
+  .about { grid-template-columns: 1fr; }
+  .about > div:first-child { padding: 28px 24px; }
+  .welcome-card, .contact-split { grid-template-columns: 1fr; }
+  .welcome-card { padding: 28px 24px; }
+  .cta-band { padding: 28px 24px; }
+  .sec-head { margin-bottom: 28px; }
+}
