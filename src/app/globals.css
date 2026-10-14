@@ -1007,3 +1007,95 @@ button.chip-check { font: inherit; font-size: .85rem; }
 }
 .marks-grid input.over { border-color: var(--danger) !important; background: #FDECEA !important; color: var(--danger) !important; font-weight: 700; box-shadow: 0 0 0 2px rgba(179, 38, 30, .15); }
 .marks-grid tr.is-absent td { background: #FFF8E6; }
+
+/* =====================================================================
+   Round 9 — wider pages, darker blue, bento home, sidebar tabs
+   ===================================================================== */
+.page { max-width: 1360px; padding-left: 28px; padding-right: 28px; }
+.hero-grid, .photo-band-head, .photo-band .marquee, .footer-grid { max-width: 1320px; }
+.hero { padding-left: 28px; padding-right: 28px; }
+
+/* Darker blue home */
+body:has(.hero) { background: #E3EDF7; }
+.hero:not(.has-photo) {
+  background: radial-gradient(1000px 500px at 12% 0%, #4F9AD3 0%, transparent 60%), linear-gradient(160deg, #164D7C 0%, #1F639C 55%, #3580BF 100%);
+}
+.hero.has-photo::before { background: linear-gradient(180deg, rgba(14, 55, 92, .62), rgba(12, 45, 78, .8)); }
+.photo-band { background: transparent; border-bottom: none; padding-bottom: 6px; }
+
+/* Bento grid: tiles of different widths, side by side */
+.bento { max-width: 1320px; margin: 0 auto; padding: 18px 28px 64px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; }
+.tile { background: #fff; border-radius: 22px; padding: 30px 32px; border: 1px solid #D9E6F2; box-shadow: 0 1px 2px rgba(16, 40, 70, .04), 0 10px 30px rgba(16, 40, 70, .07); min-width: 0; }
+.span-12 { grid-column: span 12; } .span-8 { grid-column: span 8; } .span-7 { grid-column: span 7; }
+.span-5 { grid-column: span 5; } .span-4 { grid-column: span 4; }
+.tile h2 { font-family: 'Noto Sans Ethiopic', 'Inter', sans-serif; font-size: clamp(1.3rem, 2.4vw, 1.75rem); margin: 8px 0 8px; color: #12324D; line-height: 1.3; }
+.tile-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.tile-head p { margin: 0; font-size: .95rem; }
+.tile .eyebrow { color: #1F639C; background: #DCEAF7; }
+
+/* Welcome (first tile, right under the photos) */
+.t-welcome { background: linear-gradient(135deg, #fff 55%, #EAF3FB); border-inline-start: 6px solid #1F639C; display: flex; align-items: center; }
+.t-welcome-in p { color: var(--muted); margin: 0 0 18px; line-height: 1.8; }
+.t-welcome-in .btn { border-radius: 12px; padding: 11px 18px; }
+
+/* Donate: blue tile */
+.t-donate { background: linear-gradient(150deg, #164D7C, #2A73B0 70%, #4A93CF); color: #fff; border: none; box-shadow: 0 16px 40px rgba(22, 77, 124, .3); }
+.t-donate-in { display: flex; flex-direction: column; gap: 6px; height: 100%; }
+.t-donate h2 { color: #fff; }
+.t-donate p { margin: 0 0 14px; opacity: .9; line-height: 1.7; font-size: .94rem; }
+.t-donate .btn { margin-top: auto; align-self: flex-start; border-radius: 12px; padding: 11px 22px; }
+.donate-icon { font-size: 1.8rem; width: 52px; height: 52px; border-radius: 16px; background: rgba(255, 255, 255, .16); display: inline-flex; align-items: center; justify-content: center; }
+
+/* About */
+.about-title { display: flex; align-items: center; gap: 16px; }
+.about-title img { border-radius: 50%; box-shadow: 0 6px 18px rgba(16, 40, 70, .15); flex-shrink: 0; }
+.about-text { color: var(--muted); line-height: 1.9; margin: 14px 0 18px; }
+.t-about .about-stats { margin-bottom: 18px; }
+.t-about .about-stats div { background: #EEF5FB; border: none; border-radius: 14px; padding: 14px 8px; }
+.t-about .about-stats b { color: #1F639C; font-size: 1.5rem; }
+
+/* Mission / vision / values as a vertical list */
+.mvv-list { display: flex; flex-direction: column; gap: 12px; }
+.mvv-item { display: flex; gap: 14px; align-items: flex-start; padding: 14px; border-radius: 16px; background: #F3F8FC; }
+.mvv-item h3 { margin: 0 0 4px; font-size: 1.02rem; }
+.mvv-item p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.75; }
+.mvv-item .mvv-icon { flex-shrink: 0; background: #fff; }
+.t-mission .tile-head { margin-bottom: 14px; }
+
+/* Services inside a tile: soft inner cards, no second border/shadow */
+.tile .service-cards { gap: 16px; }
+.tile .service-card { background: #F3F8FC; border: 1px solid transparent; box-shadow: none; border-radius: 18px; padding: 22px; }
+.tile .service-card:hover { background: #fff; border-color: #9CC6E8; box-shadow: 0 12px 28px rgba(30, 90, 140, .12); }
+.tile .service-card .mvv-icon { background: #fff; }
+.tile .dept-chips { justify-content: flex-start; margin-top: 18px; }
+.tile .dept-chips a { background: #F3F8FC; border-color: transparent; box-shadow: none; }
+
+/* Contact inside a tile */
+.tile .contact-row { background: #F3F8FC; border-color: transparent; box-shadow: none; }
+.tile a.contact-row:hover { background: #fff; border-color: #9CC6E8; }
+.tile .map-card { box-shadow: none; border-color: #D9E6F2; }
+
+@media (max-width: 960px) {
+  .span-8, .span-7, .span-5, .span-4 { grid-column: span 12; }
+}
+@media (max-width: 640px) {
+  .bento { padding: 12px 14px 48px; gap: 14px; }
+  .tile { padding: 22px 18px; border-radius: 18px; }
+  .page { padding-left: 14px; padding-right: 14px; }
+}
+
+/* Department tabs: a sidebar panel; every tab is its own soft button */
+.dept-tab-nav { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 10px; gap: 4px; min-width: 230px; box-shadow: var(--shadow); position: sticky; top: 84px; max-height: calc(100vh - 110px); overflow-y: auto; }
+.dept-tab-nav a, .dept-tab-nav span { background: #F2F7FB; border-inline-start: none; border-radius: 10px; box-shadow: none; padding: 9px 12px; color: var(--ink); }
+.dept-tab-nav a:hover { background: #DCEAF7; color: #12324D; }
+.dept-tab-nav a.active, .dept-tab-nav a.active:hover { background: #1F639C; color: #fff; font-weight: 600; box-shadow: 0 4px 12px rgba(31, 99, 156, .3); }
+.dept-tab-nav .tab-group { border-bottom: none; margin: 12px 4px 4px; color: #6A8197; font-size: .7rem; letter-spacing: .4px; }
+@media (max-width: 760px) {
+  .dept-tab-nav { position: static; max-height: none; flex-direction: row; padding: 6px; border-radius: 12px; }
+}
+/* /staff department cards */
+a.dept-card { border-inline-start-color: #1F639C; }
+a.dept-card:hover { background: #1F639C; color: #fff; border-color: #1F639C; }
+
+/* Member certificate toolbar */
+.cert-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin-bottom: 14px; box-shadow: var(--shadow); }

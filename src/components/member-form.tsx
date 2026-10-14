@@ -1,13 +1,13 @@
 'use client';
 import { useActionState, useState, startTransition, useRef } from 'react';
+import Link from 'next/link';
 import { saveMember, type MemberFormState } from '@/app/staff/members/actions';
 import { submitApplication, applicationUploadUrl } from '@/lib/actions/applications';
 import { createClient } from '@/lib/supabase/client';
 import { resizeImage } from '@/lib/client/upload';
 import { EcDatePicker } from './ec-date-picker';
 import { MultiSelect } from './multi-select';
-import { RegistrationSlip, type SlipData } from './registration-slip';
-import { ageFromIso, formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
+import { ageFromIso, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
   DEPARTMENTS, EDUCATION_LEVELS, EMERGENCY_RELATIONS, GEEZ_LEVEL, LANGUAGES, MARITAL_STATUS, MEMBER_TYPE,
   REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
@@ -104,62 +104,7 @@ async function upload(mode: FormMode, file: File | Blob, name = 'file'): Promise
   return path;
 }
 
-const label = (map: Record<string, string>, v: FormDataEntryValue | null) => (v ? map[String(v)] ?? String(v) : '');
-const yrs = (e: { start_year: number | null; end_year: number | null; current: boolean }, now: string) =>
-  e.start_year || e.end_year || e.current ? `${e.start_year ?? '?'} – ${e.current ? now : (e.end_year ?? '?')}` : '';
 
-/** Everything the applicant filled in, as label/value rows for the printable slip. */
-function buildSlip(fd: FormData, education: EducationEntry[], work: WorkEntry[], photo: string | null): SlipData {
-  const v = (k: string) => String(fd.get(k) ?? '').trim();
-  const dob = v('dob');
-  const fullName = [v('first_name'), v('father_name'), v('grandfather_name')].filter(Boolean).join(' ');
-  const langs = [...fd.getAll('languages').map(String), v('language_other')].filter(Boolean).join('፣ ');
-  const depts = fd.getAll('depts').map((d) => DEPARTMENTS.find((x) => x.code === d)?.name ?? String(d)).join('፣ ');
-  return {
-    fullName,
-    photo,
-    sections: [
-      { title: 'የአባልነት መረጃ', rows: [
-        ['የአባልነት ሁኔታ', v('member_type') === 'other' ? v('member_type_other') : label(MEMBER_TYPE, fd.get('member_type'))],
-        ['አገልግሎት የጀመሩበት ዓመት', v('joined_year') ? `${v('joined_year')} ዓ.ም` : ''],
-      ] },
-      { title: 'የግል መረጃ ዝርዝር', rows: [
-        ['ማዕረግ', label(TITLES, fd.get('title'))],
-        ['ሙሉ ስም', fullName],
-        ['የእናት ስም', v('mother_name')],
-        ['የክርስትና ስም', v('christian_name')],
-        ['ክርስትና የተነሱበት', v('baptism_church')],
-        ['የትውልድ ቀን', dob ? `${formatEc(dob)} (ዕድሜ ${ageFromIso(dob)})` : ''],
-        ['ፆታ', label(SEX, fd.get('sex'))],
-        ['የትዳር ሁኔታ', label(MARITAL_STATUS, fd.get('marital_status'))],
-        ['ዜግነት', fd.get('is_ethiopian') === 'on' ? 'ኢትዮጵያዊ' : v('nationality')],
-        ['ቋንቋ', langs],
-        ['የግዕዝ ችሎታ', label(GEEZ_LEVEL, fd.get('geez_level'))],
-      ] },
-      { title: 'አድራሻ', rows: [
-        ['አድራሻ', [v('region'), v('city'), v('sub_city'), v('woreda') && `ወረዳ ${v('woreda')}`, v('house_no') && `የቤት ቁ. ${v('house_no')}`].filter(Boolean).join('፣ ')],
-        ['ስልክ', [v('phone'), v('phone2')].filter(Boolean).join(' · ')],
-        ['ኢሜይል', v('email')],
-        ['Telegram', v('telegram_username')],
-      ] },
-      { title: 'ንሰሐ አባት እና የአደጋ ጊዜ ተጠሪ', rows: [
-        ['የንሰሐ አባት', [v('confessor_name'), v('confessor_phone')].filter(Boolean).join(' · ')],
-        ['የአደጋ ጊዜ ተጠሪ', [v('emergency_name'), v('emergency_relation') && `(${v('emergency_relation')})`, v('emergency_phone')].filter(Boolean).join(' ')],
-      ] },
-      { title: 'ትምህርት', rows: [
-        ...education.filter((e) => e.level || e.field || e.institution)
-          .map((e, i): [string, string] => [`ትምህርት ${i + 1}`, `${[e.level, e.field, e.institution].filter(Boolean).join(' · ')} ${yrs(e, 'አሁን')}`]),
-        ['ቀድሞ ሰ/ት/ቤት', fd.get('has_prior_school') === 'on' ? `${v('prior_school_name')} · ${v('prior_school_years') || '—'} ዓመት` : ''],
-      ] },
-      { title: 'ሥራ', rows: [
-        ['ሁኔታ', label(WORK_STATUS, fd.get('work_status'))],
-        ...(v('work_status') === 'worker' ? work.filter((w) => w.field || w.workplace)
-          .map((w, i): [string, string] => [`ሥራ ${i + 1}`, `${[w.field, w.workplace].filter(Boolean).join(' · ')} ${yrs(w, 'አሁን')}`]) : []),
-      ] },
-      { title: 'ዝንባሌ', rows: [['ማገልገል የሚፈልጉበት ክፍል', depts]] },
-    ],
-  };
-}
 
 function Section({ n, id, title, children }: { n: number; id: string; title: string; children: React.ReactNode }) {
   return (
@@ -217,7 +162,6 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
     return rows;
   });
   const [work, setWork] = useState<WorkEntry[]>(initial.work?.length ? initial.work : [emptyWork()]);
-  const [slip, setSlip] = useState<SlipData | null>(null);
   const [pinShown, setPinShown] = useState('');
   const [first, father, grand] = nameParts(initial);
   const isNew = !initial.id;
@@ -253,7 +197,6 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
     confirmed.current = false;
     setUploadError(null);
     if (mode === 'public') {
-      setSlip(buildSlip(fd, education, work, photoPreview));
       setPinShown(String(fd.get('pin') ?? ''));
     }
     let eduRows = education;
@@ -296,7 +239,10 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
         <div className="card no-print" style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '2.2rem' }}>✅</div>
           <h2 style={{ margin: '6px 0' }}>በተሳካ ሁኔታ ተመዝግበዋል</h2>
-          <p className="muted" style={{ marginTop: 0 }}>የምዝገባ ቅጹን አውርደው (ወይም አትመው) ወደ <b>የሰው ሃብት አስተዳደር (ቢሮ ቁጥር 7)</b> ይዘው ይምጡ። ምዝገባዎ ሲጸድቅ መግባት ይችላሉ።</p>
+          <p className="muted" style={{ marginTop: 0 }}>
+            ምዝገባዎ ለ<b>የሰው ሃብት አስተዳደር (ቢሮ ቁጥር 7)</b> ተልኳል። የምዝገባ ቁጥርዎን ይዘው ይቅረቡ፤ ሲጸድቅ
+            <b> የአባልነት ማረጋገጫ ምስክር ወረቀት</b> ይሰጥዎታል፤ በመግቢያ ኮድዎም መግባት ይችላሉ።
+          </p>
           <div className="secret-box">
             <div className="secret-title">🔒 ምስጢራዊ መረጃ — የተማሪ መግቢያ ኮድ</div>
             <p className="small" style={{ margin: '4px 0 10px' }}>ይህ የእርስዎ የተማሪ መግቢያ ልዩ ኮድ ነው፤ ለማንም አያጋሩ።</p>
@@ -305,13 +251,11 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
               <div><dt>መግቢያ ኮድ</dt><dd dir="ltr">{pinShown}</dd></div>
             </dl>
           </div>
+          <p className="small" style={{ marginTop: 10 }}>⚠ የመግቢያ ኮዱን አሁን ይጻፉት፤ በድጋሚ አይታይም።</p>
           <div className="btn-row" style={{ justifyContent: 'center', marginTop: 14 }}>
-            <button type="button" className="btn" onClick={() => window.print()}>⬇ የምዝገባ ቅጹን አውርድ / አትም</button>
-            <a className="btn secondary" href="/login">ይውጡ</a>
+            <Link className="btn" href="/">ወደ ዋና ገጽ</Link>
           </div>
-          <p className="hint small muted">“አውርድ” ሲጫን የሚከፈተው መስኮት ላይ “Save as PDF” ይምረጡ።</p>
         </div>
-        {slip && <RegistrationSlip slip={slip} regNo={state.regNo} appId={state.appId} />}
       </div>
     );
   }

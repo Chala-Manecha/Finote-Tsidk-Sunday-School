@@ -30,8 +30,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'duty', label: 'አባል መድብ', ready: true },
   ],
   hr: [
-    { slug: 'register', label: 'ምዝገባ (+ አባል መዝግብ)', ready: true },
-    { slug: 'applications', label: 'የተመዝጋቢዎች ዝርዝር', ready: true },
+    { slug: 'applications', label: 'ምዝገባና ተመዝጋቢዎች', ready: true },
     { slug: 'age-groups', label: 'የዕድሜ ክፍሎች', ready: true },
     { slug: 'overview', label: 'አጠቃላይ አቴንዳንስ', ready: true },
     { slug: 'attendance', label: 'ስብሰባ ክትትል መያዝ', ready: true },
@@ -121,7 +120,7 @@ const FINANCE_GROUPS: [string, string[]][] = [
   ['የክፍሉ', ['members', 'property', 'request-event', 'feedback']],
 ];
 const HR_GROUPS: [string, string[]][] = [
-  ['ምዝገባ', ['register', 'applications', 'age-groups', 'members']],
+  ['ምዝገባ', ['applications', 'members', 'age-groups']],
   ['ክትትል', ['overview', 'attendance', 'lost-members', 'departures']],
   ['ምደባና አመራር', ['duty', 'all-duties', 'leadership']],
   ['የክፍሉ', ['property', 'money', 'request-event', 'feedback']],

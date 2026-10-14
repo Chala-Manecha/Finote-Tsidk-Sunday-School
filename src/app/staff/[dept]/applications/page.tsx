@@ -30,14 +30,19 @@ export default async function Applications({ params, searchParams }: {
 
   return (
     <>
-      <h2 className="section" style={{ marginTop: 0 }}>የተመዝጋቢዎች ዝርዝር</h2>
+      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+        <h2 className="section" style={{ margin: 0 }}>ምዝገባና ተመዝጋቢዎች</h2>
+        <Link className="btn green" href="/staff/hr/register">+ አባል መዝግብ</Link>
+      </div>
       <div className="stat-cards">
         <div className="stat-card"><b>{total}</b>ጠቅላላ ተመዝጋቢ</div>
         <Link className="stat-card" href="/staff/hr/applications?show=pending"><b style={{ color: 'var(--gold)' }}>{pending}</b>ያልጸደቁ (በመጠባበቅ ላይ)</Link>
         <Link className="stat-card" href="/staff/hr/applications?show=approved"><b style={{ color: 'var(--green)' }}>{approved}</b>የጸደቁ</Link>
         <Link className="stat-card" href="/staff/hr/applications?show=rejected"><b style={{ color: 'var(--danger)' }}>{rejected}</b>ተቀባይነት ያላገኙ</Link>
       </div>
-      <MediaForm action={setRegistration} submitLabel="አስቀምጥ" resetOnSuccess={false}>
+      <details className="card" style={{ marginTop: 14 }}>
+        <summary><b>የሕዝብ ምዝገባ</b> — {open ? <span className="pill present">ክፍት</span> : <span className="pill">ዝግ</span>} <span className="small muted">ለመክፈት/ለመዝጋት ይጫኑ</span></summary>
+      <MediaForm action={setRegistration} submitLabel="አስቀምጥ" resetOnSuccess={false} card={false}>
         <p style={{ marginTop: 0 }}>
           ሁኔታ፦ {open ? <span className="pill present">ክፍት ነው — በድረ-ገጹ ላይ “ይመዝገቡ” ይታያል</span> : <span className="pill">ዝግ ነው</span>}
         </p>
@@ -48,6 +53,7 @@ export default async function Applications({ params, searchParams }: {
           <span className="hint">ቀን ካልተመረጠ እስኪዘጉት ድረስ ክፍት ይሆናል።</span>
         </div>
       </MediaForm>
+      </details>
 
       <div className="cat-tabs">
         {Object.entries(STATUS).map(([k, v]) => (

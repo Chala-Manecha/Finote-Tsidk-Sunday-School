@@ -52,54 +52,78 @@ export default async function Home() {
   const lng = Number(s?.map_lng ?? SITE_DEFAULTS.map_lng);
   const values = (s?.core_values ?? '').split('\n').map((v) => v.trim()).filter(Boolean);
 
-  const head = (eyebrow: string, title: string, sub?: string) => (
-    <div className="sec-head">
-      <span className="eyebrow">{eyebrow}</span>
-      <h2>{title}</h2>
-      {sub && <p className="muted">{sub}</p>}
+  const head = (eyebrow: string, title: string, sub?: string, extra?: React.ReactNode) => (
+    <div className="tile-head">
+      <div>
+        <span className="eyebrow">{eyebrow}</span>
+        <h2>{title}</h2>
+        {sub && <p className="muted">{sub}</p>}
+      </div>
+      {extra}
     </div>
   );
 
   const blocks: Record<string, React.ReactNode> = {
-    mission: (s?.mission || s?.vision || values.length > 0) ? (
-      <>
-        {head('ማንነታችን', 'ተልዕኮ፣ ራዕይ እና እሴቶች')}
-        <div className="mvv">
-          {s?.mission && <div className="mvv-card"><span className="mvv-icon">🎯</span><h3>ተልዕኮ</h3><p>{s.mission}</p></div>}
-          {s?.vision && <div className="mvv-card"><span className="mvv-icon">👁️</span><h3>ራዕይ</h3><p style={{ whiteSpace: 'pre-line' }}>{s.vision}</p></div>}
-          {values.length > 0 && (
-            <div className="mvv-card"><span className="mvv-icon">❤️</span><h3>እሴቶች</h3>
-              <div className="value-chips">{values.map((v) => <span key={v}>{v}</span>)}</div>
-            </div>
-          )}
-        </div>
-      </>
-    ) : null,
-    about: (
-      <div className="about" id="about">
-        <div>
-          <span className="eyebrow">ስለ እኛ</span>
-          <h2>{s?.about_title || SCHOOL_NAME}</h2>
-          {s?.about_text && <p>{s.about_text}</p>}
-          <div className="btn-row">
-            <Link href="/history" className="btn">ሙሉ ታሪካችንን ያንብቡ →</Link>
-            <Link href="/departments" className="btn secondary">ክፍሎቻችን</Link>
-          </div>
-        </div>
-        <div className="about-side">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt={SCHOOL_NAME} width={200} height={200} />
-          <div className="about-stats">
-            <div><b>{years}ኛ</b><span>የምሥረታ ዓመት</span></div>
-            <div><b>2000</b><span>ዓ.ም ተመሠረተ</span></div>
-            <div><b>{DEPARTMENTS.length}</b><span>ክፍሎች</span></div>
-          </div>
+    welcome: (
+      <div className="t-welcome-in">
+        <span className="eyebrow">እንኳን ደህና መጡ</span>
+        <h2>{s?.welcome_title || `እንኳን ወደ ${SCHOOL_NAME} በሰላም መጡ።`}</h2>
+        <p style={{ whiteSpace: 'pre-line' }}>{s?.welcome_text || 'ለመመዝገብ ወደ ቢሮ ቁጥር 7 በአካል ይሂዱ።'}</p>
+        <div className="btn-row">
+          {regOpen === true && <Link href="/register" className="btn green">📝 አባል ይሁኑ</Link>}
+          <Link href="/login" className="btn">የአባል መግቢያ</Link>
+          <Link href="/feedback" className="btn secondary">አስተያየት ይስጡ</Link>
         </div>
       </div>
     ),
+    donate: (
+      <div className="t-donate-in">
+        <span className="donate-icon" aria-hidden>🤲</span>
+        <h2>አገልግሎታችንን ይደግፉ</h2>
+        <p>በTelebirr ወይም በCBE የሚያደርጉት እርዳታ ለትምህርት፣ ለዝማሬ እና ለበጎ አድራጎት አገልግሎቶች ይውላል።</p>
+        <Link href="/donate" className="btn light">ለመርዳት →</Link>
+      </div>
+    ),
+    about: (
+      <div id="about" className="t-about-in">
+        <div className="about-title">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="" width={72} height={72} />
+          <div>
+            <span className="eyebrow">ስለ እኛ</span>
+            <h2>{s?.about_title || SCHOOL_NAME}</h2>
+          </div>
+        </div>
+        {s?.about_text && <p className="about-text">{s.about_text}</p>}
+        <div className="about-stats">
+          <div><b>{years}ኛ</b><span>የምሥረታ ዓመት</span></div>
+          <div><b>2000</b><span>ዓ.ም ተመሠረተ</span></div>
+          <div><b>{DEPARTMENTS.length}</b><span>ክፍሎች</span></div>
+        </div>
+        <div className="btn-row">
+          <Link href="/history" className="btn">ሙሉ ታሪካችንን ያንብቡ →</Link>
+          <Link href="/departments" className="btn secondary">ክፍሎቻችን</Link>
+        </div>
+      </div>
+    ),
+    mission: (s?.mission || s?.vision || values.length > 0) ? (
+      <div className="t-mission-in">
+        {head('ማንነታችን', 'ተልዕኮ፣ ራዕይ እና እሴቶች')}
+        <div className="mvv-list">
+          {s?.mission && <div className="mvv-item"><span className="mvv-icon">🎯</span><div><h3>ተልዕኮ</h3><p>{s.mission}</p></div></div>}
+          {s?.vision && <div className="mvv-item"><span className="mvv-icon">👁️</span><div><h3>ራዕይ</h3><p style={{ whiteSpace: 'pre-line' }}>{s.vision}</p></div></div>}
+          {values.length > 0 && (
+            <div className="mvv-item"><span className="mvv-icon">❤️</span><div><h3>እሴቶች</h3>
+              <div className="value-chips">{values.map((v) => <span key={v}>{v}</span>)}</div></div>
+            </div>
+          )}
+        </div>
+      </div>
+    ) : null,
     departments: (
       <div id="departments">
-        {head('አገልግሎቶች', 'ክፍሎቻችን እና አገልግሎቶቻችን', 'በሰንበት ትምህርት ቤታችን የሚሰጡ ዋና ዋና ትምህርቶችና የአገልግሎት ክፍሎች።')}
+        {head('አገልግሎቶች', 'ክፍሎቻችን እና አገልግሎቶቻችን', 'በሰንበት ትምህርት ቤታችን የሚሰጡ ዋና ዋና ትምህርቶችና የአገልግሎት ክፍሎች።',
+          <Link href="/departments" className="btn sm secondary">ሁሉም ክፍሎች →</Link>)}
         <div className="service-cards">
           {SERVICES.map((x) => (
             <Link key={x.href} href={x.href} className="service-card">
@@ -113,29 +137,6 @@ export default async function Home() {
         <div className="dept-chips">
           {DEPARTMENTS.map((d) => <Link key={d.code} href="/departments">{d.name}</Link>)}
         </div>
-      </div>
-    ),
-    welcome: (
-      <div className="welcome-card">
-        <div>
-          <span className="eyebrow">እንኳን ደህና መጡ</span>
-          <h2>{s?.welcome_title || `እንኳን ወደ ${SCHOOL_NAME} በሰላም መጡ።`}</h2>
-          <p style={{ whiteSpace: 'pre-line' }}>{s?.welcome_text || 'ለመመዝገብ ወደ ቢሮ ቁጥር 7 በአካል ይሂዱ።'}</p>
-        </div>
-        <div className="welcome-actions">
-          {regOpen === true && <Link href="/register" className="btn green">📝 አባል ይሁኑ</Link>}
-          <Link href="/login" className="btn">የአባል መግቢያ</Link>
-          <Link href="/feedback" className="btn secondary">አስተያየት ይስጡ</Link>
-        </div>
-      </div>
-    ),
-    donate: (
-      <div className="cta-band">
-        <div>
-          <h2>አገልግሎታችንን ይደግፉ</h2>
-          <p>በTelebirr ወይም በCBE የሚያደርጉት እርዳታ ለትምህርት፣ ለዝማሬ እና ለበጎ አድራጎት አገልግሎቶች ይውላል።</p>
-        </div>
-        <Link href="/donate" className="btn light">ለመርዳት →</Link>
       </div>
     ),
     contact: (
@@ -170,12 +171,25 @@ export default async function Home() {
       </div>
     ),
     social: links.length > 0 && !sections.some((x) => x.key === 'contact') ? (
-      <div className="center">
+      <div>
         {head('ይከተሉን', 'ማኅበራዊ ሚዲያ')}
         <SocialButtons links={links} />
       </div>
     ) : null,
   };
+
+  // Bento layout: tiles side by side in pairs; a tile takes the full row when its partner is hidden.
+  const shown = new Set<string>(sections.map((x) => x.key).filter((k) => blocks[k]));
+  const PAIRS: [string, string, number][] = [['welcome', 'donate', 8], ['about', 'mission', 7]];
+  const tile = (key: string, span: number) => (
+    <section key={key} className={`tile t-${key} span-${span} reveal`}>{blocks[key]}</section>
+  );
+  const tiles: React.ReactNode[] = [];
+  for (const [a, b, wide] of PAIRS) {
+    if (shown.has(a)) tiles.push(tile(a, shown.has(b) ? wide : 12));
+    if (shown.has(b)) tiles.push(tile(b, shown.has(a) ? 12 - wide : 12));
+  }
+  for (const k of ['departments', 'contact', 'social']) if (shown.has(k)) tiles.push(tile(k, 12));
 
   return (
     <>
@@ -251,13 +265,7 @@ export default async function Home() {
           </div>
         </section>
       )}
-      <main className="home-bands">
-        {sections.filter((x) => blocks[x.key]).map((x, i) => (
-          <section key={x.key} className={`band ${i % 2 ? 'band-alt' : ''} sec-${x.key}`}>
-            <div className="wrap reveal">{blocks[x.key]}</div>
-          </section>
-        ))}
-      </main>
+      <main className="bento">{tiles}</main>
       <ScrollReveal />
     </>
   );

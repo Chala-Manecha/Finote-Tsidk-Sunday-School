@@ -11,7 +11,7 @@ import { PrintButton } from '@/components/print-button';
 import { ActionButton } from '@/components/action-button';
 import { canAccess } from '@/lib/auth';
 import { deactivateMember, restoreMember, deleteMember } from '@/app/staff/members/actions';
-import { DocHeader, DocSigns } from '@/components/doc-sheet';
+import { RegistrationSlip, type SlipData } from '@/components/registration-slip';
 import { yearsLabel, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
 type AttRow = {
@@ -63,59 +63,59 @@ export default async function MemberDetail({
   const secularUrl = await signed(m.secular_school?.evidence_path);
   const eduUrls = await Promise.all(((m.education ?? []) as EducationEntry[]).map((e) => signed(e.evidence_path)));
 
-  type Row = [string, React.ReactNode];
-  const dash = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
+  const dash = (v: unknown) => (v === null || v === undefined || v === '' ? '' : String(v));
   const education = (m.education ?? []) as EducationEntry[];
   const work = (m.work ?? []) as WorkEntry[];
-  const groups: [string, Row[]][] = [
-    ['የአባልነት መረጃ', [
-      ['የምዝገባ መለያ ቁጥር', <b key="r">{m.reg_no}</b>],
-      ['የአባልነት ምዝገባ ቀን', m.registered_on ? formatEc(m.registered_on) : formatEc(m.created_at)],
-      ['የአባልነት ሁኔታ', memberTypeLabel(m.member_type, m.member_type_other)],
-      ['አገልግሎት የጀመሩበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም (የአገልግሎት ቆይታ ${Math.max(isoToEc(todayIsoAddis()).year - m.joined_year, 0)} ዓመት)` : '—'],
-      ['ክፍል (በዕድሜ)', (ageGroups ?? []).find((g) => g.code === m.age_group)?.name ?? '—'],
-      ['ሁኔታ', MEMBER_STATUS[m.member_status as keyof typeof MEMBER_STATUS]],
-      ...(m.is_active ? [] : [['ሁኔታ (መልቀቂያ)', <span key="l" className="pill absent">መልቀቂያ ወስደዋል</span>] as Row]),
-      ['የመረጡት ክፍል', m.member_departments.map((d: { dept: string }) => DEPT_NAME[d.dept]).join('፣ ') || '—'],
-    ]],
-    ['የግል መረጃ ዝርዝር', [
-      ['ማዕረግ', m.title ? TITLES[m.title as keyof typeof TITLES] : '—'],
-      ['ስም · የአባት · የአያት', [m.first_name, m.father_name, m.grandfather_name].filter(Boolean).join(' · ') || m.full_name],
-      ['የእናት ስም', dash(m.mother_name)],
-      ['የክርስትና ስም', dash(m.christian_name)],
-      ['ክርስትና የተነሱበት', dash(m.baptism_church)],
-      ['የትውልድ ቀን', m.dob ? `${formatEc(m.dob)} (ዕድሜ ${ageFromIso(m.dob)})` : '—'],
-      ['ፆታ', SEX[m.sex as keyof typeof SEX]],
-      ['የትዳር ሁኔታ', m.marital_status ? MARITAL_STATUS[m.marital_status as keyof typeof MARITAL_STATUS] : '—'],
-      ['ዜግነት', m.is_ethiopian ? 'ኢትዮጵያዊ' : m.nationality],
-      ['ቋንቋ', (m.languages ?? []).join('፣ ') || '—'],
-      ['የግዕዝ ችሎታ', GEEZ_LEVEL[m.geez_level as keyof typeof GEEZ_LEVEL]],
-    ]],
-    ['አድራሻ እና ግንኙነት', [
-      ['አድራሻ', [m.region, m.city, m.sub_city, m.woreda && `ወረዳ ${m.woreda}`, m.house_no && `የቤት ቁ. ${m.house_no}`].filter(Boolean).join('፣ ') || '—'],
-      ['ስልክ', [m.phone, m.phone2].filter(Boolean).join(' · ') || '—'],
-      ['ኢሜይል', dash(m.email)],
-      ['Telegram', m.telegram_username ? `@${m.telegram_username}` : '—'],
-      ['የንሰሐ አባት', [m.confessor_name, m.confessor_phone].filter(Boolean).join(' · ') || '—'],
-      ['የአደጋ ጊዜ ተጠሪ', [m.emergency_name, m.emergency_relation && `(${m.emergency_relation})`, m.emergency_phone].filter(Boolean).join(' ') || '—'],
-    ]],
-    ['ትምህርት እና ሥራ', [
-      ['አለማዊ ትምህርት', education.length
-        ? <>{education.map((e, i) => (
-            <div key={i}>{[e.level, e.field, e.institution].filter(Boolean).join(' · ')} <span className="muted small">{yearsLabel(e)}</span>
-              {eduUrls[i] && <> · <a className="link" href={eduUrls[i]!} target="_blank">ማስረጃ</a></>}</div>
-          ))}
-            {secularUrl && !eduUrls.some(Boolean) && <a className="link" href={secularUrl} target="_blank">ማስረጃ</a>}</>
-        : m.secular_school ? <>{m.secular_school.name} {secularUrl && <a className="link" href={secularUrl} target="_blank">ማስረጃ</a>}</> : '—'],
-      ['ቀድሞ ሰ/ት/ቤት', m.prior_school
-        ? <>{m.prior_school.name} · {m.prior_school.years ?? '—'} ዓመት {priorUrl && <a className="link" href={priorUrl} target="_blank">ማስረጃ</a>}</>
-        : '—'],
-      ['ሁኔታ', WORK_STATUS[m.work_status as keyof typeof WORK_STATUS]],
-      ['ሥራ', work.length
-        ? work.map((w, i) => <div key={i}>{[w.field, w.workplace].filter(Boolean).join(' · ')} <span className="muted small">{yearsLabel(w)}</span></div>)
-        : '—'],
-    ]],
-  ];
+  const ec = isoToEc(todayIsoAddis()).year;
+  const fullName = [m.first_name, m.father_name, m.grandfather_name].filter(Boolean).join(' ') || m.full_name;
+  // The member detail IS the membership certificate (same layout as printed); HR edits it with “አርም”.
+  const slip: SlipData = {
+    fullName: `${m.title ? `${TITLES[m.title as keyof typeof TITLES]} ` : ''}${fullName}`,
+    photo: photoUrl ?? null,
+    sections: [
+      { title: 'የአባልነት መረጃ', rows: [
+        ['የአባልነት ሁኔታ', memberTypeLabel(m.member_type, m.member_type_other)],
+        ['አገልግሎት የጀመሩበት ዓመት', m.joined_year ? `${m.joined_year} ዓ.ም (የአገልግሎት ቆይታ ${Math.max(ec - m.joined_year, 0)} ዓመት)` : ''],
+        ['የዕድሜ ክፍል', (ageGroups ?? []).find((g) => g.code === m.age_group)?.name ?? ''],
+        ['ሁኔታ', MEMBER_STATUS[m.member_status as keyof typeof MEMBER_STATUS] ?? ''],
+      ] },
+      { title: 'የግል መረጃ ዝርዝር', rows: [
+        ['የእናት ስም', dash(m.mother_name)],
+        ['የክርስትና ስም', dash(m.christian_name)],
+        ['ክርስትና የተነሱበት', dash(m.baptism_church)],
+        ['የትውልድ ቀን', m.dob ? `${formatEc(m.dob)} (ዕድሜ ${ageFromIso(m.dob)})` : ''],
+        ['ፆታ', SEX[m.sex as keyof typeof SEX] ?? ''],
+        ['የትዳር ሁኔታ', m.marital_status ? MARITAL_STATUS[m.marital_status as keyof typeof MARITAL_STATUS] : ''],
+        ['ዜግነት', m.is_ethiopian ? 'ኢትዮጵያዊ' : dash(m.nationality)],
+        ['ቋንቋ', (m.languages ?? []).join('፣ ')],
+        ['የግዕዝ ችሎታ', GEEZ_LEVEL[m.geez_level as keyof typeof GEEZ_LEVEL] ?? ''],
+      ] },
+      { title: 'አድራሻ', rows: [
+        ['አድራሻ', [m.region, m.city, m.sub_city, m.woreda && `ወረዳ ${m.woreda}`, m.house_no && `የቤት ቁ. ${m.house_no}`].filter(Boolean).join('፣ ')],
+        ['ስልክ', [m.phone, m.phone2].filter(Boolean).join(' · ')],
+        ['ኢሜይል', dash(m.email)],
+        ['Telegram', m.telegram_username ? `@${m.telegram_username}` : ''],
+      ] },
+      { title: 'ንሰሐ አባት እና የአደጋ ጊዜ ተጠሪ', rows: [
+        ['የንሰሐ አባት', [m.confessor_name, m.confessor_phone].filter(Boolean).join(' · ')],
+        ['የአደጋ ጊዜ ተጠሪ', [m.emergency_name, m.emergency_relation && `(${m.emergency_relation})`, m.emergency_phone].filter(Boolean).join(' ')],
+      ] },
+      { title: 'ትምህርት', rows: [
+        ...education.map((e, i): [string, string] => [`ትምህርት ${i + 1}`, `${[e.level, e.field, e.institution].filter(Boolean).join(' · ')} ${yearsLabel(e)}`]),
+        ['ቀድሞ ሰ/ት/ቤት', m.prior_school ? `${m.prior_school.name} · ${m.prior_school.years ?? '—'} ዓመት` : ''],
+      ] },
+      { title: 'ሥራ', rows: [
+        ['ሁኔታ', WORK_STATUS[m.work_status as keyof typeof WORK_STATUS] ?? ''],
+        ...work.map((w, i): [string, string] => [`ሥራ ${i + 1}`, `${[w.field, w.workplace].filter(Boolean).join(' · ')} ${yearsLabel(w)}`]),
+      ] },
+      { title: 'ዝንባሌ', rows: [['ማገልገል የሚፈልጉበት ክፍል', m.member_departments.map((d: { dept: string }) => DEPT_NAME[d.dept]).join('፣ ')]] },
+    ],
+  };
+  const evidence = [
+    ...education.map((e, i) => [`ትምህርት ${i + 1}${e.level ? ` (${e.level})` : ''}`, eduUrls[i]] as const),
+    ['አለማዊ ትምህርት', secularUrl] as const,
+    ['ቀድሞ ሰ/ት/ቤት', priorUrl] as const,
+  ].filter(([, u]) => !!u) as [string, string][];
 
   return (
     <>
@@ -123,14 +123,14 @@ export default async function MemberDetail({
         <Link href="/staff">ሁሉም ክፍሎች</Link> › <Link href="/staff/hr/members">አባላት</Link> › {m.full_name}
       </div>
       {saved && <div className="alert ok no-print">ተቀምጧል።</div>}
-      <div className="print-only"><DocHeader title="የአባልነት ማረጋገጫ ምስክር ወረቀት" code={m.reg_no} /></div>
-      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-        <h1 className="title" style={{ margin: 0 }}>
-          {m.title ? `${TITLES[m.title as keyof typeof TITLES]} ` : ''}{m.full_name}
+      <div className="cert-toolbar no-print">
+        <div>
+          <b>{m.full_name}</b>
           {!m.is_active && <span className="pill absent" style={{ marginInlineStart: 8 }}>ተሰርዟል</span>}
-        </h1>
-        <div className="btn-row no-print">
-          <Link className="btn sm" href={`/staff/members/${id}/edit`}>አርም</Link>
+          <div className="small muted">የአባልነት ማረጋገጫ ምስክር ወረቀት — የሚታየው እንደሚታተመው ነው።</div>
+        </div>
+        <div className="btn-row">
+          <Link className="btn sm" href={`/staff/members/${id}/edit`}>✏ መረጃውን አርም</Link>
           <PrintButton />
           {m.is_active
             ? <ActionButton action={deactivateMember.bind(null, id)} label="ሰርዝ (አቦዝን)" className="btn sm secondary"
@@ -143,28 +143,16 @@ export default async function MemberDetail({
         </div>
       </div>
 
-      {photoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={photoUrl} alt={m.full_name} className="member-photo" />
-      )}
-      {groups.map(([title, rows]) => (
-        <section key={title}>
-          <h2 className="section">{title}</h2>
-          <div className="table-wrap">
-            <table>
-              <tbody>
-                {rows.map(([k, v]) => (
-                  <tr key={k}><th style={{ width: 200 }}>{k}</th><td>{v}</td></tr>
-                ))}
-              </tbody>
-            </table>
+      <RegistrationSlip slip={slip} regNo={m.reg_no} qrUrl={`/verify?c=${encodeURIComponent(m.reg_no)}`} registeredIso={m.registered_on ?? m.created_at} />
+
+      {evidence.length > 0 && (
+        <section className="card no-print" style={{ marginTop: 14 }}>
+          <b>የተያያዙ ማስረጃዎች</b>
+          <div className="btn-row" style={{ marginTop: 8 }}>
+            {evidence.map(([k, u]) => <a key={k} className="btn sm secondary" href={u} target="_blank" rel="noopener noreferrer">📎 {k}</a>)}
           </div>
         </section>
-      ))}
-
-      <div className="print-only" style={{ marginTop: 30 }}>
-        <DocSigns roles={['የአባሉ ፊርማ', 'የመዘገበው (የሰው ሃብት አስተዳደር)']} />
-      </div>
+      )}
 
       {/* Attendance is for follow-up on screen only — never on the registration printout, and hidden until there is any. */}
       {(att ?? []).length > 0 && (

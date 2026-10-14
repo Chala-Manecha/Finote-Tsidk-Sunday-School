@@ -20,7 +20,7 @@ export function TabNav({ dept, tabs }: { dept: string; tabs: Tab[] }) {
           ];
         }
         return [header,
-          <Link key={t.slug} href={href} className={path.startsWith(href) ? 'active' : ''}>
+          <Link key={t.slug} href={href} className={path.startsWith(href) || (t.slug === 'applications' && path.startsWith(`/staff/${dept}/register`)) ? 'active' : ''}>
             {t.label}
           </Link>,
         ];

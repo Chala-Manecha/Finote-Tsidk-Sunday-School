@@ -7,13 +7,13 @@ import { formatEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 export type SlipSection = { title: string; rows: [string, string][] };
 export type SlipData = { sections: SlipSection[]; photo: string | null; fullName: string };
 
-/** Printable registration slip the applicant brings to የሰው ሃብት አስተዳደር (ቢሮ ቁጥር 7). */
-export function RegistrationSlip({ slip, regNo, appId }: { slip: SlipData; regNo: string; appId: string }) {
+/** የአባልነት ማረጋገጫ ምስክር ወረቀት — printed by የሰው ሃብት አስተዳደር once the member is approved. QR → the public verify page. */
+export function RegistrationSlip({ slip, regNo, qrUrl, registeredIso }: { slip: SlipData; regNo: string; qrUrl: string; registeredIso?: string | null }) {
   const [qr, setQr] = useState<string>('');
   useEffect(() => {
-    const url = `${window.location.origin}/staff/hr/applications/${appId}`;
+    const url = qrUrl.startsWith('/') ? `${window.location.origin}${qrUrl}` : qrUrl;
     QRCode.toString(url, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' }).then(setQr).catch(() => setQr(''));
-  }, [appId]);
+  }, [qrUrl]);
 
   return (
     <article className="doc-sheet slip">
@@ -29,7 +29,7 @@ export function RegistrationSlip({ slip, regNo, appId }: { slip: SlipData; regNo
         <div className="slip-title">
           <div className="small muted">የምዝገባ ቁጥር</div>
           <div className="doc-code">{regNo}</div>
-          <div className="small muted">የምዝገባ ቀን፦ {formatEc(todayIsoAddis())}</div>
+          <div className="small muted">የምዝገባ ቀን፦ {formatEc(registeredIso ?? todayIsoAddis())}</div>
         </div>
       </header>
 
@@ -54,8 +54,8 @@ export function RegistrationSlip({ slip, regNo, appId }: { slip: SlipData; regNo
       ))}
 
       <div className="statement-signs">
-        <div><div className="sign-line" />የአመልካች ፊርማ</div>
-        <div><div className="sign-line" />የተቀበለው (የሰው ሃብት አስተዳደር) ስምና ፊርማ</div>
+        <div><div className="sign-line" />የአባሉ ፊርማ</div>
+        <div><div className="sign-line" />ያጸደቀው (የሰው ሃብት አስተዳደር) ስምና ፊርማ</div>
       </div>
       <p className="slip-thanks">በሰንበት ትምህርት ቤታችን ስለተመዘገቡ እናመሰግናለን። እግዚአብሔር ይጠብቅልን።</p>
     </article>
