@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, classLabel } from '@/lib/education';
@@ -68,6 +69,13 @@ export default async function Classes({ params, searchParams }: {
         ))}
         <a className={`btn sm ${filter === 'all' ? 'green' : 'secondary'}`} href={link('all')}>ሁሉም ({all.length})</a>
       </div>
+      {filter !== 'none' && rows.length > 0 && (
+        <div className="btn-row no-print" style={{ justifyContent: 'flex-end' }}>
+          <Link className="btn sm secondary" href={`/staff/cards?scope=selected&ids=${rows.slice(0, 150).map((e) => e.member_id).join(',')}`}>
+            🪪 የ{filter === 'all' ? 'ሁሉም' : classLabel(filter)} መታወቂያ ({Math.min(rows.length, 150)})
+          </Link>
+        </div>
+      )}
       <ClassAssigner key={`${year.id}-${filter}`} rows={assignRows} />
       <p className="small muted">የርቀት ተማሪዎች ዝቅተኛ የክትትል ግዴታቸው በ“የትምህርት ዘመን” ትር ይወሰናል። የክፍል መምህራን በዚያው ክፍል ተማሪ ሆነው መመዝገብ የለባቸውም።</p>
     </>

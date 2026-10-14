@@ -32,7 +32,7 @@ export async function saveMarks(_: FormState, fd: FormData): Promise<FormState> 
       if (raw === '') continue;
       const n = Number(raw);
       if (!Number.isFinite(n) || n < 0) return { error: `ትክክል ያልሆነ ቁጥር፦ ${raw}` };
-      rows.push({ offering_id, member_id, final: Math.round(n * 100) / 100 });
+      rows.push({ offering_id, member_id, final: Math.round(n * 100) / 100, absent: false });
     }
     if (rows.length === 0) return { error: 'የድጋሚ ፈተና ውጤት አልገባም።' };
     const supabase = await createClient();
@@ -42,9 +42,12 @@ export async function saveMarks(_: FormState, fd: FormData): Promise<FormState> 
     return { ok: 'የድጋሚ ፈተና ውጤት ተቀምጧል።' };
   }
   for (const member_id of ids) {
-    const row: Record<string, string | number | null> = { offering_id, member_id };
-    let any = false;
+    const absent = fd.get(`absent_${member_id}`) === 'on';
+    const note = text(fd, `note_${member_id}`).slice(0, 300) || null;
+    const row: Record<string, string | number | boolean | null> = { offering_id, member_id, absent, note };
+    let any = absent || !!note;
     for (const c of COMPONENTS) {
+      if (c.key === 'final' && absent) { row.final = 0; continue; }
       const raw = text(fd, `${c.key}_${member_id}`);
       if (raw === '') { row[c.key] = null; continue; }
       const n = Number(raw);
@@ -59,7 +62,7 @@ export async function saveMarks(_: FormState, fd: FormData): Promise<FormState> 
   const { error } = await supabase.from('marks').upsert(rows, { onConflict: 'offering_id,member_id' });
   if (error) return { error: explain(error.message) };
   revalidatePath(`/student/teach/${offering_id}`);
-  return { ok: `${rows.length} ተማሪዎች ውጤት ተቀምጧል።` };
+  return { ok: `ረቂቁ ተቀምጧል (${rows.length} ተማሪዎች)።` };
 }
 
 /** Teacher: attendance for one class meeting. */

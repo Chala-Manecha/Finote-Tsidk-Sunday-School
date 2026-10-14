@@ -25,7 +25,7 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
 
   const [{ data: enr }, { data: mk }, { data: sessions }] = await Promise.all([
     supabase.from('enrollments').select('member_id').eq('year_id', s.year_id).eq('class_level', offering.class_level),
-    supabase.from('marks').select('member_id, quiz, notebook, participation, mid, final').eq('offering_id', id),
+    supabase.from('marks').select('member_id, quiz, notebook, participation, mid, final, absent, note').eq('offering_id', id),
     supabase.from('class_sessions').select('id, session_date').eq('offering_id', id).order('session_date', { ascending: false }),
   ]);
   const ids = (enr ?? []).map((e) => e.member_id as string).filter((x) => x !== me.memberId);
@@ -78,11 +78,11 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
         <h2 className="section" style={{ marginTop: 0 }}>ውጤት</h2>
         <p className="small muted">ነጥቦቹ የሚገቡት ከእያንዳንዱ ክፍል ከፍተኛ ነጥብ ውስጥ ነው። ማለፊያ፦ {s.pass_mark}/100።{s.min_attendance > 0 && ` ለዋና ፈተና ዝቅተኛ ክትትል፦ መደበኛ ${s.min_attendance}% · የርቀት ${s.min_attendance_distance}%።`}</p>
         <MarksGrid offeringId={id} students={students} marks={marks} weights={weights} locked={locked}
-          attendance={attendance} barred={barredIds} makeup={makeupIds} />
+          attendance={attendance} barred={barredIds} makeup={makeupIds} passMark={s.pass_mark} />
         {offering.status === 'draft' && (
           <div style={{ marginTop: 12 }}>
             {finalsDone
-              ? <ActionButton action={submitOffering.bind(null, id)} label="ለትምህርት ክፍል ለማጽደቅ ላክ" className="btn green"
+              ? <ActionButton action={submitOffering.bind(null, id)} label="🔒 ለትምህርት ክፍል ላክና ቆልፍ" className="btn green"
                   confirmText="ከላኩ በኋላ ውጤቱን መቀየር አይችሉም። ይላክ?" />
               : <p className="small muted">የሁሉም ተማሪዎች የዋና ፈተና ውጤት ሲገባ “ለማጽደቅ ላክ” ይታያል።</p>}
           </div>

@@ -819,4 +819,7 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1
 select pg_temp.must_equal((select count(*) from public.teacher_attendance), 0, 'others do not');
 reset role;
 
+-- ---------- member card QR verifies; marks note/absent ----------
+select pg_temp.must_equal((select (public.verify_code((select reg_no from public.members where id = '10000000-0000-0000-0000-0000000000e1'))->>'type' = 'member')::int), 1, 'member card verifies');
+
 \echo ALL RLS TESTS PASSED
