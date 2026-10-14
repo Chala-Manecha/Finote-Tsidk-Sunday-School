@@ -111,6 +111,27 @@ export async function bulkAssignClass(_: FormState, fd: FormData): Promise<FormS
   const cls = text(fd, 'class_level');
   const mode = text(fd, 'study_mode');
   if (ids.length === 0) return { error: 'ቢያንስ አንድ ተማሪ ይምረጡ።' };
+  if (cls === 'next') {
+    // ወደ ቀጣይ ክፍል አሳልፍ: each ticked student moves up one class (12ኛ and unassigned are skipped).
+    const supabase = await createClient();
+    const { data: cur } = await supabase.from('enrollments').select('id, class_level').in('id', ids);
+    const by = new Map<string, string[]>();
+    let skipped = 0;
+    for (const e of cur ?? []) {
+      const nx = e.class_level ? NEXT_CLASS[e.class_level as string] : null;
+      if (!nx) { skipped += 1; continue; }
+      by.set(nx, [...(by.get(nx) ?? []), e.id as string]);
+    }
+    let moved = 0;
+    for (const [to, list] of by) {
+      const { error, count } = await supabase.from('enrollments').update({ class_level: to }, { count: 'exact' }).in('id', list);
+      if (error) return { error: explain(error.message) };
+      moved += count ?? 0;
+    }
+    refresh();
+    if (!moved) return { error: 'የሚያልፍ ተማሪ የለም (ያልተመደቡ ወይም 12ኛ ክፍል)።' };
+    return { ok: `${moved} ተማሪ(ዎች) ወደ ቀጣይ ክፍል አልፈዋል።${skipped ? ` ${skipped} አልተቀየሩም።` : ''}` };
+  }
   if (cls !== 'none' && cls !== 'keep' && !isClassLevel(cls)) return { error: 'ክፍል ይምረጡ።' };
   if (cls === 'keep' && mode === 'keep') return { error: 'ክፍል ወይም መርሐ ግብር ይምረጡ።' };
   const row: Record<string, unknown> = {};

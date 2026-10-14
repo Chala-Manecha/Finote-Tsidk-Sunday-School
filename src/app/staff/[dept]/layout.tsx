@@ -38,9 +38,6 @@ export default async function DeptLayout({
 
   return (
     <>
-      <div className="crumb no-print">
-        <Link href="/staff">ሁሉም ክፍሎች</Link> › {DEPT_NAME[dept]}
-      </div>
       <div className="banner no-print">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {photo && <img src={photo} alt="" />}
@@ -52,6 +49,9 @@ export default async function DeptLayout({
             ዮሐ(21:16) የዮና ልጅ ስምዖን ሆይ ትወደኛለህን? እንኪያስ ጠቦቶቼን ጠብቅ።
           </div>
         </div>
+      </div>
+      <div className="crumb no-print">
+        <Link href="/staff">ሁሉም ክፍሎች</Link> › {DEPT_NAME[dept]}
       </div>
       <div className="dept-tabs">
         <TabNav dept={dept} tabs={tabsFor(dept)} />

@@ -47,7 +47,7 @@ export default async function Results({ params, searchParams }: {
       <EduPicker action={`/staff/${dept}/results`} years={years} semesters={semesters} semesterId={semester.id} classLevel={cls} />
       {courses.length > 0 && (
         ready ? <p className="alert ok">✓ ሁሉም ኮርሶች ጸድቀዋል — ተማሪዎች “ትራንስክሪፕትዎ ዝግጁ ነው” የሚል መልእክት ያያሉ።</p>
-              : <p className="small muted">ያልጸደቁ ኮርሶች፦ {courses.filter((c) => c.status !== 'approved').map((c) => c.course).join('፣ ')}</p>
+              : <p className="small muted">ውጤታቸው ገና ያልጸደቀ ኮርሶች፦ {courses.filter((c) => c.status !== 'approved').map((c) => c.course).join('፣ ')}</p>
       )}
       {picked.length > 0 && (
         <section className="card" style={{ marginBottom: 14 }}>
@@ -81,10 +81,13 @@ export default async function Results({ params, searchParams }: {
         <table>
           <thead>
             <tr>
-              <th className="rank"><Link className="link" scroll={false} href={base} title="በደረጃ ደርድር">ደረጃ</Link></th><th>ተማሪ</th>
-              {courses.map((c) => <th key={c.offering_id} className="num">{c.course}</th>)}
-              <th className="num"><Link className="link" scroll={false} href={`${base}&o=${nextOrder}`} title="በአማካይ ደርድር">አማካይ {order === 'desc' ? '▼' : order === 'asc' ? '▲' : '⇅'}</Link></th>
-              {dept === 'education' && <><th className="no-print">ጠባይ</th><th className="no-print" /></>}
+              <th className="rank" rowSpan={2}><Link className="link" scroll={false} href={base} title="በደረጃ ደርድር">ደረጃ</Link></th><th rowSpan={2}>ተማሪ</th>
+              {courses.length > 0 && <th colSpan={courses.length} className="num course-group">ኮርሶች — ድምር ውጤት (ከ100)</th>}
+              <th className="num" rowSpan={2}><Link className="link" scroll={false} href={`${base}&o=${nextOrder}`} title="በአማካይ ደርድር">አማካይ {order === 'desc' ? '▼' : order === 'asc' ? '▲' : '⇅'}</Link></th>
+              {dept === 'education' && <><th className="no-print" rowSpan={2}>ጠባይ</th><th className="no-print" rowSpan={2} /></>}
+            </tr>
+            <tr>
+              {courses.map((c) => <th key={c.offering_id} className="num course-col">📘 {c.course}</th>)}
             </tr>
           </thead>
           <tbody>

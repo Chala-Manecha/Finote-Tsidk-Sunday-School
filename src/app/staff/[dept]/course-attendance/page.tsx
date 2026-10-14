@@ -9,6 +9,8 @@ import { EcDatePicker } from '@/components/ec-date-picker';
 import { MediaForm } from '@/components/media-form';
 import { PrintButton } from '@/components/print-button';
 import { saveTeacherAttendance } from '@/lib/actions/education-admin';
+import { classAbsences } from '@/lib/absences';
+import { AbsenceList } from '@/components/absence-list';
 
 const T_STATUS = { present: 'ተገኝቷል', late: 'አርፍዷል', absent: 'ቀሪ', excused: 'በፈቃድ' } as const;
 type TStatus = keyof typeof T_STATUS;
@@ -74,6 +76,7 @@ async function Students({ supabase, base, years, semesters, semester, cls: c }: 
     .sort((a, b) => (a.members?.full_name ?? '').localeCompare(b.members?.full_name ?? ''));
   const today = todayIsoAddis();
   const stale = courses.filter((x) => { const h = held.get(x.id); return !h || (h.last && (Date.parse(today) - Date.parse(h.last)) / 864e5 > 14); });
+  const absent = await classAbsences(supabase, { semesterId: semester.id, cls });
 
   return (
     <>
@@ -83,6 +86,10 @@ async function Students({ supabase, base, years, semesters, semester, cls: c }: 
           ⚠ ክትትል ያልተያዘባቸው ወይም ከ14 ቀን በላይ ያልተያዘባቸው ኮርሶች፦ {stale.map((x) => x.name).join('፣ ')}
         </p>
       )}
+      <h3 className="section">ቀሪ ተማሪዎች <span className="small muted">— ስሙን ሲጫኑ ቀኑና ኮርሱ ይታያል</span></h3>
+      <AbsenceList groups={absent} whatLabel="ኮርስ" empty="በዚህ ክፍል እስካሁን የቀረ ተማሪ የለም።" />
+      <details className="card" style={{ marginTop: 14 }}>
+        <summary><b>በኮርስ የመገኘት መቶኛ</b> <span className="small muted">— ለእያንዳንዱ ተማሪና ኮርስ</span></summary>
       <div className="table-wrap">
         <table>
           <thead>
@@ -118,6 +125,7 @@ async function Students({ supabase, base, years, semesters, semester, cls: c }: 
           </tbody>
         </table>
       </div>
+      </details>
       <p className="small muted">
         ክትትሉን የሚይዙት መምህራን ናቸው (በ“የማስተምራቸው ክፍሎች” ገጽ)። ቀይ = ከዝቅተኛው በታች (መደበኛ {semester.min_attendance}% · የርቀት {semester.min_attendance_distance}%)።
         ግማሽ መገኘት እንደ መገኘት ይቆጠራል።

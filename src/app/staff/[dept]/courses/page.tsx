@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, OFFERING_STATUS, classLabel, isClassLevel, semesterLabel, type OfferingStatus } from '@/lib/education';
@@ -9,7 +10,7 @@ import { ReasonForm } from '@/components/reason-form';
 import {
   addCourse, deleteCourse, approveCourse, unlockCourse, saveCourseDetails, copyCourses,
 } from '@/lib/actions/education-admin';
-import { DayChecks } from '@/components/day-checks';
+import { DayChecks, dayNames } from '@/components/day-checks';
 
 type O = {
   id: string; name: string; class_level: string; status: OfferingStatus; book_name: string | null; book_path: string | null;
@@ -19,7 +20,7 @@ type O = {
 
 /** ትምህርት ክፍል: courses per class, teachers, reference books, approval. */
 export default async function Courses({ params, searchParams }: {
-  params: Promise<{ dept: string }>; searchParams: Promise<{ s?: string; c?: string }>;
+  params: Promise<{ dept: string }>; searchParams: Promise<{ s?: string; c?: string; t?: string }>;
 }) {
   const { dept } = await params;
   if (dept !== 'education') notFound();
@@ -40,6 +41,10 @@ export default async function Courses({ params, searchParams }: {
   const order = (c: string) => CLASS_LEVELS.indexOf(c as (typeof CLASS_LEVELS)[number]);
   rows.sort((a, b) => order(a.class_level) - order(b.class_level) || a.name.localeCompare(b.name));
   const pending = rows.filter((r) => r.status === 'submitted').length;
+  const noTeacher = rows.filter((r) => r.offering_teachers.length === 0).length;
+  const tf = sp.t === 'none' || sp.t === 'has' ? sp.t : 'all';
+  const shown = rows.filter((r) => tf === 'all' || (tf === 'none' ? r.offering_teachers.length === 0 : r.offering_teachers.length > 0));
+  const link = (t: string) => `/staff/education/courses?s=${semester.id}${cls ? `&c=${cls}` : ''}${t !== 'all' ? `&t=${t}` : ''}`;
   // The semester just before this one (1ኛ → last year's 2ኛ, 2ኛ → this year's 1ኛ).
   const ordered = semesters.map((x) => ({ ...x, ec: years.find((yy) => yy.id === x.year_id)?.ec_year ?? 0 }))
     .sort((a, b) => a.ec - b.ec || a.no - b.no);
@@ -59,7 +64,11 @@ export default async function Courses({ params, searchParams }: {
         </div>
       )}
 
-      <MediaForm action={addCourse} submitLabel="+ ኮርስ ጨምር">
+      <div className="course-actions no-print">
+        <details className="pop">
+          <summary className="btn sm green">+ ኮርስ ጨምር</summary>
+          <div className="pop-body">
+      <MediaForm action={addCourse} submitLabel="+ ኮርስ ጨምር" card={false}>
         <input type="hidden" name="semester_id" value={semester.id} />
         <div className="form-grid">
           <div className="field">
@@ -72,11 +81,31 @@ export default async function Courses({ params, searchParams }: {
           <div className="field"><label>የኮርሱ ስም</label><input name="name" required placeholder="ለምሳሌ፦ ዶግማ" /></div>
         </div>
       </MediaForm>
+          </div>
+        </details>
+        <Link className="btn sm secondary" href={link('none')}>👤 መምህር መድብ ({noTeacher})</Link>
+        <span style={{ flex: 1 }} />
+        <div className="seg">
+          <Link className={tf === 'all' ? 'on' : ''} href={link('all')}>ሁሉም ({rows.length})</Link>
+          <Link className={tf === 'none' ? 'on' : ''} href={link('none')}>መምህር ያልተመደበላቸው ({noTeacher})</Link>
+          <Link className={tf === 'has' ? 'on' : ''} href={link('has')}>መምህር ያላቸው ({rows.length - noTeacher})</Link>
+        </div>
+      </div>
 
-      {rows.map((o) => (
-        <section key={o.id} className="card" style={{ marginBottom: 12 }}>
-          <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-            <div><b>{o.name}</b> · {classLabel(o.class_level)} <span className={`pill ${o.status === 'approved' ? 'present' : 'half'}`}>{OFFERING_STATUS[o.status]}</span></div>
+      {shown.map((o) => (
+        <details key={o.id} className="course-item" open={tf === 'none' ? true : undefined}>
+          <summary>
+            <span className="ci-name"><b>{o.name}</b> <span className="small muted">{classLabel(o.class_level)}</span></span>
+            <span className="ci-teacher">
+              {o.offering_teachers.length
+                ? <span className="small">👤 {o.offering_teachers.map((t) => t.members?.full_name).join('፣ ')}</span>
+                : <span className="pill absent">መምህር የለም</span>}
+            </span>
+            <span className="small muted ci-days">{o.days?.length ? dayNames(o.days) : '—'}{o.time_text ? ` · ${o.time_text}` : ''}</span>
+            <span className={`pill ${o.status === 'approved' ? 'present' : 'half'}`}>{OFFERING_STATUS[o.status]}</span>
+          </summary>
+          <div className="ci-body">
+          <div className="btn-row" style={{ justifyContent: 'flex-end' }}>
             <div className="btn-row">
               {o.status === 'submitted' && <ActionButton action={approveCourse.bind(null, o.id)} label="✓ ውጤቱን አጽድቅ" className="btn sm green"
                 confirmText={`የ${o.name} (${classLabel(o.class_level)}) ውጤት ይጽደቅ? ከጸደቀ በኋላ ተማሪዎች ያዩታል።`} />}
@@ -111,8 +140,10 @@ export default async function Courses({ params, searchParams }: {
               </div>
             </div>
           </MediaForm>
-        </section>
+          </div>
+        </details>
       ))}
+      {shown.length === 0 && rows.length > 0 && <p className="muted">በዚህ ምርጫ ኮርስ የለም።</p>}
       {rows.length === 0 && <p className="muted">ለዚህ ሴሚስተር ኮርስ አልተጨመረም።</p>}
     </>
   );

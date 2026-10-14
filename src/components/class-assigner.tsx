@@ -1,5 +1,5 @@
 'use client';
-import { useActionState, useMemo, useState } from 'react';
+import { startTransition, useActionState, useMemo, useState } from 'react';
 import { STUDY_MODE } from '@/lib/constants';
 import { CLASS_LEVELS, classLabel } from '@/lib/education';
 import { bulkAssignClass } from '@/lib/actions/education-admin';
@@ -35,7 +35,8 @@ export function ClassAssigner({ rows }: { rows: AssignRow[] }) {
         <span className="small"><b>{picked.size}</b> ተመርጠዋል</span>
         <select name="class_level" defaultValue="keep" aria-label="ክፍል">
           <option value="keep">ክፍል — እንዳለ</option>
-          {CLASS_LEVELS.map((c) => <option key={c} value={c}>ወደ {classLabel(c)}</option>)}
+          {CLASS_LEVELS.map((c) => <option key={c} value={c}>መድብ / ቀይር → {classLabel(c)}</option>)}
+          <option value="next">⬆ ወደ ቀጣይ ክፍል አሳልፍ</option>
           <option value="none">ከክፍል አውጣ (ያልተመደበ)</option>
         </select>
         <select name="study_mode" defaultValue="keep" aria-label="መርሐ ግብር">
@@ -52,7 +53,7 @@ export function ClassAssigner({ rows }: { rows: AssignRow[] }) {
           <thead>
             <tr>
               <th style={{ width: 36 }}><input type="checkbox" checked={allShown} onChange={(e) => toggleAll(e.target.checked)} aria-label="ሁሉንም ምረጥ" /></th>
-              <th>ተማሪ</th><th>ክፍል</th><th>መርሐ ግብር</th><th>ምዝገባ</th>
+              <th>ተማሪ</th><th>ክፍል</th><th>መርሐ ግብር</th><th>ምዝገባ</th><th className="no-print" />
             </tr>
           </thead>
           <tbody>
@@ -63,9 +64,17 @@ export function ClassAssigner({ rows }: { rows: AssignRow[] }) {
                 <td>{r.classLevel ? classLabel(r.classLevel) : <span className="pill half">ያልተመደበ</span>}</td>
                 <td>{STUDY_MODE[r.mode as keyof typeof STUDY_MODE] ?? r.mode}</td>
                 <td className="small muted">{r.self ? 'በራሱ' : 'በትምህርት ክፍል'}</td>
+                <td className="no-print" onClick={(e) => e.stopPropagation()}>
+                  {r.classLevel && r.classLevel !== '12' && (
+                    <button type="button" className="btn sm secondary" disabled={pending} title="ወደ ቀጣይ ክፍል አሳልፍ"
+                      onClick={() => { const fd = new FormData(); fd.append('ids', r.id); fd.set('class_level', 'next'); fd.set('study_mode', 'keep'); startTransition(() => run(fd)); }}>
+                      ⬆ አሳልፍ
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
-            {shown.length === 0 && <tr><td colSpan={5} className="muted">የለም።</td></tr>}
+            {shown.length === 0 && <tr><td colSpan={6} className="muted">የለም።</td></tr>}
           </tbody>
         </table>
       </div>

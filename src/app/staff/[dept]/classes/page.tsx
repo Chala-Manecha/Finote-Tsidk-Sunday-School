@@ -24,7 +24,7 @@ export default async function Classes({ params, searchParams }: {
     .select('id, member_id, class_level, study_mode, self_registered, members(full_name, reg_no)').eq('year_id', year.id);
   const all = ((data ?? []) as unknown as E[]).sort((a, b) => (a.members?.full_name ?? '').localeCompare(b.members?.full_name ?? ''));
   const filter = sp.c ?? 'none';
-  const rows = filter === 'all' ? all : filter === 'none' ? all.filter((e) => !e.class_level) : all.filter((e) => e.class_level === filter);
+  const rows = filter === 'all' ? all : filter === 'none' ? all.filter((e) => !e.class_level) : filter === 'assigned' ? all.filter((e) => e.class_level) : all.filter((e) => e.class_level === filter);
   const count = (c: string | null) => all.filter((e) => e.class_level === c).length;
 
   const prevYear = years.filter((x) => x.ec_year < year.ec_year).sort((a, b) => b.ec_year - a.ec_year)[0];
@@ -58,7 +58,7 @@ export default async function Classes({ params, searchParams }: {
               confirmText={`በ${year.ec_year} ዓ.ም ያልገቡ ንቁ አባላት ሁሉ (ያልተመደቡ ሆነው) ይግቡ?`} />
             <span className="small muted"> ገና ያልገቡ ንቁ አባላትን ያለ ክፍል ያስገባል።</span>
           </li>
-          <li><span className="small">ከታች ያልተመደቡትን ምረጥ → ክፍል ምረጥ → <b>ለተመረጡት ተግብር</b>።</span></li>
+          <li><span className="small">ከታች ተማሪዎችን ምረጥ → <b>መድብ / ቀይር</b> ወይም <b>⬆ ወደ ቀጣይ ክፍል አሳልፍ</b> ምረጥ → <b>ለተመረጡት ተግብር</b>። ለአንድ ተማሪ ብቻ በረድፉ ላይ ያለውን <b>⬆ አሳልፍ</b> ይጫኑ።</span></li>
         </ol>
       </section>
 
@@ -67,12 +67,13 @@ export default async function Classes({ params, searchParams }: {
         {CLASS_LEVELS.map((c) => (
           <a key={c} className={`btn sm ${filter === c ? 'green' : 'secondary'}`} href={link(c)}>{classLabel(c)} ({count(c)})</a>
         ))}
+        <a className={`btn sm ${filter === 'assigned' ? 'green' : 'secondary'}`} href={link('assigned')}>የተመደቡ ({all.length - count(null)})</a>
         <a className={`btn sm ${filter === 'all' ? 'green' : 'secondary'}`} href={link('all')}>ሁሉም ({all.length})</a>
       </div>
       {filter !== 'none' && rows.length > 0 && (
         <div className="btn-row no-print" style={{ justifyContent: 'flex-end' }}>
           <Link className="btn sm secondary" href={`/staff/cards?scope=selected&ids=${rows.slice(0, 150).map((e) => e.member_id).join(',')}`}>
-            🪪 የ{filter === 'all' ? 'ሁሉም' : classLabel(filter)} መታወቂያ ({Math.min(rows.length, 150)})
+            🪪 የ{filter === 'all' ? 'ሁሉም' : filter === 'assigned' ? 'የተመደቡ' : classLabel(filter)} መታወቂያ ({Math.min(rows.length, 150)})
           </Link>
         </div>
       )}
