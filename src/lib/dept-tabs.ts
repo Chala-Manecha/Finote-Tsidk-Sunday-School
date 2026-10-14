@@ -15,7 +15,6 @@ const shared = (dept: DeptCode): Tab[] => [
 const specific: Record<DeptCode, Tab[]> = {
   office: [
     { slug: 'roster', label: 'የአባላት ዝርዝር', ready: true },
-    { slug: 'money-approvals', label: 'የገንዘብ ጥያቄ ማጸደቂያ', ready: true },
     { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: true },
     { slug: 'assignees', label: 'ክፍል ኃላፊዎች', ready: true },
     { slug: 'staff-access', label: 'የሲስተሙ አስተዳዳሪዎች', ready: true },
@@ -92,7 +91,7 @@ const specific: Record<DeptCode, Tab[]> = {
 // ጽሕፈት ቤት has many tabs, so they are grouped (order of groups = order shown).
 const OFFICE_GROUPS: [string, string[]][] = [
   ['አባላት', ['roster', 'departures', 'members']],
-  ['ገንዘብና ንብረት', ['money-approvals', 'dept-property', 'money', 'property']],
+  ['ገንዘብና ንብረት', ['money', 'dept-property', 'property']],
   ['ክፍል ኃላፊዎች', ['assignees']],
   ['መርሐ ግብሮች', ['request-event']],
   ['አስተዳደር', ['terms', 'staff-access', 'feedback-tracker', 'feedback']],

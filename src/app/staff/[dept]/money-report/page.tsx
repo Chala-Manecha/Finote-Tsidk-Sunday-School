@@ -15,10 +15,12 @@ export default async function MoneyReport({ params, searchParams }: {
   const base = `/staff/${dept}/money-report`;
   return (
     <>
-      <h2 className="section no-print" style={{ marginTop: 0 }}>የገንዘብ ሪፖርት</h2>
-      <div className="cat-tabs no-print" style={{ marginTop: 0 }}>
-        <Link href={base} className={view === 'statement' ? 'active' : ''}>ገቢ፣ ወጪ እና ቀሪ ሂሳብ</Link>
-        <Link href={`${base}?view=usage`} className={view === 'usage' ? 'active' : ''}>የክፍላት ገንዘብ አጠቃቀም</Link>
+      <div className="head-row no-print">
+        <h2 className="section">የገንዘብ ሪፖርት</h2>
+        <div className="cat-tabs">
+          <Link href={base} className={view === 'statement' ? 'active' : ''}>ገቢ፣ ወጪ እና ቀሪ ሂሳብ</Link>
+          <Link href={`${base}?view=usage`} className={view === 'usage' ? 'active' : ''}>የክፍላት ገንዘብ አጠቃቀም</Link>
+        </div>
       </div>
       {view === 'usage' ? <UsageView dept={dept} d={sp.d} /> : <LedgerView dept={dept} sp={sp} />}
     </>

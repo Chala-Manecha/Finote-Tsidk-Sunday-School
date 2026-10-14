@@ -11,6 +11,7 @@ type SessionRow = {
   session_type: SessionType;
   session_date: string;
   session_time: string | null;
+  title: string | null;
   attendance: { status: string }[];
 };
 
@@ -22,7 +23,7 @@ export default async function AttendanceList({ params }: { params: Promise<{ dep
   const supabase = await createClient();
   const { data: sessions, error } = await supabase
     .from('attendance_sessions')
-    .select('id, session_type, session_date, session_time, attendance(status)')
+    .select('id, session_type, session_date, session_time, title, attendance(status)')
     .in('session_type', types)
     .order('session_date', { ascending: false })
     .order('session_time', { ascending: false })
@@ -40,7 +41,7 @@ export default async function AttendanceList({ params }: { params: Promise<{ dep
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>ቀን</th><th>ሰዓት</th><th>አይነት</th><th>ተገኝቷል</th><th>ግማሽ</th><th>ቀሪ</th><th></th></tr>
+            <tr><th>ቀን</th><th>ሰዓት</th><th>ርዕስ / አይነት</th><th>ተገኝቷል</th><th>ግማሽ</th><th>ቀሪ</th><th></th></tr>
           </thead>
           <tbody>
             {(sessions ?? []).map((s) => {
@@ -49,7 +50,7 @@ export default async function AttendanceList({ params }: { params: Promise<{ dep
                 <tr key={s.id}>
                   <td>{formatEc(s.session_date, { weekday: true })}</td>
                   <td dir="ltr">{s.session_time?.slice(0, 5) ?? '—'}</td>
-                  <td>{SESSION_TYPES[s.session_type].label}</td>
+                  <td>{s.title ? <><b>{s.title}</b><div className="small muted">{SESSION_TYPES[s.session_type].label}</div></> : SESSION_TYPES[s.session_type].label}</td>
                   <td>{n('present')}</td>
                   <td>{n('half')}</td>
                   <td>{n('absent')}</td>

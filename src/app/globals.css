@@ -1215,3 +1215,51 @@ a.stat-card.on { outline: 2px solid #1F639C; background: #EEF6FC; }
 body:has(.topbar:not(.site-header)) .footer-grid { display: none; }
 body:has(.topbar:not(.site-header)) .site-footer { margin-top: 24px; }
 body:has(.topbar:not(.site-header)) .footer-copy { padding: 8px; font-size: .74rem; border-top: none; }
+.class-fold { background: #fff; border: 1px solid var(--line); border-radius: 12px; margin-top: 8px; }
+.class-fold > summary { display: flex; align-items: center; gap: 12px; padding: 11px 16px; cursor: pointer; list-style: none; }
+.class-fold > summary::-webkit-details-marker { display: none; }
+.class-fold > summary::before { content: '▸'; color: var(--muted); }
+.class-fold[open] > summary::before { content: '▾'; }
+.class-fold > summary .muted { margin-inline-start: auto; }
+.class-fold[open] > summary { background: #F2F7FB; border-bottom: 1px solid var(--line); border-radius: 12px 12px 0 0; }
+.class-fold[open] > summary .muted { display: none; }
+.class-fold-body { padding: 4px 12px 12px; }
+
+/* =====================================================================
+   Compact controls: number cards, filters and switches take one short row
+   ===================================================================== */
+.stat-cards { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.stat-card { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 12px; border-radius: 999px; text-align: start; font-size: .8rem; box-shadow: none; border: 1px solid var(--line); white-space: nowrap; }
+.stat-card b { display: inline; font-size: 1.02rem; }
+.stat-card small { display: inline; margin: 0 0 0 4px; }
+a.stat-card:hover { transform: none; border-color: #9CC6E8; background: #F2F7FB; }
+a.stat-card.on { outline: none; background: #1F639C; border-color: #1F639C; color: #fff; }
+a.stat-card.on b { color: #fff; }
+.member-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-bottom: 8px; }
+.member-stats section { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.member-stats h3 { margin: 0; font-size: .74rem; color: var(--muted); white-space: nowrap; }
+.member-stats .stat-cards { margin: 0; }
+.member-stats .stat-card.total { display: inline-flex; }
+.member-stats .stat-card.total b { font-size: 1.1rem; }
+
+.toolbar { gap: 6px 8px; margin: 8px 0; padding: 8px 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px; align-items: flex-end; }
+.toolbar .field { gap: 2px; }
+.toolbar .field label, .toolbar .field .label { font-size: .7rem; font-weight: 600; color: var(--muted); }
+.toolbar .field input, .toolbar .field select { padding: 5px 8px; font-size: .84rem; min-height: 32px; }
+.toolbar .field.grow input { min-width: 180px; }
+.toolbar .btn.sm { min-height: 32px; }
+.toolbar .check { font-size: .8rem; }
+.subtabs { gap: 6px; margin-bottom: 8px; }
+.cat-tabs { gap: 4px; margin: 6px 0; }
+.cat-tabs a { padding: 4px 11px; font-size: .78rem; }
+.cat-tabs a:hover { background: #DCEAF7; color: #12324D; border-color: #9CC6E8; }
+.cat-tabs a.active { background: #1F639C; border-color: #1F639C; }
+.list-bar { margin-top: 6px; padding: 6px 10px; }
+.head-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 6px; }
+.head-row h2 { margin: 0 !important; }
+.head-row .cat-tabs, .head-row .subtabs { margin: 0; }
+.ctl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ctl-row .subtabs, .ctl-row .toolbar { margin: 0; }
+.ctl-row .toolbar { padding: 4px 8px; }
+.stat-card b { margin-inline-end: 3px; }
+.member-stats .stat-card small { margin-inline-start: 3px; }

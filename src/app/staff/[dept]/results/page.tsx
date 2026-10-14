@@ -37,7 +37,14 @@ export default async function Results({ params, searchParams }: {
       </div>
       <EduPicker action={`/staff/${dept}/results`} years={years} semesters={semesters} semesterId={semester.id} classLevel={cls ?? ''} />
       {levels.length === 0 && <p className="muted card">ለዚህ ሴሚስተር ኮርስ ገና አልተመዘገበም።</p>}
-      {levels.map((c) => <ClassSheet key={c} dept={dept} semester={semester} cls={c} single={!!cls} sp={sp} conduct={conduct} />)}
+      {cls
+        ? <ClassSheet dept={dept} semester={semester} cls={cls} sp={sp} conduct={conduct} />
+        : levels.map((c) => (
+          <details key={c} className="class-fold">
+            <summary><b>{classLabel(c)}</b><span className="small muted">ለማየት ይጫኑ</span></summary>
+            <div className="class-fold-body"><ClassSheet dept={dept} semester={semester} cls={c} sp={sp} conduct={conduct} /></div>
+          </details>
+        ))}
       <p className="small muted">ማለፊያ፦ {semester.pass_mark}/100 · ቀይ = አላለፈም · አማካይ = የኮርሶቹ ውጤት አማካይ · ደረጃ በክፍሉ ውስጥ በአማካይ ነው · የተማሪውን ስም ሲጫኑ የሁሉም ኮርሶች ውጤት ይታያል።</p>
     </>
   );
@@ -46,8 +53,8 @@ export default async function Results({ params, searchParams }: {
 type Sem = NonNullable<Awaited<ReturnType<typeof loadTerms>>['semester']>;
 
 /** One class's result sheet (courses as columns, rank, conduct, transcript). */
-async function ClassSheet({ dept, semester, cls, single, sp, conduct }: {
-  dept: string; semester: Sem; cls: string; single: boolean;
+async function ClassSheet({ dept, semester, cls, sp, conduct }: {
+  dept: string; semester: Sem; cls: string;
   sp: { m?: string; o?: string }; conduct: Map<string, { conduct: string | null }>;
 }) {
   const supabase = await createClient();
@@ -65,7 +72,6 @@ async function ClassSheet({ dept, semester, cls, single, sp, conduct }: {
 
   return (
     <>
-      {!single && <h3 className="class-sheet-title">{classLabel(cls)} <span className="small muted">({new Set(rows.map((r) => r.member_id)).size} ተማሪዎች)</span></h3>}
       {courses.length > 0 && (
         ready ? <p className="alert ok">✓ ሁሉም ኮርሶች ጸድቀዋል — ተማሪዎች “ትራንስክሪፕትዎ ዝግጁ ነው” የሚል መልእክት ያያሉ።</p>
               : <p className="small muted">ውጤታቸው ገና ያልጸደቀ ኮርሶች፦ {courses.filter((c) => c.status !== 'approved').map((c) => c.course).join('፣ ')}</p>

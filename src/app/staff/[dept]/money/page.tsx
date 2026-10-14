@@ -10,9 +10,11 @@ import { ActionButton } from '@/components/action-button';
 import { RequestMoneyForm, ExpenseForm, EarningForm } from '@/components/money-forms';
 import { withdrawRequest, deleteExpense, deleteEarning } from '@/lib/actions/money';
 import { ReceiveForm } from '@/components/pay-form';
+import { RequestsTable } from '@/components/requests-table';
 import { ShopProfit } from '@/components/shop-profit';
 
 const VIEWS = {
+  approvals: 'የክፍላት ጥያቄ ማጸደቂያ',
   request: 'ገንዘብ ለመጠየቅ',
   spend: 'ወጪ ሪፖርት',
   earn: 'ገቢ ሪፖርት',
@@ -29,20 +31,24 @@ export default async function DeptMoneyPage({
   const { dept } = await params;
   if (!isDeptCode(dept) || dept === 'finance') notFound();
   const { view: v, amount, source } = await searchParams;
-  const view: View = v && v in VIEWS ? (v as View) : 'request';
+  const isOffice = dept === 'office';
+  const views = (Object.keys(VIEWS) as View[]).filter((k) => k !== 'approvals' || isOffice);
+  const view: View = v && views.includes(v as View) ? (v as View) : isOffice ? 'approvals' : 'request';
   const supabase = await createClient();
+  const pendingCount = isOffice ? (await fetchRequests(supabase, { statuses: ['pending'] })).length : 0;
 
   return (
     <>
       <h2 className="section" style={{ marginTop: 0 }}>የገንዘብ አስተዳደር</h2>
       {dept === 'development' && <ShopProfit supabase={supabase} />}
       <div className="subtabs no-print">
-        {(Object.keys(VIEWS) as View[]).map((k) => (
+        {views.map((k) => (
           <Link scroll={false} key={k} href={`/staff/${dept}/money?view=${k}`} className={`btn sm ${k === view ? 'green' : 'secondary'}`}>
-            {VIEWS[k]}
+            {VIEWS[k]}{k === 'approvals' && pendingCount > 0 ? ` (${pendingCount})` : ''}
           </Link>
         ))}
       </div>
+      {view === 'approvals' && <ApprovalsView supabase={supabase} />}
       {view === 'request' && <RequestView dept={dept} supabase={supabase} />}
       {view === 'spend' && <SpendView dept={dept} supabase={supabase} />}
       {view === 'earn' && <EarnView dept={dept} supabase={supabase} amount={amount} source={source} />}
@@ -51,6 +57,24 @@ export default async function DeptMoneyPage({
 }
 
 type Sb = Awaited<ReturnType<typeof createClient>>;
+
+/** ጽሕፈት ቤት: approve or refuse departments' money requests. */
+async function ApprovalsView({ supabase }: { supabase: Sb }) {
+  const [pending, decided] = await Promise.all([
+    fetchRequests(supabase, { statuses: ['pending'] }),
+    fetchRequests(supabase, { statuses: ['approved', 'rejected', 'paid'] }),
+  ]);
+  return (
+    <>
+      <h3 className="section">ለማጽደቅ የቀረቡ ({pending.length})</h3>
+      <RequestsTable rows={pending} mode="office" />
+      <details className="card" style={{ marginTop: 14 }}>
+        <summary><b>የተወሰነባቸው</b> <span className="small muted">— የመጨረሻዎቹ 50</span></summary>
+        <RequestsTable rows={decided.slice(0, 50)} mode="office" />
+      </details>
+    </>
+  );
+}
 
 async function RequestView({ dept, supabase }: { dept: string; supabase: Sb }) {
   const rows = await fetchRequests(supabase, { dept });

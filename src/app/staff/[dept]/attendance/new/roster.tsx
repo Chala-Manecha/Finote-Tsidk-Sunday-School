@@ -8,6 +8,7 @@ export function NewSessionRoster(props: {
   type: SessionType;
   date: string;
   time: string | null;
+  title: string | null;
 }) {
   return (
     <AttendanceRoster
@@ -15,7 +16,7 @@ export function NewSessionRoster(props: {
       initial={{}}
       startLocked={false}
       saveLabel="ክትትል አስቀምጥ"
-      onSave={(statuses) => createSession({ type: props.type, date: props.date, time: props.time, statuses })}
+      onSave={(statuses) => createSession({ type: props.type, date: props.date, time: props.time, title: props.title, statuses })}
     />
   );
 }

@@ -10,10 +10,11 @@ export default async function NewSession({
   searchParams,
 }: {
   params: Promise<{ dept: string }>;
-  searchParams: Promise<{ type?: string; date?: string; time?: string }>;
+  searchParams: Promise<{ type?: string; date?: string; time?: string; title?: string }>;
 }) {
   const { dept } = await params;
-  const { type, date, time } = await searchParams;
+  const { type, date, time, title: rawTitle } = await searchParams;
+  const title = (rawTitle ?? '').trim().slice(0, 160);
   const types = sessionTypesForDept(dept);
   if (!type || !types.includes(type as SessionType)) notFound();
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -31,7 +32,7 @@ export default async function NewSession({
     <>
       <div className="crumb"><Link href={`/staff/${dept}/attendance`}>ክትትል</Link> › አዲስ</div>
       <h2 className="section" style={{ marginTop: 0 }}>
-        {SESSION_TYPES[type as SessionType].label} — {formatEc(date, { weekday: true })}
+        {title ? `${title} · ` : ''}{SESSION_TYPES[type as SessionType].label} — {formatEc(date, { weekday: true })}
         {time ? ` · ${time}` : ''}
       </h2>
       <p className="muted small">ሁሉም የተመዘገቡ አባላት ተዘርዝረዋል፤ ያልተመረጠ ሁሉ &quot;ቀሪ&quot; ሆኖ ይቀመጣል።</p>
@@ -40,6 +41,7 @@ export default async function NewSession({
         type={type as SessionType}
         date={date}
         time={time || null}
+        title={title || null}
       />
     </>
   );

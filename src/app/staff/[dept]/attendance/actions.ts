@@ -15,6 +15,7 @@ export async function createSession(input: {
   type: SessionType;
   date: string;
   time: string | null;
+  title?: string | null;
   statuses: Record<string, string>;
 }): Promise<SaveResult> {
   const staff = await requireStaff();
@@ -33,6 +34,8 @@ export async function createSession(input: {
     if (error.code === '23505') return { error: 'በዚህ ቀን እና ሰዓት ተመሳሳይ ክፍለ ጊዜ አስቀድሞ ተመዝግቧል።' };
     return { error: error.message };
   }
+  const title = (input.title ?? '').trim().slice(0, 160);
+  if (title) await supabase.from('attendance_sessions').update({ title }).eq('id', data as string);
   revalidatePath('/staff', 'layout');
   // Client navigates + refreshes so the list and counts are fresh immediately.
   return { redirectTo: `/staff/${meta.dept}/attendance/${data}?saved=1` };

@@ -20,7 +20,7 @@ export default async function SessionPage({
 
   const { data: session } = await supabase
     .from('attendance_sessions')
-    .select('id, dept, session_type, session_date, session_time, attendance(status, member_id, members(full_name))')
+    .select('id, dept, session_type, session_date, session_time, title, attendance(status, member_id, members(full_name))')
     .eq('id', sessionId)
     .maybeSingle();
   if (!session || session.dept !== dept) notFound();
@@ -35,7 +35,7 @@ export default async function SessionPage({
       <div className="crumb no-print"><Link href={`/staff/${dept}/attendance`}>ክትትል</Link> › ክፍለ ጊዜ</div>
       {saved && <div className="alert ok">ክትትል ተቀምጧል።</div>}
       <h2 className="section" style={{ marginTop: 0 }}>
-        {SESSION_TYPES[session.session_type as SessionType].label} —{' '}
+        {session.title ? `${session.title} · ` : ''}{SESSION_TYPES[session.session_type as SessionType].label} —{' '}
         {formatEc(session.session_date, { weekday: true })}
         {session.session_time ? ` · ${session.session_time.slice(0, 5)}` : ''}
       </h2>

@@ -53,14 +53,21 @@ export default async function YearEnd({ params, searchParams }: {
         የመዛወሪያ ደንብ፦ የዓመት አማካይ ≥ {year.promote_min_average} እና የወደቁ ኮርሶች ≤ {year.max_failed_courses} (በ“የትምህርት ዘመን” ትር ይቀየራል)። ውሳኔውን ለየብቻ መቀየር ይቻላል። የተማሪውን ስም ሲጫኑ ሊታተም የሚችል የዓመት ውጤት ካርድ ይከፈታል።
       </p>
       {levels.length === 0 && <p className="muted card">በዚህ ዓመት ክፍል የተመደበለት ተማሪ የለም።</p>}
-      {levels.map((c) => <ClassYear key={c} dept={dept} year={year} years={years} cls={c} single={!!cls} m={sp.m} />)}
+      {cls
+        ? <ClassYear dept={dept} year={year} years={years} cls={cls} m={sp.m} />
+        : levels.map((c) => (
+          <details key={c} className="class-fold">
+            <summary><b>{classLabel(c)}</b><span className="small muted">ለማየት ይጫኑ</span></summary>
+            <div className="class-fold-body"><ClassYear dept={dept} year={year} years={years} cls={c} m={sp.m} /></div>
+          </details>
+        ))}
     </>
   );
 }
 
 /** One class's year summary: averages, rank, decision, promote, transcripts, report cards. */
-async function ClassYear({ dept, year, years, cls, single, m }: {
-  dept: string; year: AcademicYear; years: AcademicYear[]; cls: string; single: boolean; m?: string;
+async function ClassYear({ dept, year, years, cls, m }: {
+  dept: string; year: AcademicYear; years: AcademicYear[]; cls: string; m?: string;
 }) {
   const supabase = await createClient();
   const sp = { m };
@@ -95,7 +102,6 @@ async function ClassYear({ dept, year, years, cls, single, m }: {
 
   return (
     <>
-      {!single && <h3 className="class-sheet-title">{classLabel(cls)} <span className="small muted">({rows.length} ተማሪዎች)</span></h3>}
       {rows.length > 0 && (ready
         ? <p className="alert ok">✓ የሁለቱም ሴሚስተሮች ውጤቶች ጸድቀዋል።</p>
         : <p className="small muted">የሁለቱም ሴሚስተሮች ሁሉም ኮርሶች ሲጸድቁ የዓመት ትራንስክሪፕትና የክብር ሰርተፍኬት ይከፈታሉ።</p>)}

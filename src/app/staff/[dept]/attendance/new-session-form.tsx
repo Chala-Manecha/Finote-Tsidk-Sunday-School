@@ -16,6 +16,10 @@ export function NewSessionForm({ dept, types }: { dept: string; types: SessionTy
         <span className="label">ቀን (ዓ.ም)</span>
         <EcDatePicker name="date" defaultIso={todayIsoAddis()} yearsBack={1} yearsForward={0} required />
       </div>
+      <div className="field" style={{ flex: '1 1 220px' }}>
+        <label htmlFor="title">ርዕስ {types.includes('meeting') ? '(የስብሰባው ጉዳይ)' : '(አማራጭ)'}</label>
+        <input id="title" name="title" maxLength={160} required={types.length === 1 && types[0] === 'meeting'} placeholder={types.includes('meeting') ? 'ለምሳሌ፦ የወርሃዊ አጠቃላይ ስብሰባ' : 'አማራጭ'} />
+      </div>
       <div className="field">
         <label htmlFor="time">ሰዓት</label>
         <input id="time" name="time" type="time" />

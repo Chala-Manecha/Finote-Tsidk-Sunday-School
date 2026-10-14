@@ -46,6 +46,7 @@ export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string;
   const base = `/staff/${dept}/money-report`;
   return (
     <div className="statement">
+      <div className="ctl-row no-print">
       <PeriodTabs base={base} active={period} extra={filterDept ? `&d=${filterDept}` : ''} />
       <form className="toolbar no-print" action={base}>
         <input type="hidden" name="p" value={period} />
@@ -59,6 +60,7 @@ export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string;
         </div>
         <button className="btn sm">አጣራ</button>
       </form>
+      </div>
 
       <StatementHeader title="የገንዘብ እንቅስቃሴ መግለጫ" subtitle={`${range.label}${filterDept ? ` · ${DEPT_NAME[filterDept] ?? GENERAL_DONATIONS}` : ''}`} />
 

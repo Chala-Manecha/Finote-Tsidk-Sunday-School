@@ -33,15 +33,15 @@ type M = { full_name: string; reg_no: string } | null;
 
 /** Meeting / መዝሙር / ወረብ (the department attendance sheets). */
 export async function generalAbsences(supabase: SupabaseClient, types: string[], from: string, to: string, labels: Record<string, string>) {
-  type R = { member_id: string; status: string; members: M; attendance_sessions: { session_type: string; session_date: string } };
+  type R = { member_id: string; status: string; members: M; attendance_sessions: { session_type: string; session_date: string; title: string | null } };
   const rows = await all<R>((a, b) => supabase.from('attendance')
-    .select('member_id, status, members(full_name, reg_no), attendance_sessions!inner(session_type, session_date)')
+    .select('member_id, status, members(full_name, reg_no), attendance_sessions!inner(session_type, session_date, title)')
     .in('status', ['absent', 'half']).in('attendance_sessions.session_type', types)
     .gte('attendance_sessions.session_date', from).lte('attendance_sessions.session_date', to)
     .range(a, b) as unknown as PromiseLike<{ data: R[] | null; error: { message: string } | null }>);
   return group(rows.map((r) => ({
     id: r.member_id, name: r.members?.full_name ?? '—', reg: r.members?.reg_no ?? '', half: r.status === 'half',
-    item: { date: r.attendance_sessions.session_date, label: labels[r.attendance_sessions.session_type] ?? r.attendance_sessions.session_type },
+    item: { date: r.attendance_sessions.session_date, label: r.attendance_sessions.title ? `${r.attendance_sessions.title} (${labels[r.attendance_sessions.session_type] ?? ''})` : labels[r.attendance_sessions.session_type] ?? r.attendance_sessions.session_type },
   })));
 }
 

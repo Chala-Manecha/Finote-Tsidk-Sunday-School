@@ -30,35 +30,31 @@ export default async function Applications({ params, searchParams }: {
 
   return (
     <>
-      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-        <h2 className="section" style={{ margin: 0 }}>ምዝገባና ተመዝጋቢዎች</h2>
-        <Link className="btn green" href="/staff/hr/register">+ አባል መዝግብ</Link>
-      </div>
-      <div className="stat-cards">
-        <div className="stat-card"><b>{total}</b>ጠቅላላ ተመዝጋቢ</div>
-        <Link className="stat-card" href="/staff/hr/applications?show=pending"><b style={{ color: 'var(--gold)' }}>{pending}</b>ያልጸደቁ (በመጠባበቅ ላይ)</Link>
-        <Link className="stat-card" href="/staff/hr/applications?show=approved"><b style={{ color: 'var(--green)' }}>{approved}</b>የጸደቁ</Link>
-        <Link className="stat-card" href="/staff/hr/applications?show=rejected"><b style={{ color: 'var(--danger)' }}>{rejected}</b>ተቀባይነት ያላገኙ</Link>
-      </div>
-      <details className="card" style={{ marginTop: 14 }}>
-        <summary><b>የሕዝብ ምዝገባ</b> — {open ? <span className="pill present">ክፍት</span> : <span className="pill">ዝግ</span>} <span className="small muted">ለመክፈት/ለመዝጋት ይጫኑ</span></summary>
-      <MediaForm action={setRegistration} submitLabel="አስቀምጥ" resetOnSuccess={false} card={false}>
-        <p style={{ marginTop: 0 }}>
-          ሁኔታ፦ {open ? <span className="pill present">ክፍት ነው — በድረ-ገጹ ላይ “ይመዝገቡ” ይታያል</span> : <span className="pill">ዝግ ነው</span>}
-        </p>
-        <label className="check"><input type="checkbox" name="open" defaultChecked={s?.registration_open ?? false} /> ምዝገባውን ለሕዝብ ክፈት</label>
-        <div className="field" style={{ maxWidth: 360 }}>
-          <span className="label">እስከ (ዓ.ም፣ አማራጭ)</span>
-          <EcDatePicker name="until" defaultIso={s?.registration_until ?? null} yearsBack={0} yearsForward={1} />
-          <span className="hint">ቀን ካልተመረጠ እስኪዘጉት ድረስ ክፍት ይሆናል።</span>
+      <div className="head-row">
+        <h2 className="section">ምዝገባና ተመዝጋቢዎች</h2>
+        <div className="stat-cards" style={{ margin: 0 }}>
+          <span className="stat-card"><b>{total}</b>ጠቅላላ</span>
+          {(Object.keys(STATUS) as (keyof typeof STATUS)[]).map((k) => (
+            <Link key={k} className={`stat-card ${show === k ? 'on' : ''}`} href={`/staff/hr/applications?show=${k}`}>
+              <b style={show === k ? undefined : { color: k === 'pending' ? 'var(--gold)' : k === 'approved' ? 'var(--green)' : 'var(--danger)' }}>{counts[k]}</b>{STATUS[k]}
+            </Link>
+          ))}
         </div>
-      </MediaForm>
-      </details>
-
-      <div className="cat-tabs">
-        {Object.entries(STATUS).map(([k, v]) => (
-          <Link key={k} href={`/staff/hr/applications?show=${k}`} className={show === k ? 'active' : ''}>{v} ({counts[k as keyof typeof STATUS]})</Link>
-        ))}
+        <span style={{ flex: 1 }} />
+        <details className="pop">
+          <summary className="btn sm secondary">🌐 የሕዝብ ምዝገባ፦ {open ? 'ክፍት' : 'ዝግ'} ▾</summary>
+          <div className="pop-body" style={{ insetInlineStart: 'auto', insetInlineEnd: 0 }}>
+            <MediaForm action={setRegistration} submitLabel="አስቀምጥ" resetOnSuccess={false} card={false}>
+              <label className="check"><input type="checkbox" name="open" defaultChecked={s?.registration_open ?? false} /> ምዝገባውን ለሕዝብ ክፈት</label>
+              <div className="field">
+                <span className="label">እስከ (ዓ.ም፣ አማራጭ)</span>
+                <EcDatePicker name="until" defaultIso={s?.registration_until ?? null} yearsBack={0} yearsForward={1} />
+                <span className="hint">ቀን ካልተመረጠ እስኪዘጉት ድረስ ክፍት ይሆናል።</span>
+              </div>
+            </MediaForm>
+          </div>
+        </details>
+        <Link className="btn sm green" href="/staff/hr/register">+ አባል መዝግብ</Link>
       </div>
       <div className="table-wrap">
         <table>
