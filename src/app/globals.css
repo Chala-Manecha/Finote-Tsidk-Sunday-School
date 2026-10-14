@@ -1263,3 +1263,16 @@ a.stat-card.on b { color: #fff; }
 .ctl-row .toolbar { padding: 4px 8px; }
 .stat-card b { margin-inline-end: 3px; }
 .member-stats .stat-card small { margin-inline-start: 3px; }
+
+/* Footer always at the bottom (short pages no longer leave it hanging mid-screen) */
+body { display: flex; flex-direction: column; min-height: 100vh; }
+body > main, body > .page-loading { flex: 1 0 auto; width: 100%; }
+body > .site-footer { flex-shrink: 0; }
+main.page { min-height: 0; }
+.page-loading { min-height: 50vh; }
+
+/* Login: one card, admin login switches in place */
+.login-card form { margin: 0; }
+.login-mode { font-weight: 700; color: #1F639C; margin-bottom: 10px; text-align: center; }
+.link-btn { display: block; width: 100%; margin-top: 12px; padding: 8px; background: none; border: none; border-top: 1px solid var(--line); color: var(--muted); font: inherit; font-size: .82rem; cursor: pointer; }
+.link-btn:hover { color: #1F639C; }

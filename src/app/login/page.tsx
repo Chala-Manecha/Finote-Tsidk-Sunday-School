@@ -2,11 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PublicHeader } from '@/components/public-header';
-import { StudentLoginForm } from '@/components/student-auth-forms';
 import { getStaff } from '@/lib/auth';
 import { getMember } from '@/lib/member-auth';
 import { createClient } from '@/lib/supabase/server';
-import { LoginForm } from './login-form';
+import { LoginSwitch } from './login-switch';
 import { logout } from './actions';
 
 export const metadata: Metadata = { title: 'መግቢያ' };
@@ -43,11 +42,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               <p className="muted small" style={{ textAlign: 'center' }}>
                 ተማሪዎች፣ መምህራን እና አመራሮች ሁሉም በመለያ ቁጥራቸው እና በ6 አሃዝ ፒናቸው ይገባሉ።
               </p>
-              <StudentLoginForm next={next} />
-              <details className="admin-login">
-                <summary>የሲስተም አስተዳዳሪ መግቢያ (በተጠቃሚ ስም)</summary>
-                <div className="card" style={{ marginTop: 10 }}><LoginForm next={next.startsWith('/staff') ? next : '/staff'} /></div>
-              </details>
+              <LoginSwitch next={next} />
             </>
           )}
         </div>

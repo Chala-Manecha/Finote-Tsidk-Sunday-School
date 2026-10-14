@@ -3,17 +3,17 @@ import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { identifyMember, createMemberAccount, loginMember, type AuthState } from '@/lib/actions/student-auth';
 
-export function StudentLoginForm({ next = '' }: { next?: string }) {
+export function StudentLoginForm({ next = '', bare = false }: { next?: string; bare?: boolean }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(loginMember, {});
   return (
-    <form action={action} className="card">
+    <form action={action} className={bare ? '' : 'card'}>
       <input type="hidden" name="next" value={next} />
       <div className="field"><label htmlFor="reg">የመመዝገቢያ ቁጥር</label><input id="reg" name="reg_no" dir="ltr" required placeholder="ፍጽ-XXXX-XXXX" autoComplete="username" /></div>
       <div className="field"><label htmlFor="pin">ፒን (6 አሃዝ)</label><input id="pin" name="pin" type="password" inputMode="numeric" pattern="\d{6}" maxLength={6} required autoComplete="current-password" /></div>
       {state.error && <div className="alert error">{state.error}</div>}
       <button className="btn" style={{ width: '100%' }} disabled={pending}>{pending ? 'በመግባት ላይ…' : 'ግባ'}</button>
       <p className="small" style={{ marginBottom: 0 }}>ገና ፒን የለዎትም? <Link className="link" href="/student/register">መለያ ይፍጠሩ →</Link></p>
-      <p className="small muted" style={{ margin: '4px 0 0' }}>ፒንዎን ከረሱ ወይም መለያዎ ከተቆለፈ ትምህርት ክፍልን ያነጋግሩ።</p>
+      <p className="small muted" style={{ margin: '4px 0 0' }}>ፒንዎን ከረሱ ወይም መለያዎ ከተቆለፈ የሰው ሃብት አስተዳደርን (ቢሮ ቁጥር 7) ያነጋግሩ።</p>
     </form>
   );
 }

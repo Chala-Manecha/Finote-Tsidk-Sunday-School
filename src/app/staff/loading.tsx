@@ -1,4 +1,4 @@
-/** Shown while a page loads, so the footer never jumps up into an empty screen. */
+/** Inside the staff pages (the top bar stays) while the next page loads. */
 export default function Loading() {
   return (
     <div className="page-loading" role="status" aria-live="polite">
