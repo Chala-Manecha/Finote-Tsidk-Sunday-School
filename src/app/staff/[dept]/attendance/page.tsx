@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { SegLinks } from '@/components/seg-links';
 import { createClient } from '@/lib/supabase/server';
 import { formatEc } from '@/lib/ethiopian-calendar';
 import { SESSION_TYPES, sessionTypesForDept, type SessionType } from '@/lib/constants';
@@ -30,6 +31,7 @@ export default async function AttendanceList({ params }: { params: Promise<{ dep
 
   return (
     <>
+      {dept === 'education' && <SegLinks current="att" items={[['list', '📖 የአብነት ትምህርቶች', '/staff/education/abnet'], ['att', '🧾 ክትትል መያዝ', '/staff/education/attendance']]} />}
       <h2 className="section" style={{ marginTop: 0 }}>ክትትል መያዝ</h2>
       <NewSessionForm dept={dept} types={types} />
 

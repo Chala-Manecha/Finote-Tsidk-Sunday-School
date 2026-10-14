@@ -1176,3 +1176,42 @@ main.page { min-height: calc(100vh - 260px); }
 @media (max-width: 520px) { .mini-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mini-grid.two { grid-template-columns: 1fr; } }
 th.course-group { background: #E6F0F8; color: #1F5F95; font-size: .74rem; border-bottom: 1px solid #D5E5F2; }
 th.course-col { background: #F2F7FB; white-space: nowrap; }
+
+/* ---------- Public course page ---------- */
+.course-hero { display: grid; grid-template-columns: 1.6fr 1fr; gap: 24px; align-items: center; background: linear-gradient(135deg, #fff 50%, #E6F0F9); border: 1px solid #D9E6F2; border-radius: 22px; padding: 30px 32px; box-shadow: 0 10px 30px rgba(16, 40, 70, .07); }
+.course-hero h1 { margin: 8px 0 8px; font-size: clamp(1.6rem, 3vw, 2.2rem); color: #12324D; }
+.course-hero p { color: var(--muted); line-height: 1.9; margin: 0 0 14px; }
+.hero-pill-dark { display: inline-block; padding: 6px 14px; border-radius: 999px; background: #1F639C; color: #fff; font-size: .85rem; font-weight: 600; }
+.course-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.course-stats div { background: #fff; border: 1px solid #D9E6F2; border-radius: 16px; padding: 16px 8px; text-align: center; }
+.course-stats b { display: block; font-size: 1.8rem; color: #1F639C; }
+.course-stats span { font-size: .8rem; color: var(--muted); }
+.course-timeline { list-style: none; padding: 0; margin: 18px 0 6px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; counter-reset: step; }
+.course-timeline li { position: relative; background: #fff; border: 1px solid #D9E6F2; border-radius: 14px; padding: 12px 14px 12px 44px; }
+.course-timeline li::before { counter-increment: step; content: counter(step); position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border-radius: 50%; background: #1F639C; color: #fff; font-size: .8rem; display: flex; align-items: center; justify-content: center; }
+.course-timeline li.tbd::before { background: #B8C9D8; }
+.course-timeline span { display: block; font-size: .76rem; color: var(--muted); }
+.course-timeline b { font-size: .92rem; }
+.class-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; align-items: start; }
+.class-card { background: #fff; border: 1px solid #D9E6F2; border-radius: 16px; overflow: hidden; transition: box-shadow .2s; }
+.class-card[open] { box-shadow: 0 12px 30px rgba(16, 40, 70, .12); grid-column: span 2; }
+.class-card > summary { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; list-style: none; }
+.class-card > summary::-webkit-details-marker { display: none; }
+.class-card > summary::after { content: '▾'; margin-inline-start: auto; color: var(--muted); }
+.class-card[open] > summary { background: #F2F7FB; }
+.class-card[open] > summary::after { content: '▴'; }
+.class-card > summary > span:nth-child(2) { display: flex; flex-direction: column; }
+.class-badge { width: 42px; height: 42px; border-radius: 12px; background: #1F639C; color: #fff; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+.class-card ul { list-style: none; margin: 0; padding: 6px 12px 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.class-card li { background: #F3F8FC; border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; }
+@media (max-width: 760px) { .course-hero { grid-template-columns: 1fr; padding: 22px; } .course-timeline { grid-template-columns: 1fr 1fr; } .class-card[open] { grid-column: auto; } }
+.song-search { display: flex; gap: 8px; align-items: center; margin: 12px 0; max-width: 560px; }
+.song-search input[type=search] { flex: 1; padding: 10px 14px; border: 1px solid var(--field-border); border-radius: 12px; font: inherit; background: #fff; }
+.seg.big a { padding: 7px 14px; font-size: .86rem; }
+.class-sheet-title { margin: 22px 0 6px; padding-bottom: 6px; border-bottom: 2px solid #D5E5F2; color: #12324D; }
+a.stat-card.on { outline: 2px solid #1F639C; background: #EEF6FC; }
+
+/* Logged-in pages (departments / member area): only a thin footer line */
+body:has(.topbar:not(.site-header)) .footer-grid { display: none; }
+body:has(.topbar:not(.site-header)) .site-footer { margin-top: 24px; }
+body:has(.topbar:not(.site-header)) .footer-copy { padding: 8px; font-size: .74rem; border-top: none; }

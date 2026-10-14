@@ -13,7 +13,7 @@ export default async function HrAllDuties({
   searchParams: Promise<{ q?: string; d?: string; duty?: string; occasion?: string; past?: string }>;
 }) {
   const { dept } = await params;
-  if (dept !== 'hr') notFound();
+  if (dept !== 'hr' && dept !== 'internal_comm') notFound();
   const sp = await searchParams;
   const supabase = await createClient();
 
@@ -35,7 +35,7 @@ export default async function HrAllDuties({
         <h2 className="section" style={{ margin: 0 }}>ሁሉም ምደባዎች</h2>
         <PrintButton />
       </div>
-      <form className="toolbar no-print" action="/staff/hr/all-duties">
+      <form className="toolbar no-print" action={`/staff/${dept}/all-duties`}>
         <div className="field">
           <label htmlFor="q">ስም</label>
           <input id="q" name="q" defaultValue={needle} />

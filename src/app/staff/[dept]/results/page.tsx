@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { AuditEduTabs } from '@/components/audit-edu-tabs';
+import { ResultsSwitch } from '@/components/results-switch';
 import { createClient } from '@/lib/supabase/server';
-import { COMPONENTS, CONDUCT, classLabel, gradeOf, isClassLevel, semesterLabel, type ResultRow } from '@/lib/education';
+import { CLASS_LEVELS, COMPONENTS, CONDUCT, classLabel, gradeOf, isClassLevel, semesterLabel, type ResultRow } from '@/lib/education';
 import { loadTerms } from '@/lib/edu-data';
 import { EduPicker } from '@/components/edu-picker';
 import { MediaForm } from '@/components/media-form';
@@ -20,11 +20,38 @@ export default async function Results({ params, searchParams }: {
   const supabase = await createClient();
   const { years, semesters, semester, year } = await loadTerms(supabase, sp.s);
   if (!semester || !year) return <p className="muted">የትምህርት ዘመን ገና አልተከፈተም።</p>;
-  const cls = sp.c && isClassLevel(sp.c) ? sp.c : '1';
-  const [{ data }, { data: cond }] = await Promise.all([
-    supabase.rpc('semester_results', { p_semester: semester.id, p_class: cls }),
+  const cls = sp.c && isClassLevel(sp.c) ? sp.c : null;   // null = every class
+  const [{ data: offs }, { data: cond }] = await Promise.all([
+    supabase.from('course_offerings').select('class_level').eq('semester_id', semester.id),
     supabase.from('semester_conduct').select('member_id, conduct, remark').eq('semester_id', semester.id),
   ]);
+  const levels = cls ? [cls] : CLASS_LEVELS.filter((c) => (offs ?? []).some((o) => o.class_level === c));
+  const conduct = new Map((cond ?? []).map((c) => [c.member_id as string, c as { conduct: string | null }]));
+
+  return (
+    <>
+      <ResultsSwitch dept={dept} year={year} semesters={semesters} current={semester.id} cls={cls} />
+      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+        <h2 className="section" style={{ margin: 0 }}>የተማሪ ውጤት — {cls ? classLabel(cls) : 'ሁሉም ክፍሎች'} · {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
+        <PrintButton />
+      </div>
+      <EduPicker action={`/staff/${dept}/results`} years={years} semesters={semesters} semesterId={semester.id} classLevel={cls ?? ''} />
+      {levels.length === 0 && <p className="muted card">ለዚህ ሴሚስተር ኮርስ ገና አልተመዘገበም።</p>}
+      {levels.map((c) => <ClassSheet key={c} dept={dept} semester={semester} cls={c} single={!!cls} sp={sp} conduct={conduct} />)}
+      <p className="small muted">ማለፊያ፦ {semester.pass_mark}/100 · ቀይ = አላለፈም · አማካይ = የኮርሶቹ ውጤት አማካይ · ደረጃ በክፍሉ ውስጥ በአማካይ ነው · የተማሪውን ስም ሲጫኑ የሁሉም ኮርሶች ውጤት ይታያል።</p>
+    </>
+  );
+}
+
+type Sem = NonNullable<Awaited<ReturnType<typeof loadTerms>>['semester']>;
+
+/** One class's result sheet (courses as columns, rank, conduct, transcript). */
+async function ClassSheet({ dept, semester, cls, single, sp, conduct }: {
+  dept: string; semester: Sem; cls: string; single: boolean;
+  sp: { m?: string; o?: string }; conduct: Map<string, { conduct: string | null }>;
+}) {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc('semester_results', { p_semester: semester.id, p_class: cls });
   const rows = (data ?? []) as ResultRow[];
   const courses = [...new Map(rows.map((r) => [r.offering_id, r])).values()];
   const order = sp.o === 'asc' || sp.o === 'desc' ? sp.o : 'rank';
@@ -34,17 +61,11 @@ export default async function Results({ params, searchParams }: {
   const picked = sp.m ? rows.filter((r) => r.member_id === sp.m) : [];
   const nextOrder = order === 'desc' ? 'asc' : 'desc';
   const cell = (m: string, o: string) => rows.find((r) => r.member_id === m && r.offering_id === o);
-  const conduct = new Map((cond ?? []).map((c) => [c.member_id, c]));
   const ready = rows[0]?.ready ?? false;
 
   return (
     <>
-      {dept === 'audit' && <AuditEduTabs current="results" />}
-      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-        <h2 className="section" style={{ margin: 0 }}>የተማሪ ውጤት — {classLabel(cls)} · {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
-        <PrintButton />
-      </div>
-      <EduPicker action={`/staff/${dept}/results`} years={years} semesters={semesters} semesterId={semester.id} classLevel={cls} />
+      {!single && <h3 className="class-sheet-title">{classLabel(cls)} <span className="small muted">({new Set(rows.map((r) => r.member_id)).size} ተማሪዎች)</span></h3>}
       {courses.length > 0 && (
         ready ? <p className="alert ok">✓ ሁሉም ኮርሶች ጸድቀዋል — ተማሪዎች “ትራንስክሪፕትዎ ዝግጁ ነው” የሚል መልእክት ያያሉ።</p>
               : <p className="small muted">ውጤታቸው ገና ያልጸደቀ ኮርሶች፦ {courses.filter((c) => c.status !== 'approved').map((c) => c.course).join('፣ ')}</p>
@@ -124,7 +145,6 @@ export default async function Results({ params, searchParams }: {
           </tbody>
         </table>
       </div>
-      <p className="small muted">ማለፊያ፦ {semester.pass_mark}/100 · ቀይ = አላለፈም · አማካይ = የኮርሶቹ ውጤት አማካይ · ደረጃ በአማካይ ነው · የተማሪውን ስም ሲጫኑ የሁሉም ኮርሶች ውጤት ይታያል።</p>
     </>
   );
 }

@@ -11,6 +11,9 @@ import {
   addCourse, deleteCourse, approveCourse, unlockCourse, saveCourseDetails, copyCourses,
 } from '@/lib/actions/education-admin';
 import { DayChecks, dayNames } from '@/components/day-checks';
+import { PopForm } from '@/components/pop-form';
+import { SegLinks } from '@/components/seg-links';
+import { TeacherAttendance } from '@/components/course-attendance-views';
 
 type O = {
   id: string; name: string; class_level: string; status: OfferingStatus; book_name: string | null; book_path: string | null;
@@ -20,7 +23,7 @@ type O = {
 
 /** ትምህርት ክፍል: courses per class, teachers, reference books, approval. */
 export default async function Courses({ params, searchParams }: {
-  params: Promise<{ dept: string }>; searchParams: Promise<{ s?: string; c?: string; t?: string }>;
+  params: Promise<{ dept: string }>; searchParams: Promise<{ s?: string; c?: string; t?: string; v?: string; d?: string; all?: string }>;
 }) {
   const { dept } = await params;
   if (dept !== 'education') notFound();
@@ -28,6 +31,16 @@ export default async function Courses({ params, searchParams }: {
   const supabase = await createClient();
   const { years, semesters, semester, year } = await loadTerms(supabase, sp.s);
   if (!semester || !year) return <p className="muted">መጀመሪያ “የትምህርት ዘመን” ትር ላይ ዓመቱን ይክፈቱ።</p>;
+  const seg = <SegLinks current={sp.v === 'teachers' ? 'tch' : 'list'} items={[['list', '📘 ኮርሶች', '/staff/education/courses'], ['tch', '🧾 የመምህራን ክትትል', `/staff/education/courses?v=teachers&s=${semester.id}`]]} />;
+  if (sp.v === 'teachers') {
+    return (
+      <>
+        {seg}
+        <h2 className="section" style={{ marginTop: 0 }}>የመምህራን ክትትል — {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
+        <TeacherAttendance supabase={supabase} base="/staff/education/courses" semester={semester} date={sp.d} all={sp.all === '1'} canEdit view="teachers" />
+      </>
+    );
+  }
   const cls = sp.c && isClassLevel(sp.c) ? sp.c : undefined;
 
   let q = supabase.from('course_offerings')
@@ -53,6 +66,7 @@ export default async function Courses({ params, searchParams }: {
 
   return (
     <>
+      {seg}
       <h2 className="section" style={{ marginTop: 0 }}>ኮርሶችና መምህራን — {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
       <EduPicker action="/staff/education/courses" years={years} semesters={semesters} semesterId={semester.id} classLevel={cls} />
       {pending > 0 && <p className="alert ok">ለማጽደቅ የቀረቡ ኮርሶች፦ {pending}</p>}
@@ -65,10 +79,7 @@ export default async function Courses({ params, searchParams }: {
       )}
 
       <div className="course-actions no-print">
-        <details className="pop">
-          <summary className="btn sm green">+ ኮርስ ጨምር</summary>
-          <div className="pop-body">
-      <MediaForm action={addCourse} submitLabel="+ ኮርስ ጨምር" card={false}>
+        <PopForm label="+ ኮርስ ጨምር" action={addCourse} submitLabel="+ ኮርስ ጨምር">
         <input type="hidden" name="semester_id" value={semester.id} />
         <div className="form-grid">
           <div className="field">
@@ -80,9 +91,7 @@ export default async function Courses({ params, searchParams }: {
           </div>
           <div className="field"><label>የኮርሱ ስም</label><input name="name" required placeholder="ለምሳሌ፦ ዶግማ" /></div>
         </div>
-      </MediaForm>
-          </div>
-        </details>
+        </PopForm>
         <Link className="btn sm secondary" href={link('none')}>👤 መምህር መድብ ({noTeacher})</Link>
         <span style={{ flex: 1 }} />
         <div className="seg">

@@ -54,7 +54,7 @@ export const MEMBER_TYPE = { regular: 'መደበኛ', special: 'ልዩ መደበ
 export type MemberType = keyof typeof MEMBER_TYPE;
 export const memberTypeLabel = (t: string | null | undefined, other?: string | null) =>
   t === 'other' ? (other || 'ሌላ') : MEMBER_TYPE[(t ?? 'regular') as MemberType] ?? '—';
-export const STUDY_MODE = { regular: 'መደበኛ', distance: 'የርቀት' } as const;
+export const STUDY_MODE = { regular: 'መደበኛ', distance: 'የሳምንት መጨረሻ' } as const;
 export type StudyMode = keyof typeof STUDY_MODE;
 
 export type SessionType = 'mezmur' | 'wereb' | 'course' | 'abnet' | 'meeting';

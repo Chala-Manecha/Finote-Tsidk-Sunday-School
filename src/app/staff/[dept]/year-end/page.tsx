@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { AuditEduTabs } from '@/components/audit-edu-tabs';
+import { ResultsSwitch } from '@/components/results-switch';
 import { createClient } from '@/lib/supabase/server';
-import { CLASS_LEVELS, DECISION, classLabel, isClassLevel, semesterLabel, type AcademicYear, type ResultRow, type YearRow } from '@/lib/education';
+import { CLASS_LEVELS, DECISION, classLabel, isClassLevel, semesterLabel, type AcademicYear, type ResultRow, type Semester, type YearRow } from '@/lib/education';
 import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { PrintButton } from '@/components/print-button';
@@ -22,7 +22,48 @@ export default async function YearEnd({ params, searchParams }: {
   const years = (ys ?? []) as AcademicYear[];
   const year = years.find((x) => x.id === sp.y) ?? years.find((x) => x.is_active) ?? years[0];
   if (!year) return <p className="muted">የትምህርት ዘመን ገና አልተከፈተም።</p>;
-  const cls = sp.c && isClassLevel(sp.c) ? sp.c : '1';
+  const cls = sp.c && isClassLevel(sp.c) ? sp.c : null;   // null = every class
+  const base = `/staff/${dept}/year-end`;
+  const [{ data: sm }, { data: enr }] = await Promise.all([
+    supabase.from('semesters').select('*').eq('year_id', year.id).order('no'),
+    supabase.from('enrollments').select('class_level').eq('year_id', year.id).not('class_level', 'is', null),
+  ]);
+  const sems = (sm ?? []) as Semester[];
+  const levels = cls ? [cls] : CLASS_LEVELS.filter((c) => (enr ?? []).some((e) => e.class_level === c));
+
+  return (
+    <>
+      {sems.length > 0 && <ResultsSwitch dept={dept} year={year} semesters={sems} current="year" cls={cls} />}
+      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+        <h2 className="section" style={{ margin: 0 }}>የዓመት ማጠቃለያ — {cls ? classLabel(cls) : 'ሁሉም ክፍሎች'} · {year.ec_year} ዓ.ም</h2>
+        <PrintButton />
+      </div>
+      <form className="toolbar no-print" action={base}>
+        <div className="field">
+          <label htmlFor="y">ዓመት</label>
+          <select id="y" name="y" defaultValue={year.id}>{years.map((x) => <option key={x.id} value={x.id}>{x.ec_year} ዓ.ም</option>)}</select>
+        </div>
+        <div className="field">
+          <label htmlFor="c">ክፍል</label>
+          <select id="c" name="c" defaultValue={cls ?? ''}><option value="">ሁሉም</option>{CLASS_LEVELS.map((c) => <option key={c} value={c}>{classLabel(c)}</option>)}</select>
+        </div>
+        <button className="btn sm">አሳይ</button>
+      </form>
+      <p className="small muted">
+        የመዛወሪያ ደንብ፦ የዓመት አማካይ ≥ {year.promote_min_average} እና የወደቁ ኮርሶች ≤ {year.max_failed_courses} (በ“የትምህርት ዘመን” ትር ይቀየራል)። ውሳኔውን ለየብቻ መቀየር ይቻላል። የተማሪውን ስም ሲጫኑ ሊታተም የሚችል የዓመት ውጤት ካርድ ይከፈታል።
+      </p>
+      {levels.length === 0 && <p className="muted card">በዚህ ዓመት ክፍል የተመደበለት ተማሪ የለም።</p>}
+      {levels.map((c) => <ClassYear key={c} dept={dept} year={year} years={years} cls={c} single={!!cls} m={sp.m} />)}
+    </>
+  );
+}
+
+/** One class's year summary: averages, rank, decision, promote, transcripts, report cards. */
+async function ClassYear({ dept, year, years, cls, single, m }: {
+  dept: string; year: AcademicYear; years: AcademicYear[]; cls: string; single: boolean; m?: string;
+}) {
+  const supabase = await createClient();
+  const sp = { m };
   const { data } = await supabase.rpc('year_results', { p_year: year.id, p_class: cls });
   const rows = (data ?? []) as YearRow[];
   const ready = rows[0]?.ready ?? false;
@@ -54,25 +95,7 @@ export default async function YearEnd({ params, searchParams }: {
 
   return (
     <>
-      {dept === 'audit' && <AuditEduTabs current="year-end" />}
-      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-        <h2 className="section" style={{ margin: 0 }}>የዓመት ማጠቃለያ — {classLabel(cls)} · {year.ec_year} ዓ.ም</h2>
-        <PrintButton />
-      </div>
-      <form className="toolbar no-print" action={base}>
-        <div className="field">
-          <label htmlFor="y">ዓመት</label>
-          <select id="y" name="y" defaultValue={year.id}>{years.map((x) => <option key={x.id} value={x.id}>{x.ec_year} ዓ.ም</option>)}</select>
-        </div>
-        <div className="field">
-          <label htmlFor="c">ክፍል</label>
-          <select id="c" name="c" defaultValue={cls}>{CLASS_LEVELS.map((c) => <option key={c} value={c}>{classLabel(c)}</option>)}</select>
-        </div>
-        <button className="btn sm">አሳይ</button>
-      </form>
-      <p className="small muted">
-        የመዛወሪያ ደንብ፦ የዓመት አማካይ ≥ {year.promote_min_average} እና የወደቁ ኮርሶች ≤ {year.max_failed_courses} (በ“የትምህርት ዘመን” ትር ይቀየራል)። ውሳኔውን ለየብቻ መቀየር ይቻላል። የተማሪውን ስም ሲጫኑ ሊታተም የሚችል የዓመት ውጤት ካርድ ይከፈታል።
-      </p>
+      {!single && <h3 className="class-sheet-title">{classLabel(cls)} <span className="small muted">({rows.length} ተማሪዎች)</span></h3>}
       {rows.length > 0 && (ready
         ? <p className="alert ok">✓ የሁለቱም ሴሚስተሮች ውጤቶች ጸድቀዋል።</p>
         : <p className="small muted">የሁለቱም ሴሚስተሮች ሁሉም ኮርሶች ሲጸድቁ የዓመት ትራንስክሪፕትና የክብር ሰርተፍኬት ይከፈታሉ።</p>)}

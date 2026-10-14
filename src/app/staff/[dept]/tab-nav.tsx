@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Tab } from '@/lib/dept-tabs';
 
+/** Pages without their own tab light up the tab they belong to. */
+const ALIAS: Record<string, string[]> = { applications: ['register'], results: ['year-end'], abnet: ['attendance'] };
+
 export function TabNav({ dept, tabs }: { dept: string; tabs: Tab[] }) {
   const path = usePathname();
   return (
@@ -20,7 +23,7 @@ export function TabNav({ dept, tabs }: { dept: string; tabs: Tab[] }) {
           ];
         }
         return [header,
-          <Link key={t.slug} href={href} className={path.startsWith(href) || (t.slug === 'applications' && path.startsWith(`/staff/${dept}/register`)) ? 'active' : ''}>
+          <Link key={t.slug} href={href} className={path.startsWith(href) || (ALIAS[t.slug] ?? []).some((x) => path.startsWith(`/staff/${dept}/${x}`)) && !(dept !== 'education' && t.slug === 'abnet') ? 'active' : ''}>
             {t.label}
           </Link>,
         ];

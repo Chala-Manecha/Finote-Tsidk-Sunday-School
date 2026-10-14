@@ -31,6 +31,7 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   hr: [
     { slug: 'applications', label: 'ምዝገባና ተመዝጋቢዎች', ready: true },
+    { slug: 'student-accounts', label: 'የመግቢያ ኮድ ድጋፍ', ready: true },
     { slug: 'age-groups', label: 'የዕድሜ ክፍሎች', ready: true },
     { slug: 'overview', label: 'አጠቃላይ አቴንዳንስ', ready: true },
     { slug: 'attendance', label: 'ስብሰባ ክትትል መያዝ', ready: true },
@@ -71,11 +72,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'classes', label: 'ክፍሎችና ተማሪዎች', ready: true },
     { slug: 'courses', label: 'ኮርሶችና መምህራን', ready: true },
     { slug: 'results', label: 'የተማሪ ውጤት', ready: true },
-    { slug: 'course-attendance', label: 'የኮርስ ክትትል', ready: true },
-    { slug: 'year-end', label: 'የዓመት ማጠቃለያ', ready: true },
     { slug: 'exams', label: 'የፈተና ፈቃድና ድጋሚ ፈተና', ready: true },
-    { slug: 'student-accounts', label: 'የመግቢያ ኮድ ድጋፍ', ready: true },
-    { slug: 'attendance', label: 'ክትትል መያዝ (አብነት)', ready: true },
     { slug: 'abnet', label: 'አብነት', ready: true },
     { slug: 'wereb-admin', label: 'ወረብ አስተዳደር', ready: true },
     { slug: 'duty', label: 'አባል መድብ', ready: true },
@@ -88,6 +85,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'mahiberat', label: 'ማኅበራት', ready: true },
     { slug: 'prayer', label: 'የጸሎት መርኀ ግብራት', ready: true },
     { slug: 'dept-docs', label: 'ክፍሎቻችን (PDF)', ready: true },
+    { slug: 'all-duties', label: 'የአባላት ምደባዎች', ready: true },
   ],
 };
 
@@ -102,8 +100,8 @@ const OFFICE_GROUPS: [string, string[]][] = [
 
 const EDUCATION_GROUPS: [string, string[]][] = [
   ['የትምህርት ዘመን', ['academic', 'classes', 'courses']],
-  ['ውጤትና ክትትል', ['results', 'course-attendance', 'exams', 'year-end', 'student-accounts']],
-  ['አብነትና ወረብ', ['attendance', 'abnet', 'wereb-admin']],
+  ['ውጤት', ['results', 'exams']],
+  ['አብነትና ወረብ', ['abnet', 'wereb-admin']],
   ['የክፍሉ', ['members', 'duty', 'property', 'money', 'request-event', 'feedback']],
 ];
 const AUDIT_GROUPS: [string, string[]][] = [
@@ -120,7 +118,7 @@ const FINANCE_GROUPS: [string, string[]][] = [
   ['የክፍሉ', ['members', 'property', 'request-event', 'feedback']],
 ];
 const HR_GROUPS: [string, string[]][] = [
-  ['ምዝገባ', ['applications', 'members', 'age-groups']],
+  ['ምዝገባ', ['applications', 'members', 'student-accounts', 'age-groups']],
   ['ክትትል', ['overview', 'attendance', 'lost-members', 'departures']],
   ['ምደባና አመራር', ['duty', 'all-duties', 'leadership']],
   ['የክፍሉ', ['property', 'money', 'request-event', 'feedback']],

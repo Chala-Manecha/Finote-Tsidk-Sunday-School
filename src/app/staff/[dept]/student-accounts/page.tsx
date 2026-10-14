@@ -11,7 +11,7 @@ export default async function StudentAccounts({ params, searchParams }: {
   params: Promise<{ dept: string }>; searchParams: Promise<{ q?: string }>;
 }) {
   const { dept } = await params;
-  if (dept !== 'education') notFound();
+  if (dept !== 'hr') notFound();
   const { q } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.from('member_accounts')
@@ -29,7 +29,7 @@ export default async function StudentAccounts({ params, searchParams }: {
         ኮዱ 5 ጊዜ ከተሳሳተ መለያው ይቆለፋል — “ክፈት” ይጫኑ። ኮዱን የረሳ አባል “ዳግም አስጀምር” ሲጫን በመመዝገቢያ ቁጥሩና በስልኩ አዲስ ኮድ ይፈጥራል (ውጤቱ አይጠፋም)።
       </p>
       <div className="stat-cards"><div className="stat-card"><b>{rows.length}</b>መለያዎች</div><div className="stat-card"><b>{locked}</b>የተቆለፉ</div></div>
-      <form className="toolbar" action="/staff/education/student-accounts">
+      <form className="toolbar" action="/staff/hr/student-accounts">
         <div className="field"><label htmlFor="q">ፈልግ</label><input id="q" name="q" defaultValue={q ?? ''} /></div>
         <button className="btn sm">ፈልግ</button>
       </form>

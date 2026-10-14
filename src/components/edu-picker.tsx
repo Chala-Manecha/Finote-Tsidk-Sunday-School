@@ -1,11 +1,13 @@
 import { CLASS_LEVELS, classLabel, semesterLabel, type AcademicYear, type Semester } from '@/lib/education';
 
 /** GET form to choose semester (and optionally class). */
-export function EduPicker({ action, years, semesters, semesterId, classLevel, withClass = true }: {
+export function EduPicker({ action, years, semesters, semesterId, classLevel, withClass = true, extra }: {
   action: string; years: AcademicYear[]; semesters: Semester[]; semesterId?: string; classLevel?: string; withClass?: boolean;
+  extra?: Record<string, string>;
 }) {
   return (
     <form className="toolbar no-print" action={action}>
+      {Object.entries(extra ?? {}).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       <div className="field">
         <label htmlFor="s">ሴሚስተር</label>
         <select id="s" name="s" defaultValue={semesterId}>

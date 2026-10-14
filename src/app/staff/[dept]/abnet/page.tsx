@@ -4,6 +4,7 @@ import { mediaUrl } from '@/lib/media';
 import { MediaForm } from '@/components/media-form';
 import { AbnetFields, AbnetTable, type Abnet, ABNET_COLS } from '@/components/education-views';
 import { saveAbnet } from '@/lib/actions/education';
+import { SegLinks } from '@/components/seg-links';
 
 export default async function EducationAbnet({ params }: { params: Promise<{ dept: string }> }) {
   const { dept } = await params;
@@ -13,8 +14,12 @@ export default async function EducationAbnet({ params }: { params: Promise<{ dep
   const rows = ((data ?? []) as Abnet[]).map((a) => ({ ...a, audio_url: mediaUrl(supabase, a.audio_path), file_url: mediaUrl(supabase, a.file_path) }));
   return (
     <>
-      <h2 className="section" style={{ marginTop: 0 }}>አብነት (ይመልከቱ/ያደራጁ)</h2>
-      <MediaForm action={saveAbnet} submitLabel="+ ጨምር" fileField={['audio', 'file']} folder="abnet"><AbnetFields /></MediaForm>
+      <SegLinks current="list" items={[['list', '📖 የአብነት ትምህርቶች', '/staff/education/abnet'], ['att', '🧾 ክትትል መያዝ', '/staff/education/attendance']]} />
+      <h2 className="section" style={{ marginTop: 0 }}>የአብነት ትምህርቶች</h2>
+      <details className="card" style={{ marginBottom: 12 }}>
+        <summary className="btn sm green" style={{ display: 'inline-block' }}>+ ትምህርት ጨምር</summary>
+        <div style={{ marginTop: 10 }}><MediaForm action={saveAbnet} submitLabel="+ ጨምር" fileField={['audio', 'file']} folder="abnet" card={false}><AbnetFields /></MediaForm></div>
+      </details>
       <AbnetTable rows={rows} editable />
     </>
   );

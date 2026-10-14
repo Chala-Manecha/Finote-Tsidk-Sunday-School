@@ -11,7 +11,7 @@ type Action = (s: FormState, fd: FormData) => Promise<FormState>;
  * Fields are passed as children. Remounts (clears) after a successful add.
  */
 export function MediaForm({
-  action, fileField, folder, bucket = 'media', resize = false, submitLabel, card = true, resetOnSuccess = true, children,
+  action, fileField, folder, bucket = 'media', resize = false, submitLabel, card = true, resetOnSuccess = true, onSaved, children,
 }: {
   action: Action;
   fileField?: string | string[];
@@ -21,11 +21,14 @@ export function MediaForm({
   submitLabel: string;
   card?: boolean;
   resetOnSuccess?: boolean;
+  /** Called after each successful save (e.g. to close a pop-up). */
+  onSaved?: () => void;
   children: React.ReactNode;
 }) {
   const [state, run, pending] = useActionState<FormState & { n?: number }, FormData>(
     async (prev, fd) => {
       const res = await action(prev, fd);
+      if (res.ok) onSaved?.();
       return { ...res, n: (prev.n ?? 0) + (res.ok ? 1 : 0) };
     },
     {},
