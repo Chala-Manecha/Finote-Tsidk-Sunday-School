@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { fmtTime } from '@/lib/ethiopian-calendar';
 import { createClient } from '@/lib/supabase/server';
 import { formatEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import { PublicHeader, PublicFooter } from '@/components/public-header';
@@ -22,7 +23,7 @@ export default async function MahiberatPage() {
                 <tr key={m.id}>
                   <td>{m.association_name}</td>
                   <td>{formatEc(m.event_date, { weekday: true })}</td>
-                  <td dir="ltr">{m.event_time?.slice(0, 5) ?? '—'}</td>
+                  <td dir="ltr">{fmtTime(m.event_time) || '—'}</td>
                   <td>{m.rescheduled && <span className="pill half">ተሸጋሽጓል</span>}</td>
                 </tr>
               ))}

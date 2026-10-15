@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { fmtTime } from '@/lib/ethiopian-calendar';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { FIXED_KINDS, fixedSchedules, upcomingWereb, type FixedSchedule } from '@/lib/schedules';
@@ -94,7 +95,7 @@ export default async function FixedSchedulePage({ params }: { params: Promise<{ 
       <h2 className="section">የጸደቁ የወረብ ጥናት ቀጠሮዎች</h2>
       {wereb.length === 0 ? <p className="muted small">የሚመጣ የጸደቀ የወረብ ጥናት የለም።</p> : (
         <ul className="plain-list">
-          {wereb.map((e) => <li key={e.id}><b>{e.title}</b> — {formatEc(e.event_date, { weekday: true })} · <span dir="ltr">{e.event_time.slice(0, 5)}</span>{e.place ? ` · ${e.place}` : ''}</li>)}
+          {wereb.map((e) => <li key={e.id}><b>{e.title}</b> — {formatEc(e.event_date, { weekday: true })} · <span dir="ltr">{fmtTime(e.event_time)}</span>{e.place ? ` · ${e.place}` : ''}</li>)}
         </ul>
       )}
     </>

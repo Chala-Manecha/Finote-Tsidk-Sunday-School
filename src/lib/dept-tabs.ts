@@ -24,7 +24,7 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   mezmur: [
     { slug: 'attendance', label: 'ክትትል መያዝ', ready: true },
-    { slug: 'participants', label: 'ተሳታፊዎች', ready: true },
+    { slug: 'participants', label: 'የክፍሉ ተማሪዎች', ready: true },
     { slug: 'fixed-schedule', label: 'ቋሚ መርሐ ግብር', ready: true },
     { slug: 'songs', label: 'መዝሙራት', ready: true },
     { slug: 'wereb', label: 'ወረብ', ready: true },
@@ -71,7 +71,7 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   education: [
     { slug: 'academic', label: 'የትምህርት ዘመን', ready: true },
-    { slug: 'participants', label: 'አቴንዳንስ', ready: true },
+    { slug: 'participants', label: 'የክፍሉ ተማሪዎች', ready: true },
     { slug: 'online-exams', label: 'ኦንላይን ፈተናዎች', ready: true },
     { slug: 'classes', label: 'ክፍሎችና ተማሪዎች', ready: true },
     { slug: 'courses', label: 'ኮርሶችና መምህራን', ready: true },

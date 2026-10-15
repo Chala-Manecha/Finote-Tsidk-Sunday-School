@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { formatEc } from '@/lib/ethiopian-calendar';
+import { fmtTime, formatEc } from '@/lib/ethiopian-calendar';
 import { SESSION_TYPES, sessionTypesForDept, type SessionType } from '@/lib/constants';
 import { NewSessionRoster } from './roster';
 import { DeliveryBadge } from '@/components/delivery-badge';
@@ -12,10 +12,11 @@ export default async function NewSession({
   searchParams,
 }: {
   params: Promise<{ dept: string }>;
-  searchParams: Promise<{ type?: string; date?: string; time?: string; title?: string; mode?: string; platform?: string; link?: string }>;
+  searchParams: Promise<{ type?: string; date?: string; time?: string; title?: string; mode?: string; platform?: string; platform_other?: string; link?: string }>;
 }) {
   const { dept } = await params;
-  const { type, date, time, title: rawTitle, mode, platform, link } = await searchParams;
+  const { type, date, time, title: rawTitle, mode, platform: p0, platform_other, link } = await searchParams;
+  const platform = p0 === 'other' ? (platform_other ?? '').trim() || 'other' : p0;
   const delivery = { mode: mode === 'online' ? 'online' : 'physical', platform: mode === 'online' ? platform ?? null : null, link: mode === 'online' ? link ?? null : null };
   const title = (rawTitle ?? '').trim().slice(0, 160);
   const types = sessionTypesForDept(dept);
@@ -37,7 +38,7 @@ export default async function NewSession({
       <div className="crumb"><Link href={`/staff/${dept}/attendance`}>ክትትል</Link> › አዲስ</div>
       <h2 className="section" style={{ marginTop: 0 }}>
         {title ? `${title} · ` : ''}{SESSION_TYPES[type as SessionType].label} — {formatEc(date, { weekday: true })}
-        {time ? ` · ${time}` : ''}
+        {time ? ` · ${fmtTime(time)}` : ''}
       </h2>
       <DeliveryBadge d={delivery as Partial<Delivery>} />
       <p className="muted small">

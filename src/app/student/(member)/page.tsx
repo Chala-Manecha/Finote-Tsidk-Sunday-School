@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { fmtTime } from '@/lib/ethiopian-calendar';
 import { requireMember } from '@/lib/member-auth';
 import {
   COMPONENTS, DECISION, READY_MESSAGE, THANKSGIVING, classLabel, gradeOf, semesterLabel,
@@ -72,7 +73,7 @@ export default async function StudentHome() {
   type Item = { key: string; title: string; when: string; d: Partial<Delivery>; place?: string | null };
   const schedule: Item[] = [
     ...(weekEvents ?? []).filter((e) => !e.kind || e.kind === 'meeting' || (e.kind === 'wereb' ? takes('mezmur') : takes(e.kind)))
-      .map((e) => ({ key: e.id, title: `${e.kind ? `${EVENT_KINDS[e.kind]}፦ ` : ''}${e.title}`, when: `${formatEc(e.event_date, { weekday: true })} · ${e.event_time.slice(0, 5)}`, d: e as Partial<Delivery>, place: e.place })),
+      .map((e) => ({ key: e.id, title: `${e.kind ? `${EVENT_KINDS[e.kind]}፦ ` : ''}${e.title}`, when: `${formatEc(e.event_date, { weekday: true })} · ${fmtTime(e.event_time)}`, d: e as Partial<Delivery>, place: e.place })),
     ...(myCourses ?? []).map((c) => ({ key: c.id, title: `ኮርስ፦ ${c.name}`, when: [c.days?.length ? dayNames(c.days) : '', c.time_text].filter(Boolean).join(' · ') || 'ቋሚ', d: c as Partial<Delivery> })),
     ...(abnet ?? []).map((a) => ({ key: a.id, title: `አብነት፦ ${a.subject ?? ''}`, when: [a.day_text, a.time_text].filter(Boolean).join(' · '), d: a as Partial<Delivery> })),
     ...fixed.map((f) => ({ key: f.id, title: f.title, when: [f.day_text, f.time_text].filter(Boolean).join(' · '), d: f, place: f.place })),

@@ -221,6 +221,7 @@ export const PROGRAM_STATUS: Record<ProgramStatus, string> = { chosen: 'ተመ�
 /** Online or at the church (ኮርስ, አብነት, ስብሰባ, ወረብ …). */
 export const PLATFORMS = { meet: 'Google Meet', telegram: 'Telegram', zoom: 'Zoom', other: 'ሌላ' } as const;
 export type Platform = keyof typeof PLATFORMS;
-export type Delivery = { mode: 'physical' | 'online'; platform: Platform | null; link: string | null };
+/** platform: one of PLATFORMS, or a name typed in for “ሌላ” */
+export type Delivery = { mode: 'physical' | 'online'; platform: Platform | string | null; link: string | null };
 /** ቀጠሮ kinds (ስብሰባ shows on the home page, ወረብ ጥናት on the public ዜማ page). */
 export const EVENT_KINDS: Record<string, string> = { meeting: 'ስብሰባ', wereb: 'ወረብ ጥናት', course: 'ኮርስ ትምህርት', abnet: 'አብነት ትምህርት' };

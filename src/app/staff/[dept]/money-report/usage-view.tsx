@@ -5,13 +5,9 @@ import { DEPT_NAME, MONEY_STATUS, STATUS_PILL, formatBirr } from '@/lib/constant
 import { formatEc } from '@/lib/ethiopian-calendar';
 import { DeptMoneySummaryTable } from '@/components/dept-money-summary';
 import { PrintButton } from '@/components/print-button';
-import { MediaForm } from '@/components/media-form';
-import { EcDatePicker } from '@/components/ec-date-picker';
-import { setOpeningBalance } from '@/lib/actions/finance';
 import { loadWallet, signed } from '@/lib/ledger';
-import { todayIsoAddis } from '@/lib/ethiopian-calendar';
 
-/** Per-department use of money; ሒሳብና ንብረት also sets the opening balance here. */
+/** Per-department use of money (the opening balance is set from the report header). */
 export async function UsageView({ dept, d }: { dept: string; d?: string }) {
   const base = `/staff/${dept}/money-report?view=usage`;
   const supabase = await createClient();
@@ -35,17 +31,6 @@ export async function UsageView({ dept, d }: { dept: string; d?: string }) {
         {dept !== 'audit' && <div className="stat-card"><b>{formatBirr(selfTotal)}</b>ጠቅላላ ከራስ ወጪ</div>}
         <div className="stat-card"><b>{formatBirr(refundTotal)}</b>ጠቅላላ ተመላሽ</div>
       </div>
-      {dept === 'finance' && (
-      <details className="card no-print" style={{ marginBottom: 12 }}>
-        <summary><b>መነሻ ሂሳብ (Opening balance)</b> <span className="small muted">— ክትትል ሲጀመር በሰንበት ት/ቤቱ እጅ የነበረው ገንዘብ</span></summary>
-        <MediaForm action={setOpeningBalance} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false}>
-          <div className="form-grid">
-            <div className="field"><label>መጠን (ብር)</label><input name="opening_balance" type="number" min={0} step="0.01" defaultValue={wallet.opening} required /></div>
-            <div className="field"><span className="label">ከዚህ ቀን ጀምሮ (ዓ.ም)</span><EcDatePicker name="as_of" defaultIso={wallet.asOf ?? todayIsoAddis()} yearsBack={5} yearsForward={0} required /></div>
-          </div>
-        </MediaForm>
-      </details>
-      )}
       <DeptMoneySummaryTable rows={rows} detailHref={(x) => `${base}&d=${x}`} showSelf={dept !== 'audit'} />
 
       {d && (

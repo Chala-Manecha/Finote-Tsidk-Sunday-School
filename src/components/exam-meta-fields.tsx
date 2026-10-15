@@ -1,4 +1,5 @@
 import { EcDatePicker } from './ec-date-picker';
+import { TimePicker } from './time-picker';
 import { EXAM_COMPONENTS, addisParts, type Exam } from '@/lib/exams';
 import { todayIsoAddis } from '@/lib/ethiopian-calendar';
 
@@ -38,11 +39,11 @@ export function ExamMetaFields({ offeringId, e }: { offeringId: string; e?: Exam
       <div className="exam-meta-sec two">
         <div className="field">
           <span className="label">🟢 መክፈቻ</span>
-          <div className="date-time"><EcDatePicker name="open_date" defaultIso={o.date} yearsBack={0} yearsForward={1} required /><input name="open_time" type="time" required defaultValue={o.time} aria-label="የመክፈቻ ሰዓት" /></div>
+          <div className="date-time"><EcDatePicker name="open_date" defaultIso={o.date} yearsBack={0} yearsForward={1} required /><TimePicker name="open_time" required defaultValue={o.time} label="የመክፈቻ ሰዓት" /></div>
         </div>
         <div className="field">
           <span className="label">🔴 መዝጊያ</span>
-          <div className="date-time"><EcDatePicker name="close_date" defaultIso={c.date} yearsBack={0} yearsForward={1} required /><input name="close_time" type="time" required defaultValue={c.time} aria-label="የመዝጊያ ሰዓት" /></div>
+          <div className="date-time"><EcDatePicker name="close_date" defaultIso={c.date} yearsBack={0} yearsForward={1} required /><TimePicker name="close_time" required defaultValue={c.time} label="የመዝጊያ ሰዓት" /></div>
         </div>
       </div>
 

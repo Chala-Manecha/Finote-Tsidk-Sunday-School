@@ -117,3 +117,10 @@ export function ecMonthRange(iso: string): { from: string; to: string } {
     to: ecToIso({ ...ec, day: daysInEcMonth(ec.year, ec.month) }),
   };
 }
+
+/** '14:30' / '14:30:00' → '2:30 PM' */
+export function fmtTime(t: string | null | undefined): string {
+  if (!t || !/^\d{1,2}:\d{2}/.test(t)) return '';
+  const [h, m] = t.split(':').map(Number);
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+}

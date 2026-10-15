@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { fmtTime } from '@/lib/ethiopian-calendar';
 import { notFound } from 'next/navigation';
 import { requireStaff, canAccess } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -37,7 +38,7 @@ export default async function SessionPage({
       <h2 className="section" style={{ marginTop: 0 }}>
         {session.title ? `${session.title} · ` : ''}{SESSION_TYPES[session.session_type as SessionType].label} —{' '}
         {formatEc(session.session_date, { weekday: true })}
-        {session.session_time ? ` · ${session.session_time.slice(0, 5)}` : ''}
+        {session.session_time ? ` · ${fmtTime(session.session_time)}` : ''}
       </h2>
       <SessionRoster
         dept={dept}

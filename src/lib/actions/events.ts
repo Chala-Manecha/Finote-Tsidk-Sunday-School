@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { requireStaff, canAccess } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { isDeptCode } from '@/lib/constants';
-import { formatEc } from '@/lib/ethiopian-calendar';
+import { formatEc, fmtTime } from '@/lib/ethiopian-calendar';
 import { parseDelivery } from '@/lib/delivery';
 
 export type FormState = { error?: string; ok?: string };
@@ -48,7 +48,7 @@ export async function proposeEvent(_: FormState, fd: FormData): Promise<FormStat
   });
   if (error) return { error: error.message };
   refresh();
-  const when = `${formatEc(ev.event_date, { weekday: true })} · ${ev.event_time}`;
+  const when = `${formatEc(ev.event_date, { weekday: true })} · ${fmtTime(ev.event_time)}`;
   return { ok: dept === 'schedule' ? `ቀጠሮ ተጨምሯል (${when})።` : `ቀጠሮው ለመርሓ ግብራት ተልኳል (${when})።` };
 }
 

@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import { CHURCH_NAME, DEPARTMENTS, EVENT_KINDS, PLATFORMS, SCHOOL_NAME, SCHOOL_NAME_EN, type Platform } from '@/lib/constants';
+import { fmtTime } from '@/lib/ethiopian-calendar';
+import { CHURCH_NAME, DEPARTMENTS, EVENT_KINDS, SCHOOL_NAME, SCHOOL_NAME_EN } from '@/lib/constants';
+import { platformName } from '@/lib/delivery';
 import { PublicHeader } from '@/components/public-header';
 import { SocialButtons } from '@/components/social-buttons';
 import { ScrollReveal } from '@/components/scroll-reveal';
@@ -238,13 +240,13 @@ export default async function Home() {
                     <li key={e.id} className={i === 0 ? 'next' : ''}>
                       <div className="week-when">
                         {tag ? <span className="day-tag">{tag}</span> : <span className="small">{shortDay(e.event_date)}</span>}
-                        <span dir="ltr">{e.event_time.slice(0, 5)}</span>
+                        <span dir="ltr">{fmtTime(e.event_time)}</span>
                       </div>
                       <b>{e.kind ? `${EVENT_KINDS[e.kind]}፦ ` : ''}{e.title}</b>
                       {(e.mode === 'online' || e.place) && (
                         <span className="week-where">
                           {e.mode === 'online'
-                            ? <>💻 {PLATFORMS[e.platform as Platform] ?? 'ኦንላይን'}{joinLinks.get(e.id) && <> · <a href={joinLinks.get(e.id)!} target="_blank" rel="noopener noreferrer">ተቀላቀል ↗</a></>}</>
+                            ? <>💻 {platformName(e.platform) || 'ኦንላይን'}{joinLinks.get(e.id) && <> · <a href={joinLinks.get(e.id)!} target="_blank" rel="noopener noreferrer">ተቀላቀል ↗</a></>}</>
                             : <>📍 {e.place}</>}
                         </span>
                       )}

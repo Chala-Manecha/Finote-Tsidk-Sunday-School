@@ -71,7 +71,7 @@ export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string;
         <div><span>የጊዜው መዝጊያ ቀሪ ሂሳብ</span><b>{formatBirr(closing)}</b></div>
       </div>
       {!wallet.asOf && (
-        <p className="alert error no-print">የመነሻ ቀሪ ሂሳብ ገና አልተመዘገበም — ሒሳብና ንብረት በ&quot;የገንዘብ ክትትል&quot; ገጽ ያስገቡ።</p>
+        <p className="alert error no-print">የመነሻ ቀሪ ሂሳብ ገና አልተመዘገበም — ሒሳብና ንብረት ከላይ ባለው “+ መነሻ ሂሳብ አስገባ” ያስገቡ።</p>
       )}
 
       <div className="table-wrap">

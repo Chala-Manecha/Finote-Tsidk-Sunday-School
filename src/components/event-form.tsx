@@ -1,5 +1,6 @@
 'use client';
 import { useActionState } from 'react';
+import { TimePicker } from './time-picker';
 import { EcDatePicker } from './ec-date-picker';
 import { proposeEvent, updateEvent, type FormState } from '@/lib/actions/events';
 import { todayIsoAddis } from '@/lib/ethiopian-calendar';
@@ -47,8 +48,7 @@ export function EventForm({ dept, initial }: { dept: string; initial?: Initial }
         </div>
         <div className="field">
           <label htmlFor={`time-${initial?.id ?? 'new'}`}>ሰዓት <span className="req">*</span></label>
-          <input id={`time-${initial?.id ?? 'new'}`} name="event_time" type="time" required
-            defaultValue={initial?.event_time?.slice(0, 5)} />
+          <TimePicker id={`time-${initial?.id ?? 'new'}`} name="event_time" required defaultValue={initial?.event_time?.slice(0, 5)} />
         </div>
         <div className="field">
           <label htmlFor={`place-${initial?.id ?? 'new'}`}>ቦታ</label>

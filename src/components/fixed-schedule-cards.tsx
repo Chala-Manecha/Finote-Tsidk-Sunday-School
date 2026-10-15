@@ -1,4 +1,5 @@
 import { formatEc } from '@/lib/ethiopian-calendar';
+import { fmtTime } from '@/lib/ethiopian-calendar';
 import type { FixedSchedule, WerebEvent } from '@/lib/schedules';
 import { DeliveryBadge } from './delivery-badge';
 
@@ -23,7 +24,7 @@ export function ScheduleCards({ fixed, events = [], title }: { fixed: FixedSched
           <div key={e.id} className="sched-card dated">
             <span className="sched-tag">ቀጠሮ</span>
             <b>{e.title}</b>
-            <span>{formatEc(e.event_date, { weekday: true })} · <span dir="ltr">{e.event_time.slice(0, 5)}</span></span>
+            <span>{formatEc(e.event_date, { weekday: true })} · <span dir="ltr">{fmtTime(e.event_time)}</span></span>
             {e.place && <span className="small muted">📍 {e.place}</span>}
             <DeliveryBadge d={e} showLink={!!e.link} />
           </div>

@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation';
+import { TimePicker } from '@/components/time-picker';
+import { fmtTime } from '@/lib/ethiopian-calendar';
 import { createClient } from '@/lib/supabase/server';
 import { MAHIBER_NAMES } from '@/lib/constants';
 import { formatEc } from '@/lib/ethiopian-calendar';
@@ -25,7 +27,7 @@ function Fields({ m }: { m?: M }) {
         </div>
         <div className="field">
           <label>ሰዓት</label>
-          <input name="event_time" type="time" defaultValue={m?.event_time?.slice(0, 5)} />
+          <TimePicker name="event_time" defaultValue={m?.event_time?.slice(0, 5)} />
         </div>
       </div>
       <label className="check"><input type="checkbox" name="rescheduled" defaultChecked={m?.rescheduled} /> ተሸጋሽጓል</label>
@@ -51,7 +53,7 @@ export default async function OfficeMahiberat({ params }: { params: Promise<{ de
               <tr key={m.id}>
                 <td>{m.association_name}</td>
                 <td>{formatEc(m.event_date, { weekday: true })}</td>
-                <td dir="ltr">{m.event_time?.slice(0, 5) ?? '—'}</td>
+                <td dir="ltr">{fmtTime(m.event_time) || '—'}</td>
                 <td>{m.rescheduled && <span className="pill half">ተሸጋሽጓል</span>}</td>
                 <td>
                   <div className="btn-row">

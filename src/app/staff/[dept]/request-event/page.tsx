@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { fmtTime } from '@/lib/ethiopian-calendar';
 import { createClient } from '@/lib/supabase/server';
 import { isDeptCode, EVENT_STATUS, STATUS_PILL, type EventStatus } from '@/lib/constants';
 import { formatEc } from '@/lib/ethiopian-calendar';
@@ -37,7 +38,7 @@ export default async function RequestEventPage({ params }: { params: Promise<{ d
             {(events ?? []).map((e) => (
               <tr key={e.id}>
                 <td>{formatEc(e.event_date, { weekday: true })}</td>
-                <td dir="ltr">{e.event_time.slice(0, 5)}</td>
+                <td dir="ltr">{fmtTime(e.event_time)}</td>
                 <td>{e.kind && <span className="pill">{EVENT_KINDS[e.kind]}</span>} {e.title}{e.place && <div className="small muted">📍 {e.place}</div>}<div><DeliveryBadge d={e} compact /></div></td>
                 <td><span className={`pill ${STATUS_PILL[e.status]}`}>{EVENT_STATUS[e.status]}</span></td>
                 <td>

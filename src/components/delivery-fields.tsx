@@ -5,6 +5,8 @@ import { PLATFORMS, type Delivery } from '@/lib/constants';
 /** “በቤተ ክርስቲያን / ኦንላይን” — when online: the platform and the meeting link. */
 export function DeliveryFields({ initial, idPrefix = 'dl' }: { initial?: Partial<Delivery> | null; idPrefix?: string }) {
   const [mode, setMode] = useState(initial?.mode ?? 'physical');
+  const known = !initial?.platform || initial.platform in PLATFORMS;
+  const [platform, setPlatform] = useState<string>(known ? initial?.platform ?? 'meet' : 'other');
   return (
     <div className="delivery-fields">
       <div className="field">
@@ -21,11 +23,17 @@ export function DeliveryFields({ initial, idPrefix = 'dl' }: { initial?: Partial
       {mode === 'online' && (
         <>
           <div className="field">
-            <label htmlFor={`${idPrefix}-platform`}>መድረክ <span className="req">*</span></label>
-            <select id={`${idPrefix}-platform`} name="platform" required defaultValue={initial?.platform ?? 'meet'}>
+            <label htmlFor={`${idPrefix}-platform`}>ፕላትፎርም <span className="req">*</span></label>
+            <select id={`${idPrefix}-platform`} name="platform" required value={platform} onChange={(e) => setPlatform(e.target.value)}>
               {Object.entries(PLATFORMS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
+          {platform === 'other' && (
+            <div className="field">
+              <label htmlFor={`${idPrefix}-pother`}>የፕላትፎርሙ ስም <span className="req">*</span></label>
+              <input id={`${idPrefix}-pother`} name="platform_other" required maxLength={60} placeholder="ለምሳሌ፦ Microsoft Teams" defaultValue={known ? '' : initial?.platform ?? ''} />
+            </div>
+          )}
           <div className="field" style={{ flex: '1 1 260px' }}>
             <label htmlFor={`${idPrefix}-link`}>ማስፈንጠሪያ (link)</label>
             <input id={`${idPrefix}-link`} name="link" type="url" dir="ltr" placeholder="https://meet.google.com/…" defaultValue={initial?.link ?? ''} />

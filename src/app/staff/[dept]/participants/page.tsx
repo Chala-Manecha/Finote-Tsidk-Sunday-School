@@ -31,7 +31,7 @@ export default async function Participants({ params, searchParams }: {
   const declined = rows.filter((r) => r.status === 'declined');
   const base = `/staff/${dept}/participants`;
 
-  const title = dept === 'education' ? 'አቴንዳንስ — ተሳታፊዎች' : 'ተሳታፊዎች';
+  const title = dept === 'hr' ? 'የምደባ ተሳታፊዎች' : 'የክፍሉ ተማሪዎች';
 
   return (
     <>

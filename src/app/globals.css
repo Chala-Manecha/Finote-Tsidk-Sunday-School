@@ -1724,3 +1724,26 @@ main.page { min-height: 0; }
 }
 .dept-tab-nav .tab-list a > span, .dept-tab-nav .tab-list span.soon > span { color: inherit; }
 .dept-tab-nav .tab-list a, .dept-tab-nav .tab-list span.soon { padding: 7px 10px; min-height: 0; }
+.opening-chip { display: inline-flex; align-items: baseline; gap: 4px; padding: 5px 12px; border-radius: 999px; background: #E2F1E8; border: 1px solid #BFDCCB; font-size: .82rem; }
+.opening-chip.missing { background: #FBE4E2; border-color: #F0C2BE; }
+/* ---------- Time: hour · minute · AM/PM ---------- */
+.tpick { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--field-border); border-radius: 8px; padding: 3px 4px 3px 6px; background: #fff; }
+.tpick select { border: none !important; box-shadow: none !important; background: transparent; font: inherit; font-size: .9rem; padding: 4px 2px !important; min-height: 0 !important; color: var(--ink); appearance: none; -webkit-appearance: none; text-align: center; cursor: pointer; }
+.tpick b { color: var(--muted); }
+.tpick-ampm { display: inline-flex; background: var(--soft); border-radius: 7px; padding: 2px; margin-inline-start: 4px; }
+.tpick-ampm button { border: none; background: transparent; font: inherit; font-size: .74rem; font-weight: 700; padding: 4px 7px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+.tpick-ampm button.on { background: #1F639C; color: #fff; }
+.tpick-ampm button:disabled { opacity: .5; cursor: default; }
+.tpick:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(69, 104, 130, .14); }
+.date-time { grid-template-columns: 1fr auto; }
+/* ---------- Form on the left, the list on the right ---------- */
+.side-form { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 14px; align-items: start; }
+.side-form > form.card { position: sticky; top: 84px; display: grid; gap: 10px; }
+.side-form > form.card .field { margin: 0; }
+.side-form .delivery-fields { display: grid; gap: 8px; }
+.type-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+.type-tiles label { position: relative; display: grid; justify-items: center; gap: 2px; padding: 10px 6px; border: 1.5px solid var(--line); border-radius: 12px; cursor: pointer; font-size: .82rem; font-weight: 600; text-align: center; }
+.type-tiles label i { font-style: normal; font-size: 1.25rem; }
+.type-tiles input { position: absolute; opacity: 0; }
+.type-tiles label.on { border-color: #1F639C; background: #EAF3FB; box-shadow: 0 0 0 3px rgba(31, 99, 156, .12); }
+@media (max-width: 1000px) { .side-form { grid-template-columns: 1fr; } .side-form > form.card { position: static; } }
