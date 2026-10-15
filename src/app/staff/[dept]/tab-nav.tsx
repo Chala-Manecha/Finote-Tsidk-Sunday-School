@@ -18,7 +18,7 @@ const ICON: Record<string, string> = {
 };
 
 /**
- * The department's pages as two-column tiles, grouped. On a page deeper than a tab
+ * The department's pages listed under their group, each with its icon. On a page deeper than a tab
  * (a session, a member …) a back arrow to that tab sits at the top of the panel.
  */
 export function TabNav({ dept, deptName, tabs }: { dept: string; deptName: string; tabs: Tab[] }) {
@@ -46,7 +46,7 @@ export function TabNav({ dept, deptName, tabs }: { dept: string; deptName: strin
       {groups.map((g) => (
         <div key={g.name || 'all'} className="tab-sec">
           {g.name && <div className="tab-group">{g.name}</div>}
-          <div className="tab-grid">
+          <div className="tab-list">
             {g.tabs.map((t) => t.ready
               ? <Link key={t.slug} href={`/staff/${dept}/${t.slug}`} className={isOn(t) ? 'active' : ''}><i aria-hidden>{ICON[t.slug] ?? '•'}</i><span>{t.label}</span></Link>
               : <span key={t.slug} className="soon" title="በቅርቡ"><i aria-hidden>{ICON[t.slug] ?? '•'}</i><span>{t.label}</span></span>)}

@@ -1687,3 +1687,40 @@ main.page { min-height: 0; }
 .qform-pts input { width: 100%; box-sizing: border-box; }
 .date-time { grid-template-columns: 1fr 124px; }
 .date-time input[type=time] { width: 100%; box-sizing: border-box; }
+
+/* ---------- Department panel v2: listed under each group, same blue as the welcome bar ---------- */
+.banner { background: linear-gradient(110deg, #081A2A, #123C61); margin-bottom: 0; border-radius: 14px 14px 14px 0; }
+.dept-tabs { gap: 0 18px; align-items: flex-start; }
+.dept-tab-nav {
+  width: 250px; min-width: 250px; padding: 10px 8px 14px; gap: 2px;
+  background: linear-gradient(180deg, #12324D, #1F639C); border: none; color: #fff;
+  border-radius: 0 0 16px 16px; box-shadow: 0 8px 22px rgba(18, 50, 77, .25);
+  top: 72px; max-height: calc(100vh - 90px);
+}
+.dept-tab-content { padding-top: 14px; }
+.dept-tab-nav .nav-head { border-bottom-color: rgba(255, 255, 255, .15); }
+.dept-tab-nav .nav-head b { color: #fff; }
+.dept-tab-nav a.nav-back { color: #CFE3F5; }
+.dept-tab-nav a.nav-back:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.dept-tab-nav .tab-group { color: #9CC3E6; border: none; margin: 12px 6px 4px; font-size: .7rem; letter-spacing: .4px; }
+.dept-tab-nav .tab-list { display: grid; gap: 2px; }
+.dept-tab-nav .tab-list a, .dept-tab-nav .tab-list span.soon {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; font-size: .86rem;
+  background: transparent; color: #EAF3FB; box-shadow: none; border: none; text-align: start;
+}
+.dept-tab-nav .tab-list a i, .dept-tab-nav .tab-list span.soon i { font-style: normal; width: 22px; text-align: center; font-size: 1rem; flex-shrink: 0; }
+.dept-tab-nav .tab-list a > span, .dept-tab-nav .tab-list span.soon > span { opacity: 1; background: none; padding: 0; box-shadow: none; border: none; border-radius: 0; font-size: inherit; }
+.dept-tab-nav .tab-list a:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.dept-tab-nav .tab-list a.active, .dept-tab-nav .tab-list a.active:hover { background: #fff; color: #12324D; font-weight: 700; box-shadow: 0 4px 12px rgba(0, 0, 0, .18); }
+.dept-tab-nav .tab-list span.soon { opacity: .5; }
+.dept-tab-nav::-webkit-scrollbar { width: 6px; } .dept-tab-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .25); border-radius: 6px; }
+@media (max-width: 900px) {
+  .banner { border-radius: 14px 14px 0 0; }
+  .dept-tab-nav { width: 100%; min-width: 0; border-radius: 0 0 14px 14px; }
+  .dept-tab-nav .tab-sec { display: contents; }
+  .dept-tab-nav .tab-list { display: flex; overflow-x: auto; gap: 4px; margin-top: 4px; }
+  .dept-tab-nav .tab-list a, .dept-tab-nav .tab-list span.soon { white-space: nowrap; flex-shrink: 0; }
+  .dept-tab-content { padding-top: 12px; }
+}
+.dept-tab-nav .tab-list a > span, .dept-tab-nav .tab-list span.soon > span { color: inherit; }
+.dept-tab-nav .tab-list a, .dept-tab-nav .tab-list span.soon { padding: 7px 10px; min-height: 0; }
