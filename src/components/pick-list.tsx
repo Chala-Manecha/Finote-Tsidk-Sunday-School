@@ -1,7 +1,8 @@
 'use client';
 import { useActionState, useState } from 'react';
+import Link from 'next/link';
 
-type Row = { id: string; name: string; sub?: string; extra?: string };
+type Row = { id: string; name: string; sub?: string; extra?: string; href?: string };
 type State = { error?: string; ok?: string };
 
 /** A list with tick boxes and one button that sends the ticked ids (name="ids") to a server action. */
@@ -35,7 +36,7 @@ export function PickList({ rows, action, hidden, button, empty }: {
                   <input type="checkbox" name="ids" value={r.id} checked={picked.has(r.id)} aria-label={r.name}
                     onChange={() => { const n = new Set(picked); if (n.has(r.id)) n.delete(r.id); else n.add(r.id); setPicked(n); }} />
                 </td>
-                <td><b>{r.name}</b> {r.sub && <span className="small muted">{r.sub}</span>}</td>
+                <td>{r.href ? <Link className="link" href={r.href}><b>{r.name}</b></Link> : <b>{r.name}</b>} {r.sub && <span className="small muted">{r.sub}</span>}</td>
                 <td className="small muted">{r.extra}</td>
               </tr>
             ))}

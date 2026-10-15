@@ -7,6 +7,8 @@ import {
 import { ActionButton } from '@/components/action-button';
 import { enrollSelf } from '@/lib/actions/student-auth';
 import { ownPhoto } from '@/lib/member-photo';
+import Link from 'next/link';
+import { EXAM_COMPONENTS, examWindow, fmtAddis, type MyExam } from '@/lib/exams';
 import { DEPT_NAME, EVENT_KINDS, type Delivery } from '@/lib/constants';
 import { DeliveryBadge } from '@/components/delivery-badge';
 import { fixedSchedules } from '@/lib/schedules';
@@ -76,6 +78,12 @@ export default async function StudentHome() {
     ...fixed.map((f) => ({ key: f.id, title: f.title, when: [f.day_text, f.time_text].filter(Boolean).join(' · '), d: f, place: f.place })),
   ];
 
+  const { data: examData } = await supabase.rpc('my_exams');
+  const exams = (examData ?? []) as MyExam[];
+  const openExams = exams.filter((x) => !x.submitted_at && (examWindow(x) === 'open' || x.attempt_id));
+  const upcomingExams = exams.filter((x) => !x.attempt_id && examWindow(x) === 'upcoming');
+  const doneExams = exams.filter((x) => x.submitted_at);
+
   const results = classLevel
     ? await Promise.all(semesters.map(async (s) => {
         const { data } = await supabase.rpc('semester_results', { p_semester: s.id, p_class: classLevel });
@@ -109,6 +117,15 @@ export default async function StudentHome() {
           <div><b>{upcoming.length}</b><span>የሚመጡ ምደባዎች</span></div>
         </div>
       </section>
+
+      {openExams.map((x) => (
+        <Link key={x.id} href={`/student/exam/${x.id}`} className="exam-open-banner">
+          <span aria-hidden>📝</span>
+          <span><b>{x.attempt_id ? 'ያልጨረሱት ፈተና፦' : 'አሁን ክፍት ፈተና፦'} {x.title}</b><br />
+            <span className="small">{x.course} · {x.duration_min} ደቂቃ · እስከ {fmtAddis(x.closes_at)}</span></span>
+          <span className="btn sm green">{x.attempt_id ? 'ቀጥል →' : 'ጀምር →'}</span>
+        </Link>
+      ))}
 
       <div className="me-grid">
         <section className="card">
@@ -144,6 +161,26 @@ export default async function StudentHome() {
             </ul>
           )}
         </section>
+
+        {(upcomingExams.length > 0 || doneExams.length > 0) && (
+          <section className="card">
+            <h2 className="section" style={{ marginTop: 0 }}>ኦንላይን ፈተናዎች</h2>
+            <ul className="me-list">
+              {upcomingExams.map((x) => (
+                <li key={x.id}>
+                  <span><b>{x.title}</b> <span className="small muted">({EXAM_COMPONENTS[x.component]})</span><br /><span className="small muted">{x.course} · ይከፈታል {fmtAddis(x.opens_at, { weekday: true })}</span></span>
+                  <span className="pill pending">የሚመጣ</span>
+                </li>
+              ))}
+              {doneExams.map((x) => (
+                <li key={x.id}>
+                  <span><Link className="link" href={`/student/exam/${x.id}`}><b>{x.title}</b></Link><br /><span className="small muted">{x.course}</span></span>
+                  {x.released ? <b>{Number(x.score ?? 0)}/{Number(x.total_points)}</b> : <span className="pill half">እየታረመ</span>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className="card">
           <h2 className="section" style={{ marginTop: 0 }}>የቀረሁባቸው ቀናት</h2>

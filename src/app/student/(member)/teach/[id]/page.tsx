@@ -68,6 +68,12 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
       <h1 className="title">{offering.name}</h1>
       <p className="muted">{classLabel(offering.class_level)} · {semesterLabel(s.no)} · <span className={`pill ${offering.status === 'approved' ? 'present' : 'half'}`}>{OFFERING_STATUS[offering.status]}</span></p>
 
+      <Link href={`/student/teach/${id}/exams`} className="card exam-link" style={{ marginBottom: 16 }}>
+        <span aria-hidden>🖊</span>
+        <span><b>ኦንላይን ፈተናዎች</b><br /><span className="small muted">Quiz፣ የአጋማሽና ዋና ፈተና አዘጋጅ → ትምህርት ክፍል ያጸድቃል → ተማሪዎች በኦንላይን ይፈተናሉ → ውጤቱ ወደ ማርክ ሉህ ይገባል</span></span>
+        <span className="link">ክፈት →</span>
+      </Link>
+
       <section className="card" style={{ marginBottom: 16 }}>
         <h2 className="section" style={{ marginTop: 0 }}>ማጣቀሻ መጽሐፍ</h2>
         {book ? <a className="btn secondary" href={book} target="_blank" rel="noopener noreferrer">📘 {offering.book_name ?? 'መጽሐፉን ክፈት'}</a>
