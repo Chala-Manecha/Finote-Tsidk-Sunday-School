@@ -94,7 +94,7 @@ export const EXPORT_COLUMNS: Col[] = [
   { key: 'languages', label: 'ቋንቋዎች', group: 'ትምህርትና ሥራ', get: (m) => ((m.languages as string[] | null) ?? []).join('፣ ') },
   { key: 'verify_url', label: 'የመታወቂያ ማረጋገጫ (QR)', group: 'መታወቂያ', get: (m, c) => `${c.verifyBase}/verify?c=${encodeURIComponent(s(m.reg_no))}` },
 ];
-export const COLUMN_BY_KEY = new Map(EXPORT_COLUMNS.map((c) => [c.key, c]));
+const COLUMN_BY_KEY = new Map(EXPORT_COLUMNS.map((c) => [c.key, c]));
 
 export const EXPORT_TEMPLATES: { key: string; label: string; cols: string[] }[] = [
   { key: 'basic', label: 'መሠረታዊ ዝርዝር', cols: ['reg_no', 'full_name', 'sex', 'age', 'age_group', 'phone', 'member_type', 'depts'] },
