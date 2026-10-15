@@ -4,16 +4,19 @@ import { createClient } from '@/lib/supabase/server';
 import { formatEc } from '@/lib/ethiopian-calendar';
 import { SESSION_TYPES, sessionTypesForDept, type SessionType } from '@/lib/constants';
 import { NewSessionRoster } from './roster';
+import { DeliveryBadge } from '@/components/delivery-badge';
+import type { Delivery } from '@/lib/constants';
 
 export default async function NewSession({
   params,
   searchParams,
 }: {
   params: Promise<{ dept: string }>;
-  searchParams: Promise<{ type?: string; date?: string; time?: string; title?: string }>;
+  searchParams: Promise<{ type?: string; date?: string; time?: string; title?: string; mode?: string; platform?: string; link?: string }>;
 }) {
   const { dept } = await params;
-  const { type, date, time, title: rawTitle } = await searchParams;
+  const { type, date, time, title: rawTitle, mode, platform, link } = await searchParams;
+  const delivery = { mode: mode === 'online' ? 'online' : 'physical', platform: mode === 'online' ? platform ?? null : null, link: mode === 'online' ? link ?? null : null };
   const title = (rawTitle ?? '').trim().slice(0, 160);
   const types = sessionTypesForDept(dept);
   if (!type || !types.includes(type as SessionType)) notFound();
@@ -22,11 +25,12 @@ export default async function NewSession({
   }
 
   const supabase = await createClient();
-  const { data: members } = await supabase
-    .from('members')
-    .select('id, full_name')
-    .eq('is_active', true)
-    .order('full_name');
+  // ስብሰባ: every active member · መዝሙር / ወረብ / አብነት: only those the department added (ተሳታፊዎች)
+  const program = type === 'abnet' ? 'abnet' : type === 'mezmur' || type === 'wereb' ? 'mezmur' : null;
+  const { data: members } = program
+    ? await supabase.from('members').select('id, full_name, member_programs!inner(program, status)')
+        .eq('is_active', true).eq('member_programs.program', program).eq('member_programs.status', 'active').order('full_name')
+    : await supabase.from('members').select('id, full_name').eq('is_active', true).order('full_name');
 
   return (
     <>
@@ -35,13 +39,17 @@ export default async function NewSession({
         {title ? `${title} · ` : ''}{SESSION_TYPES[type as SessionType].label} — {formatEc(date, { weekday: true })}
         {time ? ` · ${time}` : ''}
       </h2>
-      <p className="muted small">ሁሉም የተመዘገቡ አባላት ተዘርዝረዋል፤ ያልተመረጠ ሁሉ &quot;ቀሪ&quot; ሆኖ ይቀመጣል።</p>
+      <DeliveryBadge d={delivery as Partial<Delivery>} />
+      <p className="muted small">
+        {program ? <>የክፍሉ ተሳታፊዎች ብቻ ተዘርዝረዋል (<Link className="link" href={`/staff/${dept}/participants${program === 'abnet' ? '?p=abnet' : ''}`}>ተሳታፊዎች</Link>)፤</> : 'ሁሉም ንቁ አባላት ተዘርዝረዋል፤'} ያልተመረጠ ሁሉ &quot;ቀሪ&quot; ሆኖ ይቀመጣል።
+      </p>
       <NewSessionRoster
-        members={members ?? []}
+        members={(members ?? []).map((m) => ({ id: m.id, full_name: m.full_name }))}
         type={type as SessionType}
         date={date}
         time={time || null}
         title={title || null}
+        delivery={delivery}
       />
     </>
   );

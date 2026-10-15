@@ -3,8 +3,12 @@ import { useActionState } from 'react';
 import { EcDatePicker } from './ec-date-picker';
 import { proposeEvent, updateEvent, type FormState } from '@/lib/actions/events';
 import { todayIsoAddis } from '@/lib/ethiopian-calendar';
+import { DeliveryFields } from './delivery-fields';
+import { EVENT_KINDS, type Delivery } from '@/lib/constants';
 
-type Initial = { id: string; title: string; event_date: string; event_time: string; kind?: string | null; place?: string | null };
+type Initial = { id: string; title: string; event_date: string; event_time: string; kind?: string | null; place?: string | null } & Partial<Delivery>;
+
+const KINDS_FOR: Record<string, string[]> = { hr: ['meeting'], mezmur: ['wereb'], education: ['course', 'abnet'] };
 
 /** Add (ቀጠሮ ላክ) or edit an event. All three fields are mandatory. */
 export function EventForm({ dept, initial }: { dept: string; initial?: Initial }) {
@@ -24,12 +28,12 @@ export function EventForm({ dept, initial }: { dept: string; initial?: Initial }
       <input type="hidden" name="dept" value={dept} />
       {initial && <input type="hidden" name="id" value={initial.id} />}
       <div className="form-grid">
-        {(dept === 'mezmur' || initial?.kind) && (
+        {(KINDS_FOR[dept] || initial?.kind) && (
           <div className="field">
             <label htmlFor={`kind-${initial?.id ?? 'new'}`}>አይነት</label>
-            <select id={`kind-${initial?.id ?? 'new'}`} name="kind" defaultValue={initial?.kind ?? ''}>
+            <select id={`kind-${initial?.id ?? 'new'}`} name="kind" defaultValue={initial?.kind ?? KINDS_FOR[dept]?.[0] ?? ''}>
               <option value="">ዝግጅት / ሌላ</option>
-              <option value="wereb">ወረብ ጥናት (በሕዝብ ዜማ ገጽ ይታያል)</option>
+              {(KINDS_FOR[dept] ?? [initial!.kind!]).map((k) => <option key={k} value={k}>{EVENT_KINDS[k]}</option>)}
             </select>
           </div>
         )}
@@ -50,6 +54,7 @@ export function EventForm({ dept, initial }: { dept: string; initial?: Initial }
           <label htmlFor={`place-${initial?.id ?? 'new'}`}>ቦታ</label>
           <input id={`place-${initial?.id ?? 'new'}`} name="place" defaultValue={initial?.place ?? ''} />
         </div>
+        <DeliveryFields initial={initial} idPrefix={`ev-${initial?.id ?? 'new'}`} />
       </div>
       <div className="btn-row">
         <button className="btn" disabled={pending}>

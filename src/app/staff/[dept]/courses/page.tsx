@@ -1,9 +1,11 @@
+import type { Delivery } from '@/lib/constants';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, OFFERING_STATUS, classLabel, isClassLevel, semesterLabel, type OfferingStatus } from '@/lib/education';
 import { loadTerms } from '@/lib/edu-data';
 import { EduPicker } from '@/components/edu-picker';
+import { DeliveryFields } from '@/components/delivery-fields';
 import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { ReasonForm } from '@/components/reason-form';
@@ -17,7 +19,7 @@ import { TeacherAttendance } from '@/components/course-attendance-views';
 
 type O = {
   id: string; name: string; class_level: string; status: OfferingStatus; book_name: string | null; book_path: string | null;
-  days: number[]; time_text: string | null;
+  days: number[]; time_text: string | null; mode: Delivery["mode"]; platform: Delivery["platform"]; link: string | null;
   offering_teachers: { member_id: string; members: { full_name: string } | null }[];
 };
 
@@ -44,7 +46,7 @@ export default async function Courses({ params, searchParams }: {
   const cls = sp.c && isClassLevel(sp.c) ? sp.c : undefined;
 
   let q = supabase.from('course_offerings')
-    .select('id, name, class_level, status, book_name, book_path, days, time_text, offering_teachers(member_id, members(full_name))')
+    .select('id, name, class_level, status, book_name, book_path, days, time_text, mode, platform, link, offering_teachers(member_id, members(full_name))')
     .eq('semester_id', semester.id).order('class_level').order('name');
   if (cls) q = q.eq('class_level', cls);
   const [{ data }, { data: members }] = await Promise.all([
@@ -147,6 +149,7 @@ export default async function Courses({ params, searchParams }: {
                 <div className="small">{o.book_name ?? (o.book_path ? 'ተጭኗል' : 'አልተጫነም')}</div>
                 <input name="book" type="file" accept=".pdf,.doc,.docx,application/pdf" aria-label="መጽሐፍ" />
               </div>
+              <DeliveryFields initial={o} idPrefix={`co-${o.id}`} />
             </div>
           </MediaForm>
           </div>

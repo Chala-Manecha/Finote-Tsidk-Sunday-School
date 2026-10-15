@@ -102,6 +102,9 @@ export async function logoutMember() {
 export async function enrollSelf() {
   const supabase = await createClient();
   const { error } = await supabase.rpc('enroll_self');
-  if (error) return { error: error.message.includes('no_active_year') ? 'የትምህርት ዘመኑ ገና አልተከፈተም።' : 'መመዝገብ አልተቻለም።' };
+  if (error) {
+    if (error.message.includes('course_declined')) return { error: 'በምዝገባዎ ኮርስ አልመረጡም። ለመማር ከፈለጉ የሰው ሃብት አስተዳደርን ያነጋግሩ።' };
+    return { error: error.message.includes('no_active_year') ? 'የትምህርት ዘመኑ ገና አልተከፈተም።' : 'መመዝገብ አልተቻለም።' };
+  }
   revalidatePath('/student');
 }

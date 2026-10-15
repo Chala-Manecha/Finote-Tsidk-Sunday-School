@@ -10,7 +10,7 @@ export default async function EditMemberPage({ params }: { params: Promise<{ id:
   const supabase = await createClient();
   const { data: m } = await supabase
     .from('members')
-    .select('*, member_departments(dept)')
+    .select('*, member_departments(dept), member_programs(program, status)')
     .eq('id', id)
     .maybeSingle();
   if (!m) notFound();
@@ -25,7 +25,12 @@ export default async function EditMemberPage({ params }: { params: Promise<{ id:
       </div>
       <h1 className="title">የአባል መረጃ አርም</h1>
       <MemberForm
-        initial={{ ...m, photo_url, depts: m.member_departments.map((d: { dept: string }) => d.dept) }}
+        initial={{
+          ...m, photo_url, depts: m.member_departments.map((d: { dept: string }) => d.dept),
+          programs: m.member_programs.length
+            ? m.member_programs.filter((p: { status: string }) => p.status !== 'declined').map((p: { program: string }) => p.program)
+            : null,
+        }}
       />
     </>
   );

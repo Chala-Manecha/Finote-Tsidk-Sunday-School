@@ -10,7 +10,7 @@ import { MultiSelect } from './multi-select';
 import { ageFromIso, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
   DEPARTMENTS, EDUCATION_LEVELS, EMERGENCY_RELATIONS, GEEZ_LEVEL, LANGUAGES, MARITAL_STATUS, MEMBER_TYPE,
-  REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
+  PROGRAMS, PROGRAM_CODES, REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
 } from '@/lib/constants';
 import { emptyEducation, emptyWork, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
@@ -36,6 +36,8 @@ export type MemberInitial = {
   prior_school?: { name?: string | null; years?: number | null; evidence_path?: string | null } | null;
   secular_school?: { name?: string | null; evidence_path?: string | null } | null;
   depts?: string[];
+  /** programs the member takes part in / chose (undefined = never asked) */
+  programs?: string[] | null;
   registered_on?: string | null;
   member_type?: string | null;
   member_type_other?: string | null;
@@ -505,6 +507,21 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
           <label htmlFor="depts">በየትኛው ክፍል ቀርበው ማገልገል ይፈልጋሉ? (ቢበዛ 2)</label>
           <MultiSelect id="depts" name="depts" options={DEPT_OPTIONS} defaultValue={initial.depts ?? []} max={2} placeholder="ክፍል ይምረጡ" />
         </div>
+        <fieldset className="program-pick">
+          <legend>መሳተፍ የሚፈልጉባቸው <span className="small muted">(ያልተመረጡት “አልመረጡም” ተብለው ይመዘገባሉ፤ ስብሰባ ለሁሉም አባላት ነው)</span></legend>
+          {initial.programs === null
+            ? <label className="check small"><input type="checkbox" name="programs_asked" value="1" /> ምርጫው ገና አልተመዘገበም — አሁን መዝግብ (ይህ ካልተመረጠ አይቀየርም)</label>
+            : <input type="hidden" name="programs_asked" value="1" />}
+          <div className="program-grid">
+            {PROGRAM_CODES.map((p) => (
+              <label key={p} className="program-opt">
+                <input type="checkbox" name="programs" value={p}
+                  defaultChecked={!!initial.programs?.includes(p)} />
+                <span>{PROGRAMS[p].label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </Section>
 
       {mode === 'public' && (

@@ -75,3 +75,7 @@ export async function allParticipation(supabase: SupabaseClient, from?: string, 
 export const AREA_UNIT: Record<PartArea, string> = {
   meeting: 'ስብሰባ', course: 'ክፍለ ጊዜ', abnet: 'ክፍለ ጊዜ', mezmur: 'ጥናት', wereb: 'ጥናት', teaching: 'ክፍለ ጊዜ', duty: 'ምደባ',
 };
+
+/** The areas a declined program covers (መዝሙር covers both መዝሙርና ወረብ). */
+export const PROGRAM_AREAS: Record<string, PartArea[]> = { course: ['course'], abnet: ['abnet'], mezmur: ['mezmur', 'wereb'], duty: ['duty'] };
+export const declinedAreas = (declined: string[]) => declined.flatMap((p) => PROGRAM_AREAS[p] ?? []);

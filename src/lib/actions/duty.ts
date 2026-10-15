@@ -29,6 +29,8 @@ export async function saveDuty(_: FormState, fd: FormData): Promise<FormState> {
 
   const row = { member_id: memberId, dept, duty, occasion, duty_date: dutyDate };
   const supabase = await createClient();
+  const { data: inProgram } = await supabase.rpc('in_program', { p_member: memberId, p_program: 'duty' });
+  if (!inProgram) return { error: 'ይህ አባል “የተለያዩ አገልግሎቶች”ን አልመረጠም ወይም ሰው ሃብት ገና አልጨመረውም።' };
   const { error, count } = id
     ? await supabase.from('duty_assignments').update(row, { count: 'exact' }).eq('id', id)
     : await supabase.from('duty_assignments').insert(row, { count: 'exact' });

@@ -1,4 +1,5 @@
 'use server';
+import { parseDelivery } from '@/lib/delivery';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireDept } from '@/lib/auth';
@@ -83,12 +84,13 @@ export async function activateSemester(id: string) {
 
 // ---------- enrollments ----------
 
-/** Every registered member is a course student: enroll all active members not yet in this year. */
+/** Enroll every active member who takes ኮርስ (added under ተሳታፊዎች) and is not yet in this year. */
 export async function enrollAllMembers(yearId: string) {
   await requireDept('education');
   const supabase = await createClient();
   const [{ data: members }, { data: existing }] = await Promise.all([
-    supabase.from('members').select('id').eq('is_active', true),
+    supabase.from('members').select('id, member_programs!inner(program, status)').eq('is_active', true)
+      .eq('member_programs.program', 'course').eq('member_programs.status', 'active'),
     supabase.from('enrollments').select('member_id').eq('year_id', yearId),
   ]);
   const have = new Set((existing ?? []).map((e) => e.member_id));
@@ -395,8 +397,10 @@ export async function saveCourseDetails(_: FormState, fd: FormData): Promise<For
   const days = fd.getAll('days').map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
   const book = text(fd, 'book_path');
   const { data: old } = await supabase.from('course_offerings').select('book_path').eq('id', id).maybeSingle();
+  const dl = parseDelivery(fd);
+  if ('error' in dl) return dl;
   const row = {
-    days, time_text: text(fd, 'time_text') || null,
+    days, time_text: text(fd, 'time_text') || null, ...dl,
     ...(book.startsWith('books/') ? { book_path: book, book_name: text(fd, 'book_name') || null } : {}),
   };
   const { error, count } = await supabase.from('course_offerings').update(row, { count: 'exact' }).eq('id', id);

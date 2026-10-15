@@ -4,13 +4,15 @@ import { createClient } from '@/lib/supabase/server';
 import { DEPT_NAME, EVENT_STATUS, STATUS_PILL, type EventStatus } from '@/lib/constants';
 import { formatEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import { EventForm } from '@/components/event-form';
+import { DeliveryBadge } from '@/components/delivery-badge';
+import { EVENT_KINDS, type Delivery } from '@/lib/constants';
 import { ActionButton } from '@/components/action-button';
 import { decideEvent, deleteEvent } from '@/lib/actions/events';
 import { PrintButton } from '@/components/print-button';
 import { FIXED_KINDS, fixedSchedules } from '@/lib/schedules';
 import { dayNames } from '@/components/day-checks';
 
-type Ev = { id: string; title: string; event_date: string; event_time: string; status: EventStatus; dept: string; kind: string | null; place: string | null };
+type Ev = { id: string; title: string; event_date: string; event_time: string; status: EventStatus; dept: string; kind: string | null; place: string | null } & Delivery;
 
 export default async function ScheduleEventsPage({
   params,
@@ -27,7 +29,7 @@ export default async function ScheduleEventsPage({
   const supabase = await createClient();
   let q = supabase
     .from('events')
-    .select('id, title, event_date, event_time, status, dept, kind, place')
+    .select('id, title, event_date, event_time, status, dept, kind, place, mode, platform, link')
     .order('event_date')
     .order('event_time');
   // Upcoming events, plus every pending one whatever its date, so nothing waits unseen.
@@ -104,8 +106,8 @@ export default async function ScheduleEventsPage({
                 <td>{formatEc(e.event_date, { weekday: true })}</td>
                 <td dir="ltr">{e.event_time.slice(0, 5)}</td>
                 <td>
-                  {e.kind === 'wereb' && <span className="pill">ወረብ ጥናት</span>} {e.title}
-                  {e.place && <div className="small muted">📍 {e.place}</div>}
+                  {e.kind && <span className="pill">{EVENT_KINDS[e.kind]}</span>} {e.title}
+                  {e.place && <div className="small muted">📍 {e.place}</div>}<div><DeliveryBadge d={e} compact /></div>
                   {clashes(e) && <div className="small" style={{ color: 'var(--danger)' }}>⚠ ተደራቢ — በዚህ ሰዓት ሌላ የጸደቀ ቀጠሮ አለ</div>}
                 </td>
                 <td>{DEPT_NAME[e.dept]}</td>

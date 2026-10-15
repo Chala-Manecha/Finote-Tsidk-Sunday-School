@@ -69,6 +69,10 @@ insert into public.members (id, full_name, sex, work_status, dob) values
   ('10000000-0000-0000-0000-000000000002', 'ሰላም ታደሰ', 'female', 'worker',  '1998-09-12'),
   ('10000000-0000-0000-0000-000000000003', 'ዮናስ ገብሩ',  'male',   'worker',  null);
 insert into public.member_departments values ('10000000-0000-0000-0000-000000000001', 'mezmur');
+insert into public.member_programs (member_id, program, status) values
+  ('10000000-0000-0000-0000-000000000001', 'mezmur', 'active'),
+  ('10000000-0000-0000-0000-000000000002', 'mezmur', 'active'),
+  ('10000000-0000-0000-0000-000000000003', 'mezmur', 'active');
 select pg_temp.must_equal((select count(*) from public.members where created_by = '00000000-0000-0000-0000-0000000000a1'), 3, 'created_by stamped');
 delete from public.members where id = '10000000-0000-0000-0000-000000000003';
 select pg_temp.must_equal((select count(*) from public.members), 3, 'HR cannot hard-delete');
@@ -856,6 +860,72 @@ select set_config('request.jwt.claim.role', 'anon', false);
 select set_config('request.jwt.claim.sub', '', false);
 select pg_temp.must_equal((select count(*) from public.fixed_schedules), 1, 'public sees fixed schedules');
 select pg_temp.must_fail($q$select * from public.participation()$q$);
+reset role;
+
+-- ---------- round 14: programs, online exams ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select public.set_member_programs('10000000-0000-0000-0000-000000000002', array['course', 'mezmur']);
+select pg_temp.must_equal((select count(*) from public.member_programs where member_id = '10000000-0000-0000-0000-000000000002' and status = 'declined'), 2, 'unticked programs are declined');
+select pg_temp.must_equal((select count(*) from public.member_programs where member_id = '10000000-0000-0000-0000-000000000002' and program = 'mezmur' and status = 'active'), 1, 'already active stays active');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+update public.member_programs set status = 'active' where member_id = '10000000-0000-0000-0000-000000000002' and program = 'course';
+select pg_temp.must_equal((select count(*) from public.member_programs where member_id = '10000000-0000-0000-0000-000000000002' and program = 'course' and status = 'active'), 1, 'education adds a member who chose course');
+update public.member_programs set status = 'active' where member_id = '10000000-0000-0000-0000-000000000002' and program = 'abnet';
+select pg_temp.must_equal((select count(*) from public.member_programs where member_id = '10000000-0000-0000-0000-000000000002' and program = 'abnet' and status = 'declined'), 1, 'department cannot add a member who declined');
+update public.member_programs set status = 'active' where member_id = '10000000-0000-0000-0000-000000000002' and program = 'mezmur';
+select pg_temp.must_fail($q$insert into public.member_programs (member_id, program, status) values ('10000000-0000-0000-0000-000000000001', 'course', 'active')$q$);
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+insert into public.online_exams (id, offering_id, component, title, duration_min, opens_at, closes_at)
+  values ('93000000-0000-0000-0000-000000000001', '92000000-0000-0000-0000-000000000003', 'quiz', 'የዶግማ ፈተና 1', 30, now() - interval '1 minute', now() + interval '1 hour');
+insert into public.exam_questions (id, exam_id, sort, kind, prompt, points, options, answer) values
+  ('94000000-0000-0000-0000-000000000001', '93000000-0000-0000-0000-000000000001', 1, 'choice', 'ምረጥ', 2, '["ሀ","ለ","ሐ"]', '1'),
+  ('94000000-0000-0000-0000-000000000002', '93000000-0000-0000-0000-000000000001', 2, 'tf', 'እውነት?', 1, '[]', 'true'),
+  ('94000000-0000-0000-0000-000000000003', '93000000-0000-0000-0000-000000000001', 3, 'blank', '___ ሐዋርያ ነው', 2, '[]', '["ጴጥሮስ","petros"]'),
+  ('94000000-0000-0000-0000-000000000004', '93000000-0000-0000-0000-000000000001', 4, 'match', 'አዛምድ', 2, '{"left":["x","y"],"right":["X","Y"]}', '[0,1]');
+select pg_temp.must_fail($q$update public.online_exams set status = 'approved' where id = '93000000-0000-0000-0000-000000000001'$q$);
+update public.online_exams set status = 'submitted' where id = '93000000-0000-0000-0000-000000000001';
+select pg_temp.must_fail($q$update public.online_exams set title = 'ሌላ' where id = '93000000-0000-0000-0000-000000000001'$q$);
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*) from public.online_exams), 0, 'students do not read exams');
+select pg_temp.must_equal((select count(*) from public.exam_questions), 0, 'students do not read questions or answers');
+select pg_temp.must_fail($q$select public.start_exam('93000000-0000-0000-0000-000000000001')$q$);
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+update public.online_exams set status = 'approved' where id = '93000000-0000-0000-0000-000000000001';
+select pg_temp.must_equal((select count(*) from public.online_exams where status = 'approved' and approved_by is not null), 1, 'education approves');
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*) from public.my_exams()), 1, 'student sees the exam for their class');
+select public.start_exam('93000000-0000-0000-0000-000000000001');
+select pg_temp.must_equal((select jsonb_array_length(public.exam_paper((select attempt_id from public.my_exams())) -> 'questions')), 4, 'paper has the questions');
+select pg_temp.must_equal((select count(*) from jsonb_array_elements(public.exam_paper((select attempt_id from public.my_exams())) -> 'questions') q where q ? 'answer'), 0, 'paper has no answers');
+select public.save_exam_answers((select attempt_id from public.my_exams()),
+  '{"94000000-0000-0000-0000-000000000001": 1, "94000000-0000-0000-0000-000000000002": true, "94000000-0000-0000-0000-000000000003": " Petros ", "94000000-0000-0000-0000-000000000004": [1, 0]}',
+  '["94000000-0000-0000-0000-000000000004"]', 1);
+select public.submit_exam((select attempt_id from public.my_exams()), null, null, null, false);
+select pg_temp.must_equal((select (score is null and submitted_at is not null)::int from public.my_exams()), 1, 'score hidden until the teacher sends it');
+select pg_temp.must_fail($q$select public.save_exam_answers((select attempt_id from public.my_exams()), '{}', '[]', 0)$q$);
+update public.exam_attempts set manual_points = '{"94000000-0000-0000-0000-000000000004": 2}';
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+select pg_temp.must_equal((select score::int from public.exam_attempts), 5, 'automatic marking');
+update public.exam_attempts set manual_points = '{"94000000-0000-0000-0000-000000000004": 1}';
+select pg_temp.must_equal((select score::int from public.exam_attempts), 6, 'teacher corrects a question');
+select pg_temp.must_fail($q$update public.exam_attempts set answers = '{}'$q$);
+update public.online_exams set pushed_at = now() where id = '93000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select score::int from public.my_exams()), 6, 'student sees the sent result');
+select pg_temp.must_equal((select jsonb_array_length(public.my_exam_review('93000000-0000-0000-0000-000000000001') -> 'questions')), 4, 'student reviews the marked paper');
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_fail($q$select link from public.events$q$);
+select pg_temp.must_equal((select (count(*) >= 0)::int from (select id, mode, platform from public.events) e), 1, 'public reads events without the link');
 reset role;
 
 \echo ALL RLS TESTS PASSED

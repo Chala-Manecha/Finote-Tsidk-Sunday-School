@@ -203,3 +203,24 @@ export const CHURCH_NAME = 'አቃቂ ፋንታ ደብረ ፅጌ ቅዱስ ሩ�
 export const CHURCH_NAME_EN = 'Akaki Kality St.Rufael & St.Arsema Church';
 export const SCHOOL_NAME_EN = 'Finote Tsidk Sunday School';
 export const SCHOOL_ADDRESS = 'አቃቂ ቃሊቲ፣ ወረዳ-13፣ አዲስ አበባ';
+
+/** What a member chooses to take part in (ስብሰባ is for everybody). Owning department adds them. */
+export const PROGRAMS = {
+  course: { label: 'ኮርስ ትምህርት', dept: 'education' },
+  abnet: { label: 'አብነት ትምህርት', dept: 'education' },
+  mezmur: { label: 'መዝሙርና ወረብ ጥናት', dept: 'mezmur' },
+  duty: { label: 'የተለያዩ አገልግሎቶች (ምደባ)', dept: 'hr' },
+} as const;
+export type ProgramCode = keyof typeof PROGRAMS;
+export const PROGRAM_CODES = Object.keys(PROGRAMS) as ProgramCode[];
+export const isProgram = (v: string): v is ProgramCode => v in PROGRAMS;
+export const programsForDept = (dept: string) => PROGRAM_CODES.filter((p) => PROGRAMS[p].dept === dept);
+export type ProgramStatus = 'chosen' | 'active' | 'declined';
+export const PROGRAM_STATUS: Record<ProgramStatus, string> = { chosen: 'ተመዝግቧል (መደመር ይጠብቃል)', active: 'ተሳታፊ', declined: 'አልመረጡም' };
+
+/** Online or at the church (ኮርስ, አብነት, ስብሰባ, ወረብ …). */
+export const PLATFORMS = { meet: 'Google Meet', telegram: 'Telegram', zoom: 'Zoom', other: 'ሌላ' } as const;
+export type Platform = keyof typeof PLATFORMS;
+export type Delivery = { mode: 'physical' | 'online'; platform: Platform | null; link: string | null };
+/** ቀጠሮ kinds (ስብሰባ shows on the home page, ወረብ ጥናት on the public ዜማ page). */
+export const EVENT_KINDS: Record<string, string> = { meeting: 'ስብሰባ', wereb: 'ወረብ ጥናት', course: 'ኮርስ ትምህርት', abnet: 'አብነት ትምህርት' };

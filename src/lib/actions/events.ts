@@ -4,6 +4,7 @@ import { requireStaff, canAccess } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { isDeptCode } from '@/lib/constants';
 import { formatEc } from '@/lib/ethiopian-calendar';
+import { parseDelivery } from '@/lib/delivery';
 
 export type FormState = { error?: string; ok?: string };
 
@@ -17,9 +18,12 @@ function readEvent(fd: FormData) {
   if (!title) return { error: 'የዝግጅቱን ስም ያስገቡ።' } as const;
   if (!DATE_RE.test(date)) return { error: 'ቀን ይምረጡ።' } as const;
   if (!TIME_RE.test(time)) return { error: 'ሰዓት ያስገቡ።' } as const;
-  const kind = String(fd.get('kind') ?? '') === 'wereb' ? 'wereb' : null;
+  const k = String(fd.get('kind') ?? '');
+  const kind = ['wereb', 'meeting', 'course', 'abnet'].includes(k) ? k : null;
   const place = String(fd.get('place') ?? '').trim().slice(0, 120) || null;
-  return { title, event_date: date, event_time: time, kind, place } as const;
+  const dl = parseDelivery(fd);
+  if ('error' in dl) return dl;
+  return { title, event_date: date, event_time: time, kind, place, ...dl } as const;
 }
 
 const refresh = () => {

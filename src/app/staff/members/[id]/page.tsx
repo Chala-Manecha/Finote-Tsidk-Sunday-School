@@ -4,7 +4,7 @@ import { requireDept } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { ageFromIso, formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
-  DEPT_NAME, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_STATUS, memberTypeLabel, SEX, TITLES, WORK_STATUS,
+  DEPT_NAME, PROGRAMS, type ProgramCode, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_STATUS, memberTypeLabel, SEX, TITLES, WORK_STATUS,
 } from '@/lib/constants';
 import { PART_AREAS, type PartArea } from '@/lib/participation';
 import { PrintButton } from '@/components/print-button';
@@ -15,6 +15,9 @@ import { RegistrationSlip, type SlipData } from '@/components/registration-slip'
 import { yearsLabel, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
 type Absence = { on_date: string; area: PartArea; label: string; status: 'absent' | 'half' };
+
+const progLabels = (rows: { program: string; status: string }[], keep: (s: string) => boolean) =>
+  rows.filter((r) => keep(r.status) && r.program in PROGRAMS).map((r) => PROGRAMS[r.program as ProgramCode].label).join('፣ ');
 
 export default async function MemberDetail({
   params,
@@ -29,7 +32,7 @@ export default async function MemberDetail({
   const supabase = await createClient();
 
   const [{ data: m }, { data: att }, { data: ageGroups }, { data: history }] = await Promise.all([
-    supabase.from('members').select('*, member_departments(dept)').eq('id', id).maybeSingle(),
+    supabase.from('members').select('*, member_departments(dept), member_programs(program, status)').eq('id', id).maybeSingle(),
     supabase.rpc('member_absences', { p_member: id, p_limit: 300 }),
     supabase.from('age_groups').select('code, name'),
     supabase.rpc('member_history_count', { p_member: id }),
@@ -95,7 +98,11 @@ export default async function MemberDetail({
         ['ሁኔታ', WORK_STATUS[m.work_status as keyof typeof WORK_STATUS] ?? ''],
         ...work.map((w, i): [string, string] => [`ሥራ ${i + 1}`, `${[w.field, w.workplace].filter(Boolean).join(' · ')} ${yearsLabel(w)}`]),
       ] },
-      { title: 'ዝንባሌ', rows: [['ማገልገል የሚፈልጉበት ክፍል', m.member_departments.map((d: { dept: string }) => DEPT_NAME[d.dept]).join('፣ ')]] },
+      { title: 'ዝንባሌና ተሳትፎ', rows: [
+        ['ማገልገል የሚፈልጉበት ክፍል', m.member_departments.map((d: { dept: string }) => DEPT_NAME[d.dept]).join('፣ ')],
+        ['መሳተፍ የመረጡት', progLabels(m.member_programs, (s) => s !== 'declined')],
+        ['ያልመረጡት', progLabels(m.member_programs, (s) => s === 'declined')],
+      ] },
     ],
   };
   const evidence = [

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CHURCH_NAME, DEPARTMENTS, SCHOOL_NAME, SCHOOL_NAME_EN } from '@/lib/constants';
+import { CHURCH_NAME, DEPARTMENTS, EVENT_KINDS, PLATFORMS, SCHOOL_NAME, SCHOOL_NAME_EN, type Platform } from '@/lib/constants';
 import { PublicHeader } from '@/components/public-header';
 import { SocialButtons } from '@/components/social-buttons';
 import { ScrollReveal } from '@/components/scroll-reveal';
@@ -28,13 +28,21 @@ export default async function Home() {
   const [{ data }, { data: photos }, { data: week }, { data: social }, { data: upcoming }, { data: regOpen }] = await Promise.all([
     supabase.from('site_settings').select(SITE_TEXT_COLUMNS).maybeSingle(),
     supabase.from('event_photos').select('id, caption, image_path').order('created_at', { ascending: false }).limit(20),
-    supabase.from('events').select('id, title, event_date, event_time').eq('status', 'approved')
+    supabase.from('events').select('id, title, event_date, event_time, kind, place, mode, platform').eq('status', 'approved')
       .gte('event_date', today).lte('event_date', addDays(today, 7)).order('event_date').order('event_time'),
     supabase.from('social_links').select('id, platform, url, label, sort').order('sort').order('created_at'),
     supabase.from('events').select('id, title, event_date, event_time').eq('status', 'approved')
       .gt('event_date', addDays(today, 7)).order('event_date').order('event_time').limit(1),
     supabase.rpc('registration_is_open'),
   ]);
+  // Online links: only for a signed-in member or staff (the public role cannot read them).
+  const { data: claims } = await supabase.auth.getClaims();
+  const onlineIds = (week ?? []).filter((e) => e.mode === 'online').map((e) => e.id);
+  const joinLinks = new Map<string, string>();
+  if (claims?.claims?.sub && onlineIds.length) {
+    const { data: l } = await supabase.from('events').select('id, link').in('id', onlineIds);
+    for (const r of l ?? []) if (r.link) joinLinks.set(r.id, r.link);
+  }
   const tomorrow = addDays(today, 1);
   const shortDay = (d: string) => { const e = isoToEc(d); return `${WEEKDAYS_AM[weekdayOf(d)]}፣ ${EC_MONTHS[e.month - 1]} ${e.day}`; };
   const dayTag = (d: string) => (d === today ? 'ዛሬ' : d === tomorrow ? 'ነገ' : null);
@@ -232,7 +240,14 @@ export default async function Home() {
                         {tag ? <span className="day-tag">{tag}</span> : <span className="small">{shortDay(e.event_date)}</span>}
                         <span dir="ltr">{e.event_time.slice(0, 5)}</span>
                       </div>
-                      <b>{e.title}</b>
+                      <b>{e.kind ? `${EVENT_KINDS[e.kind]}፦ ` : ''}{e.title}</b>
+                      {(e.mode === 'online' || e.place) && (
+                        <span className="week-where">
+                          {e.mode === 'online'
+                            ? <>💻 {PLATFORMS[e.platform as Platform] ?? 'ኦንላይን'}{joinLinks.get(e.id) && <> · <a href={joinLinks.get(e.id)!} target="_blank" rel="noopener noreferrer">ተቀላቀል ↗</a></>}</>
+                            : <>📍 {e.place}</>}
+                        </span>
+                      )}
                       {i === 0 && !tag && <span className="small next-label">ቀጣይ</span>}
                     </li>
                   );

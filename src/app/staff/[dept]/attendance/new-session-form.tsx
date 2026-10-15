@@ -2,6 +2,7 @@
 import { EcDatePicker } from '@/components/ec-date-picker';
 import { SESSION_TYPES, type SessionType } from '@/lib/constants';
 import { todayIsoAddis } from '@/lib/ethiopian-calendar';
+import { DeliveryFields } from '@/components/delivery-fields';
 
 export function NewSessionForm({ dept, types }: { dept: string; types: SessionType[] }) {
   return (
@@ -24,6 +25,7 @@ export function NewSessionForm({ dept, types }: { dept: string; types: SessionTy
         <label htmlFor="time">ሰዓት</label>
         <input id="time" name="time" type="time" />
       </div>
+      {types.some((t) => t !== 'mezmur') && <DeliveryFields idPrefix="ns" />}
       <button className="btn">+ ክትትል ጨምር</button>
     </form>
   );

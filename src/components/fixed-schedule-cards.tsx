@@ -1,5 +1,6 @@
 import { formatEc } from '@/lib/ethiopian-calendar';
 import type { FixedSchedule, WerebEvent } from '@/lib/schedules';
+import { DeliveryBadge } from './delivery-badge';
 
 /** Public cards: weekly fixed schedules and dated (approved) sessions. */
 export function ScheduleCards({ fixed, events = [], title }: { fixed: FixedSchedule[]; events?: WerebEvent[]; title: string }) {
@@ -14,6 +15,7 @@ export function ScheduleCards({ fixed, events = [], title }: { fixed: FixedSched
             <b>{f.title}</b>
             <span>{f.day_text}{f.time_text ? ` · ${f.time_text}` : ''}</span>
             {f.place && <span className="small muted">📍 {f.place}</span>}
+            <DeliveryBadge d={f} showLink={!!f.link} />
             {f.note && <span className="small muted">{f.note}</span>}
           </div>
         ))}
@@ -23,6 +25,7 @@ export function ScheduleCards({ fixed, events = [], title }: { fixed: FixedSched
             <b>{e.title}</b>
             <span>{formatEc(e.event_date, { weekday: true })} · <span dir="ltr">{e.event_time.slice(0, 5)}</span></span>
             {e.place && <span className="small muted">📍 {e.place}</span>}
+            <DeliveryBadge d={e} showLink={!!e.link} />
           </div>
         ))}
       </div>

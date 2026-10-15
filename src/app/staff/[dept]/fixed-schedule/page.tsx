@@ -7,6 +7,8 @@ import { PopForm } from '@/components/pop-form';
 import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { formatEc } from '@/lib/ethiopian-calendar';
+import { DeliveryFields } from '@/components/delivery-fields';
+import { DeliveryBadge } from '@/components/delivery-badge';
 
 const DEPTS = ['mezmur'];
 
@@ -43,6 +45,7 @@ function Fields({ dept, f }: { dept: string; f?: FixedSchedule }) {
           <label htmlFor={`note-${k}`}>ማስታወሻ</label>
           <input id={`note-${k}`} name="note" defaultValue={f?.note ?? ''} />
         </div>
+        <DeliveryFields initial={f} idPrefix={`fx-${k}`} />
       </div>
     </>
   );
@@ -53,7 +56,7 @@ export default async function FixedSchedulePage({ params }: { params: Promise<{ 
   const { dept } = await params;
   if (!DEPTS.includes(dept)) notFound();
   const supabase = await createClient();
-  const [rows, wereb] = await Promise.all([fixedSchedules(supabase, { dept }), upcomingWereb(supabase)]);
+  const [rows, wereb] = await Promise.all([fixedSchedules(supabase, { dept, withLink: true }), upcomingWereb(supabase)]);
 
   return (
     <>
@@ -71,7 +74,7 @@ export default async function FixedSchedulePage({ params }: { params: Promise<{ 
               <tr key={f.id}>
                 <td className="small">{FIXED_KINDS[f.kind]}</td>
                 <td><b>{f.title}</b>{f.note && <div className="small muted">{f.note}</div>}</td>
-                <td>{f.day_text}</td><td>{f.time_text ?? '—'}</td><td>{f.place ?? '—'}</td>
+                <td>{f.day_text}</td><td>{f.time_text ?? '—'}</td><td>{f.place ?? '—'}<div><DeliveryBadge d={f} /></div></td>
                 <td className="no-print">
                   <div className="btn-row">
                     <details className="pop">

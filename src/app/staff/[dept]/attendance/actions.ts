@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireStaff, canAccess } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
+import { parseDelivery } from '@/lib/delivery';
 import { SESSION_TYPES, type AttendanceStatus, type SessionType } from '@/lib/constants';
 
 const VALID: AttendanceStatus[] = ['absent', 'present', 'half'];
@@ -16,6 +17,7 @@ export async function createSession(input: {
   date: string;
   time: string | null;
   title?: string | null;
+  delivery?: { mode: string; platform: string | null; link: string | null };
   statuses: Record<string, string>;
 }): Promise<SaveResult> {
   const staff = await requireStaff();
@@ -35,7 +37,12 @@ export async function createSession(input: {
     return { error: error.message };
   }
   const title = (input.title ?? '').trim().slice(0, 160);
-  if (title) await supabase.from('attendance_sessions').update({ title }).eq('id', data as string);
+  // was it held online or at the church?
+  const fd = new FormData();
+  if (input.delivery) for (const [k, v] of Object.entries(input.delivery)) if (v) fd.set(k, v);
+  const dl = parseDelivery(fd);
+  const extra = { ...(title ? { title } : {}), ...('error' in dl ? {} : dl) };
+  if (Object.keys(extra).length) await supabase.from('attendance_sessions').update(extra).eq('id', data as string);
   revalidatePath('/staff', 'layout');
   // Client navigates + refreshes so the list and counts are fresh immediately.
   return { redirectTo: `/staff/${meta.dept}/attendance/${data}?saved=1` };

@@ -72,9 +72,9 @@ export default async function Classes({ params, searchParams }: {
             </li>
           )}
           <li>
-            <ActionButton action={enrollAllMembers.bind(null, year.id)} label="አዲስ አባላትን አስገባ" className="btn sm secondary"
-              confirmText={`በ${year.ec_year} ዓ.ም ያልገቡ ንቁ አባላት ሁሉ (ያልተመደቡ ሆነው) ይግቡ?`} />
-            <span className="small muted"> ገና ያልገቡ ንቁ አባላትን ያለ ክፍል ያስገባል።</span>
+            <ActionButton action={enrollAllMembers.bind(null, year.id)} label="ኮርስ የሚወስዱትን አስገባ" className="btn sm secondary"
+              confirmText={`ኮርስ የመረጡና በተሳታፊዎች የተጨመሩ፣ በ${year.ec_year} ዓ.ም ገና ያልገቡ አባላት (ያልተመደቡ ሆነው) ይግቡ?`} />
+            <span className="small muted"> ኮርስ የሚወስዱ (በተሳታፊዎች የተጨመሩ) ገና ያልገቡትን ያለ ክፍል ያስገባል።</span>
           </li>
           <li><span className="small">ከታች ተማሪዎችን ምረጥ → <b>መድብ / ቀይር</b> ወይም <b>⬆ ወደ ቀጣይ ክፍል አሳልፍ</b> ምረጥ → <b>ለተመረጡት ተግብር</b>። ለአንድ ተማሪ ብቻ በረድፉ ላይ ያለውን <b>⬆ አሳልፍ</b> ይጫኑ።</span></li>
         </ol>

@@ -7,13 +7,17 @@ import {
 import { ActionButton } from '@/components/action-button';
 import { enrollSelf } from '@/lib/actions/student-auth';
 import { ownPhoto } from '@/lib/member-photo';
-import { DEPT_NAME } from '@/lib/constants';
+import { DEPT_NAME, EVENT_KINDS, type Delivery } from '@/lib/constants';
+import { DeliveryBadge } from '@/components/delivery-badge';
+import { fixedSchedules } from '@/lib/schedules';
+import { dayNames } from '@/components/day-checks';
 import { ecToIso, formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import { PART_AREAS, bandOf, loadBands, memberParticipation, overall, type PartArea } from '@/lib/participation';
 import { BandLegend, ParticipationView } from '@/components/participation-view';
 import { DutyPill, type DutyStatus } from '@/components/duty-table';
 
 type Duty = { id: string; dept: string; duty: string; duty_date: string; occasion: string; status: DutyStatus };
+const addDaysIso = (iso: string, n: number) => { const d = new Date(`${iso}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 type Absence = { on_date: string; area: PartArea; label: string; status: 'absent' | 'half' };
 
 
@@ -49,6 +53,28 @@ export default async function StudentHome() {
   ]);
   const semesters = (semData ?? []) as Semester[];
   const classLevel = (enr as { class_level: string | null } | null)?.class_level ?? null;
+
+  // This week's schedule for what the member takes part in (with the join link when online).
+  const { data: myProgs } = await supabase.from('member_programs').select('program, status').eq('member_id', me.memberId);
+  const takes = (p: string) => (myProgs ?? []).some((x) => x.program === p && x.status === 'active');
+  const [{ data: weekEvents }, fixed, { data: abnet }, { data: myCourses }] = await Promise.all([
+    supabase.from('events').select('id, title, event_date, event_time, kind, place, mode, platform, link').eq('status', 'approved')
+      .gte('event_date', today).lte('event_date', addDaysIso(today, 7)).order('event_date').order('event_time'),
+    takes('mezmur') ? fixedSchedules(supabase, { dept: 'mezmur', withLink: true }) : Promise.resolve([]),
+    takes('abnet') ? supabase.from('abnet_sessions').select('id, subject, teacher, day_text, time_text, mode, platform, link') : Promise.resolve({ data: [] }),
+    classLevel && year
+      ? supabase.from('course_offerings').select('id, name, days, time_text, mode, platform, link, semesters!inner(is_active, year_id)')
+          .eq('class_level', classLevel).eq('semesters.year_id', year.id).eq('semesters.is_active', true)
+      : Promise.resolve({ data: [] }),
+  ]);
+  type Item = { key: string; title: string; when: string; d: Partial<Delivery>; place?: string | null };
+  const schedule: Item[] = [
+    ...(weekEvents ?? []).filter((e) => !e.kind || e.kind === 'meeting' || (e.kind === 'wereb' ? takes('mezmur') : takes(e.kind)))
+      .map((e) => ({ key: e.id, title: `${e.kind ? `${EVENT_KINDS[e.kind]}፦ ` : ''}${e.title}`, when: `${formatEc(e.event_date, { weekday: true })} · ${e.event_time.slice(0, 5)}`, d: e as Partial<Delivery>, place: e.place })),
+    ...(myCourses ?? []).map((c) => ({ key: c.id, title: `ኮርስ፦ ${c.name}`, when: [c.days?.length ? dayNames(c.days) : '', c.time_text].filter(Boolean).join(' · ') || 'ቋሚ', d: c as Partial<Delivery> })),
+    ...(abnet ?? []).map((a) => ({ key: a.id, title: `አብነት፦ ${a.subject ?? ''}`, when: [a.day_text, a.time_text].filter(Boolean).join(' · '), d: a as Partial<Delivery> })),
+    ...fixed.map((f) => ({ key: f.id, title: f.title, when: [f.day_text, f.time_text].filter(Boolean).join(' · '), d: f, place: f.place })),
+  ];
 
   const results = classLevel
     ? await Promise.all(semesters.map(async (s) => {
@@ -89,6 +115,20 @@ export default async function StudentHome() {
           <h2 className="section" style={{ marginTop: 0 }}>የእኔ ተሳትፎ — {ecYear} ዓ.ም</h2>
           <ParticipationView data={part} bands={bands} compact />
           <BandLegend bands={bands} />
+        </section>
+
+        <section className="card">
+          <h2 className="section" style={{ marginTop: 0 }}>የእኔ መርሐ ግብሮች</h2>
+          {schedule.length === 0 ? <p className="muted small">በዚህ ሳምንት የተያዘ መርሐ ግብር የለም።</p> : (
+            <ul className="me-list">
+              {schedule.map((x) => (
+                <li key={x.key}>
+                  <span><b>{x.title}</b><br /><span className="small muted">{x.when}{x.place ? ` · 📍 ${x.place}` : ''}</span></span>
+                  <DeliveryBadge d={x.d} />
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="card">

@@ -1,4 +1,5 @@
 'use server';
+import { parseDelivery } from '@/lib/delivery';
 import { revalidatePath } from 'next/cache';
 import { requireStaff } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -38,6 +39,8 @@ export async function saveAbnet(_: FormState, fd: FormData): Promise<FormState> 
   if (!day_text) return { error: 'ቀን ያስገቡ።' };
   if (!time_text) return { error: 'ሰዐት ያስገቡ።' };
   if (!teacher) return { error: 'መምህር ያስገቡ።' };
+  const dl = parseDelivery(fd);
+  if ('error' in dl) return dl;
   const upload = (k: string) => { const v = text(fd, `${k}_path`); return v.startsWith('abnet/') ? v : undefined; };
   const audio = upload('audio') ?? (fd.get('remove_audio') === 'on' ? null : undefined);
   const file = upload('file') ?? (fd.get('remove_file') === 'on' ? null : undefined);
@@ -46,7 +49,7 @@ export async function saveAbnet(_: FormState, fd: FormData): Promise<FormState> 
     ? await supabase.from('abnet_sessions').select('audio_path, file_path').eq('id', id).maybeSingle()
     : { data: null };
   const row = {
-    subject, day_text, time_text, teacher,
+    subject, day_text, time_text, teacher, ...dl,
     ...(audio !== undefined ? { audio_path: audio } : {}), ...(file !== undefined ? { file_path: file } : {}),
   };
   const res = await save('abnet_sessions', id, row, 'ተጨምሯል።');

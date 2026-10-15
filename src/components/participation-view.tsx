@@ -1,10 +1,12 @@
 import { AREA_UNIT, PART_AREAS, PART_AREA_KEYS, bandOf, overall, type Bands, type PartArea, type PartCell } from '@/lib/participation';
 
 /** One member's participation per area: bar, %, and the band HR set (በጣም ጥሩ / ጥሩ / ደካማ). */
-export function ParticipationView({ data, bands, showAll = false, compact = false }: {
+export function ParticipationView({ data, bands, showAll = false, compact = false, declined = [] }: {
   data: Partial<Record<PartArea, PartCell>>; bands: Bands; showAll?: boolean; compact?: boolean;
+  /** areas the member chose not to take part in — shown as “አልመረጡም” */
+  declined?: PartArea[];
 }) {
-  const areas = PART_AREA_KEYS.filter((a) => showAll || data[a]);
+  const areas = PART_AREA_KEYS.filter((a) => showAll || data[a] || declined.includes(a));
   const all = overall(data);
   const allBand = bandOf(all, bands);
   if (areas.length === 0) return <p className="muted small">እስካሁን የተመዘገበ ተሳትፎ የለም።</p>;
@@ -18,7 +20,7 @@ export function ParticipationView({ data, bands, showAll = false, compact = fals
             <span className="part-name">{PART_AREAS[a]}</span>
             <span className="part-bar" aria-hidden><i className={band ? `b-${band.key}` : ''} style={{ width: `${c?.pct ?? 0}%` }} /></span>
             <span className="part-pct">{c?.pct ?? '—'}{c?.pct !== null && c?.pct !== undefined ? '%' : ''}</span>
-            <span className="part-band">{band ? <span className={`band b-${band.key}`}>{band.label}</span> : <span className="small muted">አይሳተፍም</span>}</span>
+            <span className="part-band">{band ? <span className={`band b-${band.key}`}>{band.label}</span> : <span className="small muted">{declined.includes(a) && !c ? 'አልመረጡም' : 'አይሳተፍም'}</span>}</span>
             {!compact && (
               <span className="part-count small muted">
                 {c ? `${fmt(c.attended)} / ${c.total} ${AREA_UNIT[a]}${c.pending ? ` · ${c.pending} ያልተረጋገጠ` : ''}` : ''}

@@ -11,7 +11,7 @@ export default async function ReviewApplication({ params }: { params: Promise<{ 
   const { dept, id } = await params;
   if (dept !== 'hr') notFound();
   const supabase = await createClient();
-  const { data: a } = await supabase.from('member_applications').select('id, reg_no, data, depts, status, created_at').eq('id', id).maybeSingle();
+  const { data: a } = await supabase.from('member_applications').select('id, reg_no, data, depts, programs, status, created_at').eq('id', id).maybeSingle();
   if (!a) notFound();
   const d = a.data as MemberInitial;
   const photo_url = d.photo_path
@@ -24,7 +24,7 @@ export default async function ReviewApplication({ params }: { params: Promise<{ 
       <p className="muted small">ምዝገባ ቁ. <b dir="ltr">{a.reg_no ?? '—'}</b> · የቀረበው {formatEc(a.created_at)}። ሲጸድቅ አባሉ ይህንኑ ቁጥር ይይዛል፤ በምዝገባ ወቅት በፈጠረው ኮድም መግባት ይችላል። መረጃውን ያረጋግጡ፣ አስፈላጊ ከሆነ ያስተካክሉ እና “አጽድቅና አባል መዝግብ” ይጫኑ።</p>
       {a.status !== 'pending' ? <div className="alert error">ይህ ማመልከቻ ቀደም ብሎ ተወስኗል።</div> : (
         <>
-          <MemberForm mode="approve" applicationId={a.id} initial={{ ...d, photo_url, depts: a.depts }} />
+          <MemberForm mode="approve" applicationId={a.id} initial={{ ...d, photo_url, depts: a.depts, programs: a.programs ?? null }} />
           <details className="card" style={{ marginTop: 16 }}>
             <summary className="btn sm danger">ውድቅ አድርግ</summary>
             <div style={{ marginTop: 10 }}>

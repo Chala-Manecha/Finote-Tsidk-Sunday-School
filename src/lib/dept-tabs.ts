@@ -24,6 +24,7 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   mezmur: [
     { slug: 'attendance', label: 'ክትትል መያዝ', ready: true },
+    { slug: 'participants', label: 'ተሳታፊዎች', ready: true },
     { slug: 'fixed-schedule', label: 'ቋሚ መርሐ ግብር', ready: true },
     { slug: 'songs', label: 'መዝሙራት', ready: true },
     { slug: 'wereb', label: 'ወረብ', ready: true },
@@ -36,6 +37,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'overview', label: 'አጠቃላይ አቴንዳንስ', ready: true },
     { slug: 'attendance', label: 'ስብሰባ ክትትል መያዝ', ready: true },
     { slug: 'duty', label: 'አባል መድብ', ready: true },
+    { slug: 'participants', label: 'የምደባ ተሳታፊዎች', ready: true },
     { slug: 'all-duties', label: 'ሁሉም ምደባዎች', ready: true },
     { slug: 'departures', label: 'መልቀቂያ', ready: true },
     { slug: 'leadership', label: 'የክፍላት አመራሮች', ready: true },
@@ -69,6 +71,8 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   education: [
     { slug: 'academic', label: 'የትምህርት ዘመን', ready: true },
+    { slug: 'participants', label: 'ተሳታፊዎች (ኮርስና አብነት)', ready: true },
+    { slug: 'online-exams', label: 'ኦንላይን ፈተናዎች', ready: true },
     { slug: 'classes', label: 'ክፍሎችና ተማሪዎች', ready: true },
     { slug: 'courses', label: 'ኮርሶችና መምህራን', ready: true },
     { slug: 'results', label: 'የተማሪ ውጤት', ready: true },
@@ -99,8 +103,8 @@ const OFFICE_GROUPS: [string, string[]][] = [
 ];
 
 const EDUCATION_GROUPS: [string, string[]][] = [
-  ['የትምህርት ዘመን', ['academic', 'classes', 'courses']],
-  ['ውጤት', ['results', 'exams']],
+  ['የትምህርት ዘመን', ['academic', 'participants', 'classes', 'courses']],
+  ['ውጤትና ፈተና', ['results', 'online-exams', 'exams']],
   ['አብነትና ወረብ', ['abnet', 'wereb-admin']],
   ['የክፍሉ', ['members', 'duty', 'property', 'money', 'request-event', 'feedback']],
 ];
@@ -120,7 +124,7 @@ const FINANCE_GROUPS: [string, string[]][] = [
 const HR_GROUPS: [string, string[]][] = [
   ['ምዝገባ', ['applications', 'members', 'student-accounts', 'age-groups']],
   ['ክትትል', ['overview', 'attendance', 'lost-members', 'departures']],
-  ['ምደባና አመራር', ['duty', 'all-duties', 'leadership']],
+  ['ምደባና አመራር', ['duty', 'participants', 'all-duties', 'leadership']],
   ['የክፍሉ', ['property', 'money', 'request-event', 'feedback']],
 ];
 const GROUPS: Partial<Record<DeptCode, [string, string[]][]>> = { office: OFFICE_GROUPS, education: EDUCATION_GROUPS, hr: HR_GROUPS, audit: AUDIT_GROUPS, finance: FINANCE_GROUPS };

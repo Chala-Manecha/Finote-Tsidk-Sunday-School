@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { requireStaff, canAccess } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { FIXED_KINDS } from '@/lib/schedules';
+import { parseDelivery } from '@/lib/delivery';
 
 export type FormState = { error?: string; ok?: string };
 
@@ -21,6 +22,9 @@ export async function saveFixedSchedule(_: FormState, fd: FormData): Promise<For
   const t = (k: string) => String(fd.get(k) ?? '').trim() || null;
   const row = { dept, kind, title: t('title'), day_text: t('day_text'), time_text: t('time_text'), place: t('place'), note: t('note') };
   if (!(kind in FIXED_KINDS)) return { error: 'አይነቱን ይምረጡ።' };
+  const dl = parseDelivery(fd);
+  if ('error' in dl) return dl;
+  Object.assign(row, dl);
   if (!row.title) return { error: 'ርዕስ ያስገቡ።' };
   if (!row.day_text) return { error: 'ቀኑን ያስገቡ (ለምሳሌ፦ ዘወትር ቅዳሜ)።' };
   const supabase = await createClient();

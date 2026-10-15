@@ -61,7 +61,7 @@ export async function submitApplication(_: ApplicationState, fd: FormData): Prom
   if (uErr || !user.user) return { error: 'መላክ አልተቻለም። እንደገና ይሞክሩ።' };
 
   const { data: row, error } = await admin.from('member_applications').insert({
-    data: parsed.member, depts: parsed.depts, full_name: parsed.fullName, phone: parsed.phone,
+    data: parsed.member, depts: parsed.depts, programs: parsed.programs ?? [], full_name: parsed.fullName, phone: parsed.phone,
     reg_key: key, auth_user_id: user.user.id,
   }).select('id, reg_no').single();
   if (error || !row) {

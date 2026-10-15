@@ -9,7 +9,8 @@ import { termLabel, type Term } from '@/lib/periods';
 import { DocHeader, DocSigns, QrCode, verifyUrl } from '@/components/doc-sheet';
 import { DocPrintButton } from '@/components/doc-print-button';
 import { markCertificatePrinted } from '@/lib/actions/receipts';
-import { loadBands, memberParticipation } from '@/lib/participation';
+import { declinedAreas, loadBands, memberParticipation } from '@/lib/participation';
+import { PROGRAMS, type ProgramCode } from '@/lib/constants';
 import { BandLegend, ParticipationView } from '@/components/participation-view';
 
 type RoleRow = { dept: string; role: LeaderRole; leadership_terms: Term | null };
@@ -31,7 +32,12 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
   ]);
   if (!m) notFound();
   // How active the member was in each area while a member (HR's bands: በጣም ጥሩ / ጥሩ / ደካማ).
-  const [part, bands] = await Promise.all([memberParticipation(supabase, d.member_id, undefined, d.leave_date), loadBands(supabase)]);
+  const [part, bands, { data: progs }] = await Promise.all([
+    memberParticipation(supabase, d.member_id, undefined, d.leave_date), loadBands(supabase),
+    supabase.from('member_programs').select('program, status').eq('member_id', d.member_id),
+  ]);
+  // Programs the member chose not to take part in (shown, so the % is read fairly).
+  const declined = (progs ?? []).filter((p) => p.status === 'declined').map((p) => p.program as ProgramCode);
   const photo = m.photo_path
     ? (await supabase.storage.from('member-docs').createSignedUrl(m.photo_path, 600)).data?.signedUrl
     : null;
@@ -89,8 +95,11 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
         </div>
 
         <h3 className="serif" style={{ marginBottom: 6 }}>የተሳትፎ ማጠቃለያ</h3>
-        <ParticipationView data={part} bands={bands} />
+        <ParticipationView data={part} bands={bands} declined={declinedAreas(declined)} />
         <BandLegend bands={bands} />
+        {declined.length > 0 && (
+          <p className="cert-text small">በራሳቸው ምርጫ ያልተሳተፉባቸው፦ <b>{declined.map((p) => PROGRAMS[p].label).join('፣ ')}</b>።</p>
+        )}
 
         {results.length > 0 && (
           <>

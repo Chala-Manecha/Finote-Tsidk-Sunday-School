@@ -3,6 +3,9 @@ import { MultiSelect } from './multi-select';
 import { ABNET_SUBJECTS } from '@/lib/constants';
 import { ActionButton } from './action-button';
 import { dayNames } from './day-checks';
+import { DeliveryFields } from './delivery-fields';
+import { DeliveryBadge } from './delivery-badge';
+import type { Delivery } from '@/lib/constants';
 import {
   saveAbnet, deleteAbnet,
 } from '@/lib/actions/education';
@@ -13,8 +16,10 @@ export type Abnet = {
   id: string; subjects: string[]; days: number[]; times: string[]; teacher: string;
   subject: string | null; day_text: string | null; time_text: string | null;
   audio_path: string | null; file_path: string | null; audio_url?: string | null; file_url?: string | null;
-};
-export const ABNET_COLS = 'id, subjects, days, times, teacher, subject, day_text, time_text, audio_path, file_path';
+} & Partial<Delivery>;
+export const ABNET_COLS = 'id, subjects, days, times, teacher, subject, day_text, time_text, audio_path, file_path, mode, platform';
+/** staff and signed-in members also read the meeting link */
+export const ABNET_COLS_LINK = `${ABNET_COLS}, link`;
 
 function Edit({ children }: { children: React.ReactNode }) {
   return (
@@ -40,6 +45,7 @@ export function AbnetFields({ a }: { a?: Abnet }) {
         <div className="field"><label>ቀን</label><input name="day_text" required defaultValue={a?.day_text ?? (a?.days?.length ? dayNames(a.days) : '')} placeholder="ለምሳሌ፦ ቅዳሜና እሑድ" /></div>
         <div className="field"><label>ሰዐት</label><input name="time_text" required defaultValue={a?.time_text ?? ''} placeholder="ለምሳሌ፦ ከሰዓት 8:00–10:00" /></div>
         <div className="field"><label>መምህር</label><input name="teacher" required defaultValue={a?.teacher ?? ''} /></div>
+        <DeliveryFields initial={a} idPrefix={`ab-${a?.id ?? 'new'}`} />
         <div className="field">
           <label>ድምፅ (አማራጭ) {a?.audio_path ? '(ለመቀየር ብቻ)' : ''}</label>
           <input name="audio" type="file" accept="audio/*" />
@@ -69,7 +75,7 @@ export function AbnetTable({ rows, editable }: { rows: Abnet[]; editable?: boole
                 {a.file_url && <div><a className="link small" href={a.file_url} target="_blank" rel="noopener noreferrer">📄 ፋይሉን ክፈት</a></div>}
               </td>
               <td>{a.day_text || dayNames(a.days)}</td>
-              <td>{a.time_text || a.times.join('፣ ')}</td>
+              <td>{a.time_text || a.times.join('፣ ')}<div><DeliveryBadge d={a} showLink={!!a.link} compact /></div></td>
               <td>{a.teacher}</td>
               {editable && (
                 <td>

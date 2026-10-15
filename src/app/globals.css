@@ -1317,11 +1317,10 @@ main.page { min-height: 0; }
 .me-stats b { font-size: 1.35rem; } .me-stats b small { font-size: .8rem; opacity: .8; }
 .me-stats span { font-size: .76rem; opacity: .9; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .me-stats em { font-style: normal; }
-.me-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 14px; align-items: start; }
+.me-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
 .me-list { list-style: none; margin: 0; padding: 0; display: grid; }
 .me-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .88rem; }
 .me-list li:last-child { border-bottom: none; }
-@media (max-width: 1000px) { .me-grid { grid-template-columns: 1fr 1fr; } .me-grid > :first-child { grid-column: 1 / -1; } }
 @media (max-width: 700px) {
   .me-hero { grid-template-columns: auto 1fr; padding: 16px; }
   .me-photo { width: 76px; height: 76px; }
@@ -1337,3 +1336,21 @@ main.page { min-height: 0; }
 .teach-card .nums div { background: var(--soft); border-radius: 8px; padding: 6px; text-align: center; font-size: .72rem; color: var(--muted); }
 .teach-card .nums b { display: block; font-size: 1.05rem; color: var(--ink); }
 .st-draft { border-top-color: #C99A2E; } .st-submitted { border-top-color: #456882; } .st-approved { border-top-color: #2E6B50; }
+
+/* ---------- Programs a member chooses ---------- */
+.program-pick { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px 12px; margin: 14px 0 0; max-width: 720px; }
+.program-pick legend { font-weight: 700; font-size: .9rem; padding: 0 6px; }
+.program-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.program-opt { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); cursor: pointer; font-size: .9rem; }
+.program-opt:has(input:checked) { border-color: var(--gold); background: var(--gold-light); font-weight: 600; }
+
+/* ---------- Online / at the church ---------- */
+.delivery-fields { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: flex-start; grid-column: 1 / -1; }
+.delivery-fields .seg label { cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.delivery-fields .seg input { position: absolute; opacity: 0; pointer-events: none; }
+.dlv { display: inline-flex; align-items: center; gap: 4px; font-size: .78rem; color: var(--muted); white-space: nowrap; }
+.dlv.online { color: #1f5a8c; font-weight: 600; }
+.dlv a { color: inherit; text-decoration: underline; }
+.seg label { padding: 5px 10px; border-radius: 8px; font-size: .8rem; position: relative; }
+.seg label.on { background: #1F639C; color: #fff; }
+.week-where { display: block; font-size: .76rem; opacity: .85; margin-top: 2px; } .week-where a { color: inherit; text-decoration: underline; }

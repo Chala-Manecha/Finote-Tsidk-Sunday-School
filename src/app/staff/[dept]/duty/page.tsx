@@ -31,7 +31,9 @@ export default async function DeptDutyPage({
   if (view === 'confirm') q = q.lte('duty_date', today).is('status', null);
   const [{ data: rows }, { data: members }, { count: waiting }] = await Promise.all([
     q.returns<DutyRow[]>(),
-    supabase.from('members').select('id, full_name').eq('is_active', true).order('full_name'),
+    // only members who chose “የተለያዩ አገልግሎቶች” and were added by ሰው ሃብት
+    supabase.from('members').select('id, full_name, member_programs!inner(program, status)').eq('is_active', true)
+      .eq('member_programs.program', 'duty').eq('member_programs.status', 'active').order('full_name'),
     supabase.from('duty_assignments').select('id', { count: 'exact', head: true }).eq('dept', dept).lte('duty_date', today).is('status', null),
   ]);
   const base = `/staff/${dept}/duty`;
@@ -44,7 +46,7 @@ export default async function DeptDutyPage({
         <h2 className="section" style={{ margin: 0 }}>አባል መድብ</h2>
         <details className="pop no-print">
           <summary className="btn sm green">+ አዲስ ምደባ</summary>
-          <div className="pop-body"><DutyForm dept={dept} members={members ?? []} plain /></div>
+          <div className="pop-body"><DutyForm dept={dept} members={(members ?? []).map((m) => ({ id: m.id, full_name: m.full_name }))} plain /></div>
         </details>
       </div>
       <SegLinks current={view} items={[
@@ -63,7 +65,7 @@ export default async function DeptDutyPage({
         <span style={{ flex: 1 }} />
         <PrintButton />
       </form>
-      <DutyTable rows={shown} members={members ?? []} editableDept={dept} />
+      <DutyTable rows={shown} members={(members ?? []).map((m) => ({ id: m.id, full_name: m.full_name }))} editableDept={dept} />
     </>
   );
 }

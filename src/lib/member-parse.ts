@@ -1,5 +1,5 @@
 import 'server-only';
-import { isDeptCode, SEX, WORK_STATUS, TITLES, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_TYPE } from '@/lib/constants';
+import { isDeptCode, isProgram, SEX, WORK_STATUS, TITLES, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_TYPE } from '@/lib/constants';
 import { cleanEducation, cleanWork } from '@/lib/member-details';
 
 export const DUPLICATE_NAME_MSG = 'በቅድሚያ ተመዝግበዋል። እባክዎ ስምዎትን በትክክል መሙላትዎን ያረጋግጡ!';
@@ -14,7 +14,7 @@ const oneOf = <T extends Record<string, string>>(v: string | null, map: T) =>
 /** Uploaded files arrive as storage paths; only our own folders are accepted. */
 const docPath = (v: string | null) => (v && /^(members|applications)\//.test(v) ? v : null);
 
-export type ParsedMember = { member: Record<string, unknown>; depts: string[]; fullName: string; phone: string | null };
+export type ParsedMember = { member: Record<string, unknown>; depts: string[]; fullName: string; phone: string | null; programs: string[] | null };
 
 /** Reads and checks the member form. `isNew` makes the registration-only fields required. */
 export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { error: string } {
@@ -72,6 +72,8 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
   const depts = fd.getAll('depts').map(String).filter(isDeptCode);
   if (depts.length > 2) return { error: 'ቢበዛ 2 ክፍሎች ብቻ መምረጥ ይቻላል።' };
   const phone = str(fd, 'phone');
+  // null = the form had no program question (older forms); [] = chose none (all declined)
+  const programs = fd.get('programs_asked') === '1' ? fd.getAll('programs').map(String).filter(isProgram) : null;
 
   const member = {
     full_name: fullName,
@@ -116,5 +118,5 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
     education,
     work,
   };
-  return { member, depts, fullName, phone };
+  return { member, depts, fullName, phone, programs };
 }
