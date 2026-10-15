@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireMember } from '@/lib/member-auth';
 import { classLabel } from '@/lib/education';
 import {
-  COMPONENT_WEIGHT, EXAM_COLS, EXAM_COMPONENTS, EXAM_STATUS, QUESTION_COLS, QUESTION_KINDS,
+  COMPONENT_WEIGHT, EXAM_COLS, EXAM_COMPONENTS, EXAM_STATUS, LETTERS, QUESTION_COLS, QUESTION_KINDS,
   answerText, examWindow, fmtAddis, givenText, totalPoints, type Exam, type Question,
 } from '@/lib/exams';
 import { deleteExam, deleteQuestion, moveQuestion, pushResults, saveExam, saveManualPoints, setExamStatus } from '@/lib/actions/online-exams';
@@ -12,7 +12,7 @@ import { ActionButton } from '@/components/action-button';
 import { MediaForm } from '@/components/media-form';
 import { ExamMetaFields } from '@/components/exam-meta-fields';
 import { QuestionForm } from '@/components/exam-question-form';
-import { SegLinks } from '@/components/seg-links';
+import { Modal } from '@/components/modal';
 
 type Attempt = {
   id: string; member_id: string; started_at: string; deadline: string; submitted_at: string | null; auto_submitted: boolean;
@@ -45,89 +45,119 @@ export default async function TeacherExam({ params, searchParams }: {
   const weight = sem[COMPONENT_WEIGHT[e.component]];
   const base = `/student/teach/${id}/exams/${examId}`;
 
+  const kinds = (Object.keys(QUESTION_KINDS) as (keyof typeof QUESTION_KINDS)[]).map((k) => [k, qs.filter((q) => q.kind === k).length] as const).filter(([, n]) => n > 0);
+  const w = examWindow(e);
+  const side = (
+    <aside className="exam-side">
+      <div className={`exam-side-status ${e.status}`}>
+        <span className="small">ሁኔታ</span>
+        <b>{EXAM_STATUS[e.status]}</b>
+        <span className="small">
+          {e.status === 'draft' && 'ጥያቄዎቹን ሲጨርሱ ለትምህርት ክፍል ይላኩ።'}
+          {e.status === 'submitted' && 'ትምህርት ክፍል እስኪያጸድቅ ይጠብቁ።'}
+          {e.status === 'rejected' && <>ተመልሷል፦ <i>{e.review_note}</i></>}
+          {e.status === 'approved' && (w === 'upcoming' ? 'በተወሰነው ሰዓት ይከፈታል።' : w === 'open' ? '● አሁን ክፍት ነው።' : 'ተዘግቷል።')}
+        </span>
+      </div>
+      <dl className="exam-facts-list">
+        <div><dt>አይነት</dt><dd>{EXAM_COMPONENTS[e.component]}</dd></div>
+        <div><dt>ኮርስ</dt><dd>{o?.name} · {classLabel(o?.class_level ?? '')}</dd></div>
+        <div><dt>ጊዜ</dt><dd>{e.duration_min} ደቂቃ</dd></div>
+        <div><dt>ይከፈታል</dt><dd>{fmtAddis(e.opens_at, { weekday: true })}</dd></div>
+        <div><dt>ይዘጋል</dt><dd>{fmtAddis(e.closes_at, { weekday: true })}</dd></div>
+        <div><dt>ጥያቄዎች</dt><dd>{qs.length} · {total} ነጥብ</dd></div>
+        <div><dt>ማርክ ሉህ</dt><dd>ከ{weight} (በ{EXAM_COMPONENTS[e.component]})</dd></div>
+      </dl>
+      <div className="exam-side-actions">
+        {editable && <ActionButton action={setExamStatus.bind(null, examId, id, 'submitted')} label="📤 ለትምህርት ክፍል ላክ" className="btn green"
+          confirmText="ከተላከ በኋላ እስኪመለስ ድረስ መቀየር አይቻልም። ይላክ?" />}
+        {e.status === 'submitted' && <ActionButton action={setExamStatus.bind(null, examId, id, 'draft')} label="↩ መልሰህ ውሰድ" className="btn secondary" />}
+        {editable && (
+          <Modal label="⚙ የፈተናውን መረጃ አርም" title="የፈተናው መረጃ" btnClass="btn secondary">
+            <MediaForm action={saveExam} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false}><ExamMetaFields offeringId={id} e={e} /></MediaForm>
+          </Modal>
+        )}
+        <div className="btn-row">
+          <a className="btn sm secondary" href={`${base}/print`} target="_blank" rel="noopener">🖨 ወረቀት</a>
+          <a className="btn sm secondary" href={`${base}/print?key=1`} target="_blank" rel="noopener">🖨 ከመልስ ጋር</a>
+        </div>
+        {editable && <ActionButton action={deleteExam.bind(null, examId, id)} label="ፈተናውን አጥፋ" className="link small neg" confirmText="ፈተናው ከነጥያቄዎቹ ይጥፋ?" />}
+      </div>
+    </aside>
+  );
+
   return (
     <>
-      <Link className="link small" href={`/student/teach/${id}/exams`}>← ኦንላይን ፈተናዎች · {o?.name}</Link>
-      <div className="head-row">
-        <h1 className="title" style={{ margin: 0 }}>{e.title}</h1>
-        <span className="btn-row">
-          <a className="btn sm secondary" href={`${base}/print`} target="_blank" rel="noopener">🖨 የፈተና ወረቀት</a>
-          <a className="btn sm secondary" href={`${base}/print?key=1`} target="_blank" rel="noopener">🖨 ከመልስ ጋር</a>
-        </span>
-      </div>
-      <p className="muted small">
-        {EXAM_COMPONENTS[e.component]} · {o?.name} ({classLabel(o?.class_level ?? '')}) · {qs.length} ጥያቄ · {total} ነጥብ → ወደ ማርክ ሉህ ከ{weight} · {e.duration_min} ደቂቃ ·
-        {' '}{fmtAddis(e.opens_at, { weekday: true })} → {fmtAddis(e.closes_at)}
-      </p>
-
-      <div className={`status-banner ${e.status}`}>
-        <span>
-          <b>{EXAM_STATUS[e.status]}</b>
-          {e.status === 'draft' && ' — ጥያቄዎቹን ሲጨርሱ ለትምህርት ክፍል ያስጸድቁ።'}
-          {e.status === 'submitted' && ' — ትምህርት ክፍል እስኪያጸድቅ ይጠብቁ። ለማስተካከል መልሰው ይውሰዱት።'}
-          {e.status === 'rejected' && <> — ትምህርት ክፍል መልሶታል፦ <i>{e.review_note}</i></>}
-          {e.status === 'approved' && (examWindow(e) === 'upcoming' ? ' — በተወሰነው ሰዓት ለተማሪዎች ይከፈታል።' : examWindow(e) === 'open' ? ' — አሁን ክፍት ነው።' : ' — ተዘግቷል።')}
-        </span>
-        <span className="btn-row">
-          {editable && <ActionButton action={setExamStatus.bind(null, examId, id, 'submitted')} label="📤 ለትምህርት ክፍል ላክ" className="btn sm green"
-            confirmText="ከተላከ በኋላ እስኪመለስ ድረስ መቀየር አይቻልም። ይላክ?" />}
-          {e.status === 'submitted' && <ActionButton action={setExamStatus.bind(null, examId, id, 'draft')} label="↩ መልሰህ ውሰድ" className="btn sm secondary" />}
-          {editable && <ActionButton action={deleteExam.bind(null, examId, id)} label="ፈተናውን አጥፋ" className="btn sm danger" confirmText="ፈተናው ከነጥያቄዎቹ ይጥፋ?" />}
-        </span>
-      </div>
-
-      {e.status === 'approved' && <SegLinks current={view} items={[['questions', `📝 ጥያቄዎች (${qs.length})`, `${base}?v=questions`], ['results', '📊 ውጤትና እርማት', `${base}?v=results`]]} />}
-
-      {view === 'questions' && (
-        <>
-          {editable && (
-            <details className="card fold-card" style={{ marginBottom: 12 }}>
-              <summary><b>⚙ የፈተናው መረጃ</b> <span className="small muted">— ርዕስ፣ አይነት፣ ጊዜ</span></summary>
-              <div style={{ marginTop: 10 }}>
-                <MediaForm action={saveExam} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false}><ExamMetaFields offeringId={id} e={e} /></MediaForm>
-              </div>
-            </details>
-          )}
-          <div className="q-list">
-            {qs.map((q, i) => (
-              <div key={q.id} className="q-item">
-                <div className="q-head">
-                  <span><b>{i + 1}.</b> <span className="pill">{QUESTION_KINDS[q.kind]}</span></span>
-                  <span className="small"><b>{Number(q.points)}</b> ነጥብ</span>
-                </div>
-                <div className="q-prompt">{q.prompt}</div>
-                {q.kind === 'choice' && <ol type="A">{(q.options as string[]).map((t, k) => <li key={k} className={k === Number(q.answer) ? 'ok' : ''}>{t}</li>)}</ol>}
-                {q.kind === 'match' && (
-                  <table className="small" style={{ marginTop: 6 }}>
-                    <tbody>{(q.options as { left: string[]; right: string[] }).left.map((l, k) => <tr key={k}><td>{k + 1}. {l}</td><td>↔ {(q.options as { right: string[] }).right[k]}</td></tr>)}</tbody>
-                  </table>
-                )}
-                {q.kind !== 'choice' && q.kind !== 'match' && <div className="q-key">✓ {answerText(q)}</div>}
-                {editable && (
-                  <div className="btn-row" style={{ marginTop: 8 }}>
-                    <details className="pop">
-                      <summary className="btn xs secondary">አርም</summary>
-                      <div className="pop-body wide"><QuestionForm examId={examId} offeringId={id} q={q} /></div>
-                    </details>
-                    {i > 0 && <ActionButton action={moveQuestion.bind(null, q.id, examId, id, -1)} label="↑" className="btn xs secondary" />}
-                    {i < qs.length - 1 && <ActionButton action={moveQuestion.bind(null, q.id, examId, id, 1)} label="↓" className="btn xs secondary" />}
-                    <ActionButton action={deleteQuestion.bind(null, q.id, examId, id)} label="አጥፋ" className="btn xs danger" confirmText="ጥያቄው ይጥፋ?" />
-                  </div>
-                )}
-              </div>
-            ))}
-            {qs.length === 0 && <p className="muted">እስካሁን ጥያቄ የለም።</p>}
+      <div className="page-bar">
+        <Link className="back-pill" href={`/student/teach/${id}/exams`}>← ፈተናዎች</Link>
+        <h1 className="title" style={{ margin: 0, fontSize: '1.35rem' }}>{e.title}</h1>
+        <span className="spacer" />
+        {e.status === 'approved' && (
+          <div className="seg">
+            <Link className={view === 'questions' ? 'on' : ''} href={`${base}?v=questions`}>📝 ጥያቄዎች ({qs.length})</Link>
+            <Link className={view === 'results' ? 'on' : ''} href={`${base}?v=results`}>📊 ውጤትና እርማት</Link>
           </div>
-          {editable && (
-            <section className="card" style={{ marginTop: 14 }}>
-              <h3 style={{ marginTop: 0 }}>+ አዲስ ጥያቄ</h3>
-              <QuestionForm examId={examId} offeringId={id} />
-            </section>
-          )}
-        </>
-      )}
+        )}
+      </div>
 
-      {view === 'results' && <Results e={e} qs={qs} total={total} weight={weight} offeringId={id} yearId={sem.year_id} classLevel={o?.class_level ?? ''} />}
+      {view === 'questions' ? (
+        <div className="exam-layout">
+          <div className="exam-main">
+            <div className="card-head">
+              <b>ጥያቄዎች</b><span className="count-badge">{qs.length}</span>
+              {kinds.map(([k, n]) => <span key={k} className="pill">{QUESTION_KINDS[k]} {n}</span>)}
+              <span style={{ flex: 1 }} />
+              {editable && (
+                <Modal label="+ ጥያቄ ጨምር" title="አዲስ ጥያቄ" sub={`${e.title} · ጥያቄ ${qs.length + 1}`} size="lg">
+                  <QuestionForm examId={examId} offeringId={id} number={qs.length + 1} />
+                </Modal>
+              )}
+            </div>
+            <div className="q-list">
+              {qs.map((q, i) => (
+                <article key={q.id} className="q-card">
+                  <header>
+                    <span className="q-no">{i + 1}</span>
+                    <span className="pill">{QUESTION_KINDS[q.kind]}</span>
+                    <span className="small muted">{Number(q.points)} ነጥብ</span>
+                    <span style={{ flex: 1 }} />
+                    {editable && (
+                      <span className="q-tools">
+                        <Modal label="✎" title={`ጥያቄ ${i + 1} አርም`} btnClass="icon-btn" size="lg"><QuestionForm examId={examId} offeringId={id} q={q} number={i + 1} /></Modal>
+                        {i > 0 && <ActionButton action={moveQuestion.bind(null, q.id, examId, id, -1)} label="↑" className="icon-btn" />}
+                        {i < qs.length - 1 && <ActionButton action={moveQuestion.bind(null, q.id, examId, id, 1)} label="↓" className="icon-btn" />}
+                        <ActionButton action={deleteQuestion.bind(null, q.id, examId, id)} label="🗑" className="icon-btn danger" confirmText="ጥያቄው ይጥፋ?" />
+                      </span>
+                    )}
+                  </header>
+                  <div className="q-prompt">{q.prompt}</div>
+                  {q.kind === 'choice' && (
+                    <ol className="q-opts">
+                      {(q.options as string[]).map((t, k) => <li key={k} className={k === Number(q.answer) ? 'ok' : ''}><b>{LETTERS[k]}</b>{t}{k === Number(q.answer) && <span aria-label="ትክክል"> ✓</span>}</li>)}
+                    </ol>
+                  )}
+                  {q.kind === 'match' && (
+                    <div className="q-pairs">
+                      {(q.options as { left: string[]; right: string[] }).left.map((l, k) => (
+                        <div key={k}><span>{k + 1}. {l}</span><span aria-hidden>↔</span><span>{(q.options as { right: string[] }).right[k]}</span></div>
+                      ))}
+                    </div>
+                  )}
+                  {(q.kind === 'tf' || q.kind === 'blank') && <div className="q-key">✓ {answerText(q)}</div>}
+                </article>
+              ))}
+              {qs.length === 0 && (
+                <div className="empty-state">
+                  <div aria-hidden>📝</div>
+                  <b>እስካሁን ጥያቄ የለም</b>
+                  <span className="small muted">“+ ጥያቄ ጨምር”ን ተጭነው ምርጫ፣ እውነት/ሐሰት፣ ባዶ ቦታ ወይም አዛምድ ጥያቄዎችን ያስገቡ።</span>
+                </div>
+              )}
+            </div>
+          </div>
+          {side}
+        </div>
+      ) : <Results e={e} qs={qs} total={total} weight={weight} offeringId={id} yearId={sem.year_id} classLevel={o?.class_level ?? ''} />}
     </>
   );
 }

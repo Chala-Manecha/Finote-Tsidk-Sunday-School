@@ -1,12 +1,18 @@
 import { WEEK_ORDER } from '@/lib/constants';
 import { WEEKDAYS_AM } from '@/lib/ethiopian-calendar';
-import { MultiSelect } from './multi-select';
-
-const DAY_OPTIONS = WEEK_ORDER.map((d) => ({ value: String(d), label: WEEKDAYS_AM[d] }));
-
-/** Days of the week as a drop-down of check boxes (values submitted under `name`). */
+/** The week as seven toggle days (ሰኞ … እሑድ); ticked days are submitted under `name`. */
 export function DayChecks({ name, selected = [] }: { name: string; selected?: number[] }) {
-  return <MultiSelect name={name} options={DAY_OPTIONS} defaultValue={(selected ?? []).map(String)} placeholder="ቀን(ናት) ይምረጡ" />;
+  const on = new Set(selected ?? []);
+  return (
+    <div className="week-pick" role="group" aria-label="ቀናት">
+      {WEEK_ORDER.map((d) => (
+        <label key={d} className={d === 0 || d === 6 ? 'we' : ''}>
+          <input type="checkbox" name={name} value={d} defaultChecked={on.has(d)} />
+          <span>{WEEKDAYS_AM[d]}</span>
+        </label>
+      ))}
+    </div>
+  );
 }
 
 export const dayNames = (days: number[] | null | undefined) =>

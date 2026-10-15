@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireStaff, canAccess } from '@/lib/auth';
 import { DEPT_NAME, isDeptCode } from '@/lib/constants';
@@ -50,11 +49,8 @@ export default async function DeptLayout({
           </div>
         </div>
       </div>
-      <div className="crumb no-print">
-        <Link href="/staff">ሁሉም ክፍሎች</Link> › {DEPT_NAME[dept]}
-      </div>
       <div className="dept-tabs">
-        <TabNav dept={dept} tabs={tabsFor(dept)} />
+        <TabNav dept={dept} deptName={DEPT_NAME[dept]} tabs={tabsFor(dept)} />
         <section className="dept-tab-content">{children}</section>
       </div>
     </>

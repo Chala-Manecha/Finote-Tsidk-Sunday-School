@@ -104,7 +104,7 @@ export async function StudentAttendance({ supabase, base, years, semesters, seme
       </div>
       </details>
       <p className="small muted">
-        ክትትሉን የሚይዙት መምህራን ናቸው (በ“የማስተምራቸው ክፍሎች” ገጽ)። ቀይ = ከዝቅተኛው በታች (መደበኛ {semester.min_attendance}% · የሳምንት መጨረሻ {semester.min_attendance_distance}%)።
+        ክትትሉን የሚይዙት መምህራን ናቸው (በ“የማስተምራቸው ክፍሎች” ገጽ)። ቀይ = ከዝቅተኛው በታች (መደበኛ {semester.min_attendance}% · የርቀት {semester.min_attendance_distance}%)።
         ግማሽ መገኘት እንደ መገኘት ይቆጠራል።
       </p>
     </>

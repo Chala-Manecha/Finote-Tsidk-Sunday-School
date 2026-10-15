@@ -928,4 +928,14 @@ select pg_temp.must_fail($q$select link from public.events$q$);
 select pg_temp.must_equal((select (count(*) >= 0)::int from (select id, mode, platform from public.events) e), 1, 'public reads events without the link');
 reset role;
 
+-- ---------- round 15: adding a member to ኮርስ enrolls them in the open year ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select public.set_member_programs('10000000-0000-0000-0000-000000000001', array['course']);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+update public.member_programs set status = 'active' where member_id = '10000000-0000-0000-0000-000000000001' and program = 'course';
+select pg_temp.must_equal((select count(*) from public.enrollments where member_id = '10000000-0000-0000-0000-000000000001' and year_id = '90000000-0000-0000-0000-000000000001' and class_level is null), 1, 'added to course → enrolled without a class');
+reset role;
+
 \echo ALL RLS TESTS PASSED

@@ -13,9 +13,9 @@ export default async function OfficeRosterPage({
   if (dept !== 'office') notFound();
   return (
     <>
-      <h2 className="section" style={{ marginTop: 0 }}>የአባላት ዝርዝር</h2>
+      <div className="page-bar"><h2 className="section" style={{ margin: 0 }}>የአባላት ዝርዝር</h2></div>
       <MemberStats basePath="/staff/office/roster" />
-      <MemberTable basePath="/staff/office/roster" filters={await searchParams} linkToDetail />
+      <MemberTable basePath="/staff/office/roster" filters={await searchParams} linkToDetail withChips />
     </>
   );
 }

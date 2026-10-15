@@ -5,7 +5,8 @@ import { requireMember } from '@/lib/member-auth';
 import { classLabel, semesterLabel } from '@/lib/education';
 import { EXAM_COLS, EXAM_COMPONENTS, EXAM_STATUS, EXAM_STATUS_PILL, examWindow, fmtAddis, totalPoints, type Exam } from '@/lib/exams';
 import { saveExam } from '@/lib/actions/online-exams';
-import { PopForm } from '@/components/pop-form';
+import { Modal } from '@/components/modal';
+import { MediaForm } from '@/components/media-form';
 import { ExamMetaFields } from '@/components/exam-meta-fields';
 
 /** A teacher's online exams for one course. */
@@ -25,14 +26,23 @@ export default async function TeacherExams({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <Link className="link small" href={`/student/teach/${id}`}>← {o?.name}</Link>
-      <div className="head-row">
-        <h1 className="title" style={{ margin: 0 }}>ኦንላይን ፈተናዎች</h1>
-        <PopForm label="+ አዲስ ፈተና" action={saveExam} submitLabel="ፍጠርና ጥያቄ ጨምር"><ExamMetaFields offeringId={id} /></PopForm>
+      <div className="page-bar">
+        <Link className="back-pill" href={`/student/teach/${id}`}>← {o?.name}</Link>
+        <h1 className="title" style={{ margin: 0, fontSize: '1.35rem' }}>ኦንላይን ፈተናዎች</h1>
+        <span className="spacer" />
+        <Modal label="+ አዲስ ፈተና" title="አዲስ ኦንላይን ፈተና" sub={`${o?.name ?? ''} · ${classLabel(o?.class_level ?? '')}`} btnClass="btn green">
+          <MediaForm action={saveExam} submitLabel="ፍጠርና ጥያቄ ጨምር →" card={false}><ExamMetaFields offeringId={id} /></MediaForm>
+        </Modal>
       </div>
       <p className="muted small">{o?.name} · {classLabel(o?.class_level ?? '')} · {semesterLabel(sem)} — ያዘጋጁት ፈተና በትምህርት ክፍል ሲጸድቅ ብቻ ለክፍሉ ተማሪዎች ይከፈታል።</p>
 
-      {rows.length === 0 ? <p className="muted card">እስካሁን ኦንላይን ፈተና አላዘጋጁም።</p> : (
+      {rows.length === 0 ? (
+        <div className="empty-state">
+          <div aria-hidden>🖊</div>
+          <b>እስካሁን ኦንላይን ፈተና አላዘጋጁም</b>
+          <span className="small muted">“+ አዲስ ፈተና” → ጥያቄዎችን ያስገቡ → ለትምህርት ክፍል ይላኩ → ሲጸድቅ በተወሰነው ሰዓት ለተማሪዎች ይከፈታል።</span>
+        </div>
+      ) : (
         <div className="exam-cards">
           {rows.map((e) => {
             const w = examWindow(e);

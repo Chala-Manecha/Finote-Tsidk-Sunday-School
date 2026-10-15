@@ -14,7 +14,6 @@ import {
 } from '@/lib/actions/education-admin';
 import { DayChecks, dayNames } from '@/components/day-checks';
 import { PopForm } from '@/components/pop-form';
-import { SegLinks } from '@/components/seg-links';
 import { TeacherAttendance } from '@/components/course-attendance-views';
 
 type O = {
@@ -33,12 +32,19 @@ export default async function Courses({ params, searchParams }: {
   const supabase = await createClient();
   const { years, semesters, semester, year } = await loadTerms(supabase, sp.s);
   if (!semester || !year) return <p className="muted">መጀመሪያ “የትምህርት ዘመን” ትር ላይ ዓመቱን ይክፈቱ።</p>;
-  const seg = <SegLinks current={sp.v === 'teachers' ? 'tch' : 'list'} items={[['list', '📘 ኮርሶች', '/staff/education/courses'], ['tch', '🧾 የመምህራን ክትትል', `/staff/education/courses?v=teachers&s=${semester.id}`]]} />;
+  const seg = (
+    <div className="seg no-print">
+      <Link href="/staff/education/courses">📘 ኮርሶች</Link>
+      <Link className="on" href={`/staff/education/courses?v=teachers&s=${semester.id}`}>🧾 የመምህራን ክትትል</Link>
+    </div>
+  );
   if (sp.v === 'teachers') {
     return (
       <>
-        {seg}
-        <h2 className="section" style={{ marginTop: 0 }}>የመምህራን ክትትል — {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
+        <div className="page-bar">
+          <h2 className="section" style={{ margin: 0 }}>የመምህራን ክትትል — {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
+          {seg}
+        </div>
         <TeacherAttendance supabase={supabase} base="/staff/education/courses" semester={semester} date={sp.d} all={sp.all === '1'} canEdit view="teachers" />
       </>
     );
@@ -68,22 +74,15 @@ export default async function Courses({ params, searchParams }: {
 
   return (
     <>
-      {seg}
-      <h2 className="section" style={{ marginTop: 0 }}>ኮርሶችና መምህራን — {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
-      <EduPicker action="/staff/education/courses" years={years} semesters={semesters} semesterId={semester.id} classLevel={cls} />
-      {pending > 0 && <p className="alert ok">ለማጽደቅ የቀረቡ ኮርሶች፦ {pending}</p>}
-      {prevSem && (
-        <div className="btn-row no-print" style={{ margin: '8px 0' }}>
-          <ActionButton action={copyCourses.bind(null, prevSem.id, semester.id)} label={`ከ${prevSem.ec} ዓ.ም ${semesterLabel(prevSem.no)} ኮርሶችን ቅዳ`} className="btn sm secondary"
-            confirmText="ኮርሶቹ ከመምህራን፣ ቀንና ሰዓት እና መጽሐፍ ጋር ይቀዳሉ (ያሉት አይደገሙም)። ይቀጥል?" />
-          <span className="small muted">ሁሉንም ኮርሶች እንደገና ከመጻፍ ይልቅ ከቀደመው ሴሚስተር ቅዳ፤ ከዚያ የተለወጠውን ብቻ አስተካክል።</span>
+      <div className="page-bar">
+        <h2 className="section" style={{ margin: 0 }}>ኮርሶችና መምህራን</h2>
+        <div className="seg no-print">
+          <Link className="on" href="/staff/education/courses">📘 ኮርሶች</Link>
+          <Link href={`/staff/education/courses?v=teachers&s=${semester.id}`}>🧾 የመምህራን ክትትል</Link>
         </div>
-      )}
-
-      <div className="course-actions no-print">
+        <span className="spacer" />
         <PopForm label="+ ኮርስ ጨምር" action={addCourse} submitLabel="+ ኮርስ ጨምር">
-        <input type="hidden" name="semester_id" value={semester.id} />
-        <div className="form-grid">
+          <input type="hidden" name="semester_id" value={semester.id} />
           <div className="field">
             <label>ክፍል</label>
             <select name="class_level" required defaultValue={cls ?? ''}>
@@ -92,15 +91,20 @@ export default async function Courses({ params, searchParams }: {
             </select>
           </div>
           <div className="field"><label>የኮርሱ ስም</label><input name="name" required placeholder="ለምሳሌ፦ ዶግማ" /></div>
-        </div>
         </PopForm>
-        <Link className="btn sm secondary" href={link('none')}>👤 መምህር መድብ ({noTeacher})</Link>
-        <span style={{ flex: 1 }} />
+        {prevSem && (
+          <ActionButton action={copyCourses.bind(null, prevSem.id, semester.id)} label={`⧉ ከ${prevSem.ec} ${semesterLabel(prevSem.no)} ቅዳ`} className="btn sm secondary"
+            confirmText={`የ${prevSem.ec} ዓ.ም ${semesterLabel(prevSem.no)} ኮርሶች ከመምህራን፣ ቀንና ሰዓት እና መጽሐፍ ጋር ይቀዳሉ (ያሉት አይደገሙም)። ይቀጥል?`} />
+        )}
+      </div>
+      <div className="page-bar no-print">
+        <EduPicker action="/staff/education/courses" years={years} semesters={semesters} semesterId={semester.id} classLevel={cls} />
         <div className="seg">
-          <Link className={tf === 'all' ? 'on' : ''} href={link('all')}>ሁሉም ({rows.length})</Link>
-          <Link className={tf === 'none' ? 'on' : ''} href={link('none')}>መምህር ያልተመደበላቸው ({noTeacher})</Link>
-          <Link className={tf === 'has' ? 'on' : ''} href={link('has')}>መምህር ያላቸው ({rows.length - noTeacher})</Link>
+          <Link className={tf === 'all' ? 'on' : ''} href={link('all')}>ሁሉም {rows.length}</Link>
+          <Link className={tf === 'none' ? 'on' : ''} href={link('none')}>መምህር የሌላቸው {noTeacher}</Link>
+          <Link className={tf === 'has' ? 'on' : ''} href={link('has')}>መምህር ያላቸው {rows.length - noTeacher}</Link>
         </div>
+        {pending > 0 && <span className="pill half">ለማጽደቅ የቀረቡ {pending}</span>}
       </div>
 
       {shown.map((o) => (

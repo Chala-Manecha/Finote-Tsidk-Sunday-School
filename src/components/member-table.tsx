@@ -5,6 +5,7 @@ import {
 } from '@/lib/constants';
 import { FILTER_KEYS, type MemberFilters } from '@/lib/member-export';
 import { loadMembers, photoUrls } from '@/lib/member-load';
+import { AutoSubmit } from './auto-submit';
 import { MemberList, type ListRow } from './member-list';
 
 /**
@@ -12,9 +13,11 @@ import { MemberList, type ListRow } from './member-list';
  * HR's all-member view and ጽሕፈት ቤት's የአባላት ዝርዝር.
  */
 export async function MemberTable({
-  basePath, filters, fixedDept, linkToDetail,
+  basePath, filters, fixedDept, linkToDetail, withChips = false,
 }: {
   basePath: string;
+  /** the page shows count buttons for የአባልነት ሁኔታ / የዕድሜ ክፍል, so those two drop-downs are left out */
+  withChips?: boolean;
   filters: MemberFilters & Record<string, string | undefined>;
   fixedDept?: string;
   linkToDetail: boolean;
@@ -53,21 +56,31 @@ export async function MemberTable({
             {Object.entries(MEMBER_STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="group">የዕድሜ ክፍል</label>
-          <select id="group" name="group" defaultValue={filters.group ?? ''}>
-            <option value="">ሁሉም</option>
-            {(groups ?? []).map((g) => <option key={g.code} value={g.code}>{g.name}</option>)}
-            <option value="none">ያልተመደቡ</option>
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="type">የአባልነት ሁኔታ</label>
-          <select id="type" name="type" defaultValue={filters.type ?? ''}>
-            <option value="">ሁሉም</option>
-            {Object.entries(MEMBER_TYPE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
-        </div>
+        {withChips ? (
+          <>
+            {/* chosen with the count buttons above; kept while searching */}
+            {filters.group && <input type="hidden" name="group" value={filters.group} />}
+            {filters.type && <input type="hidden" name="type" value={filters.type} />}
+          </>
+        ) : (
+          <>
+            <div className="field">
+              <label htmlFor="group">የዕድሜ ክፍል</label>
+              <select id="group" name="group" defaultValue={filters.group ?? ''}>
+                <option value="">ሁሉም</option>
+                {(groups ?? []).map((g) => <option key={g.code} value={g.code}>{g.name}</option>)}
+                <option value="none">ያልተመደቡ</option>
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="type">የአባልነት ሁኔታ</label>
+              <select id="type" name="type" defaultValue={filters.type ?? ''}>
+                <option value="">ሁሉም</option>
+                {Object.entries(MEMBER_TYPE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+          </>
+        )}
         <div className="field">
           <label htmlFor="work">የስራ ሁኔታ</label>
           <select id="work" name="work" defaultValue={filters.work ?? ''}>
@@ -79,6 +92,7 @@ export async function MemberTable({
           <input type="checkbox" name="inactive" value="1" defaultChecked={filters.inactive === '1'} /> የተሰረዙ ብቻ
         </label>
         <button className="btn sm">አጣራ</button>
+        <AutoSubmit />
         {Object.keys(active).length > 0 && <a className="link small" href={basePath}>አጽዳ</a>}
       </form>
 

@@ -122,31 +122,36 @@ export function ExamRunner({ info, resume }: { info: Info; resume: boolean }) {
   // ---------- screens ----------
   if (screen === 'intro') {
     return (
-      <section className="card exam-intro">
-        <span className="pill">{EXAM_COMPONENTS[info.component]}</span>
-        <h1 className="serif">{info.title}</h1>
-        <p className="muted">{info.course}</p>
-        <div className="exam-facts">
-          <div><b>{info.questions}</b>ጥያቄዎች</div>
-          <div><b>{Number(info.total_points)}</b>ነጥብ</div>
-          <div><b>{info.duration_min}</b>ደቂቃ</div>
+      <section className="exam-intro2">
+        <div className="exam-hero">
+          <span className="exam-hero-tag">{EXAM_COMPONENTS[info.component]}</span>
+          <h1 className="serif">{info.title}</h1>
+          <p>{info.course}</p>
         </div>
-        <ul className="exam-rules">
-          <li>ሲጀምሩ ሰዓቱ መቁጠር ይጀምራል፤ ገጹን ቢዘጉም ሰዓቱ አይቆምም።</li>
-          <li>ጥያቄዎቹ አንድ በአንድ ይታያሉ — በ“ቀዳሚ / ቀጣይ” ይመላለሱ፤ መመለስ የሚፈልጉትን በ🚩 ምልክት ያድርጉ።</li>
-          <li>መልሶችዎ በራሳቸው ይቀመጣሉ። ሰዓቱ ሲያልቅ ፈተናው በራሱ ይገባል።</li>
-          <li>ከፈተናው ገጽ መውጣት ይቆጠራል፤ መምህሩ ያየዋል።</li>
-        </ul>
-        {err && <div className="alert error">{err}</div>}
-        <button className="btn green big" disabled={busy} onClick={begin}>{busy ? '…' : '▶ ፈተናውን ጀምር'}</button>
+        <div className="exam-intro-body">
+          <div className="exam-facts2">
+            <div><i aria-hidden>📋</i><b>{info.questions}</b><span>ጥያቄዎች</span></div>
+            <div><i aria-hidden>🏅</i><b>{Number(info.total_points)}</b><span>ነጥብ</span></div>
+            <div><i aria-hidden>⏱</i><b>{info.duration_min}</b><span>ደቂቃ</span></div>
+          </div>
+          <ul className="exam-rules2">
+            <li><i aria-hidden>⏱</i><span><b>ሰዓቱ</b> ሲጀምሩ መቁጠር ይጀምራል፤ ገጹን ቢዘጉም አይቆምም።</span></li>
+            <li><i aria-hidden>↔</i><span>ጥያቄዎቹ <b>አንድ በአንድ</b> ይታያሉ — በ“ቀዳሚ / ቀጣይ” ይመላለሱ።</span></li>
+            <li><i aria-hidden>🚩</i><span>መመለስ የሚፈልጉትን <b>ምልክት</b> ያድርጉ፤ ከማስረከብዎ በፊት ይገመግማሉ።</span></li>
+            <li><i aria-hidden>💾</i><span>መልሶችዎ <b>በራሳቸው ይቀመጣሉ</b>፤ ሰዓቱ ሲያልቅ ፈተናው በራሱ ይገባል።</span></li>
+            <li><i aria-hidden>👁</i><span>ከፈተናው ገጽ <b>መውጣት ይቆጠራል</b> — መምህሩ ያየዋል።</span></li>
+          </ul>
+          {err && <div className="alert error">{err}</div>}
+          <button className="btn green big exam-start" disabled={busy} onClick={begin}>{busy ? '…' : '▶ ፈተናውን ጀምር'}</button>
+        </div>
       </section>
     );
   }
 
   if (screen === 'done') {
     return (
-      <section className="card exam-intro">
-        <div style={{ fontSize: '2.4rem' }}>✅</div>
+      <section className="card exam-intro exam-done">
+        <div className="exam-done-icon" aria-hidden>✓</div>
         <h1 className="serif">ፈተናዎ ገብቷል</h1>
         <p>{autoDone ? 'ሰዓቱ ስላለቀ ያስቀመጧቸው መልሶች በራሳቸው ገብተዋል።' : 'መልሶችዎ ተቀብለናል።'} ውጤቱ መምህሩ ሲልከው በዳሽቦርድዎ ይታያል።</p>
         <a className="btn" href="/student">ወደ ዳሽቦርድ ተመለስ</a>

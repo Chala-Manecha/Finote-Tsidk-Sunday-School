@@ -18,14 +18,7 @@ export async function addToProgram(_: FormState, fd: FormData): Promise<FormStat
   const { error, count } = await supabase.from('member_programs').update({ status: 'active' }, { count: 'exact' })
     .eq('program', program).eq('status', 'chosen').in('member_id', ids);
   if (error) return { error: error.message };
-  // ኮርስ: also put them in this year's list (class is assigned under ክፍሎችና ተማሪዎች).
-  if (program === 'course') {
-    const { data: year } = await supabase.from('academic_years').select('id').eq('is_active', true).maybeSingle();
-    if (year) {
-      await supabase.from('enrollments').upsert(ids.map((member_id) => ({ year_id: year.id, member_id })),
-        { onConflict: 'year_id,member_id', ignoreDuplicates: true });
-    }
-  }
+  // ኮርስ: the database also enrolls them in the open year (without a class).
   revalidatePath('/staff', 'layout');
   return { ok: `${count ?? 0} አባላት ተጨምረዋል።` };
 }

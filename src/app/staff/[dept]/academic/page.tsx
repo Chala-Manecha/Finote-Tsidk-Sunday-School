@@ -86,7 +86,7 @@ export default async function Academic({ params }: { params: Promise<{ dept: str
                       <legend>🧾 ለዋና ፈተና ዝቅተኛ ክትትል</legend>
                       <div className="mini-grid two">
                         <label>መደበኛ ተማሪዎች (%)<input name="min_attendance" type="number" min={0} max={100} defaultValue={x.min_attendance} required /></label>
-                        <label>የሳምንት መጨረሻ ተማሪዎች (%)<input name="min_attendance_distance" type="number" min={0} max={100} defaultValue={x.min_attendance_distance ?? 50} required /></label>
+                        <label>የርቀት ተማሪዎች (%)<input name="min_attendance_distance" type="number" min={0} max={100} defaultValue={x.min_attendance_distance ?? 50} required /></label>
                       </div>
                       <p className="hint small">0 = ገደብ የለም። ከዚህ በታች የሆነ ተማሪ ያለ ትምህርት ክፍል ፈቃድ ዋና ፈተና አይመዘገብለትም።</p>
                     </fieldset>

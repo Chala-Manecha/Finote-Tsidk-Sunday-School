@@ -6,28 +6,53 @@ import type { Tab } from '@/lib/dept-tabs';
 /** Pages without their own tab light up the tab they belong to. */
 const ALIAS: Record<string, string[]> = { applications: ['register'], results: ['year-end'], abnet: ['attendance'] };
 
-export function TabNav({ dept, tabs }: { dept: string; tabs: Tab[] }) {
+const ICON: Record<string, string> = {
+  abnet: '📜', academic: '🗓', 'age-groups': '👪', 'all-duties': '📋', applications: '📝', assignees: '🧑‍💼', attendance: '🧾',
+  classes: '👥', contributions: '📊', 'course-attendance': '🧾', courses: '📘', departures: '🚪', 'dept-docs': '📄',
+  'dept-property': '🏛', donations: '🎁', duty: '🧭', earnings: '💰', events: '📅', exams: '🗝', feedback: '💬',
+  'feedback-tracker': '📨', 'fixed-schedule': '🔁', history: '📖', 'home-page': '🏠', leadership: '⭐', 'lost-members': '🔎',
+  mahiberat: '🤝', members: '👤', money: '💵', 'money-report': '📈', 'online-exams': '🖊', overview: '📊', participants: '✅',
+  photos: '🖼', prayer: '🙏', property: '📦', 'property-requests': '🛒', purchases: '🧾', receipts: '🧾', reports: '📑',
+  'request-event': '📮', requests: '✍', results: '🏅', roster: '📇', 'sale-items': '🏷', social: '🔗', songs: '🎵',
+  'staff-access': '🔐', 'student-accounts': '🔑', terms: '🏛', wereb: '🥁', 'wereb-admin': '🥁',
+};
+
+/**
+ * The department's pages as two-column tiles, grouped. On a page deeper than a tab
+ * (a session, a member …) a back arrow to that tab sits at the top of the panel.
+ */
+export function TabNav({ dept, deptName, tabs }: { dept: string; deptName: string; tabs: Tab[] }) {
   const path = usePathname();
+  const isOn = (t: Tab) => {
+    const href = `/staff/${dept}/${t.slug}`;
+    return path.startsWith(href) || ((ALIAS[t.slug] ?? []).some((x) => path.startsWith(`/staff/${dept}/${x}`)) && !(dept !== 'education' && t.slug === 'abnet'));
+  };
+  const current = tabs.find(isOn);
+  const deeper = current && path.replace(/\/$/, '') !== `/staff/${dept}/${current.slug}`;
+  const groups: { name: string; tabs: Tab[] }[] = [];
+  for (const t of tabs) {
+    const g = t.group ?? '';
+    if (groups.at(-1)?.name !== g) groups.push({ name: g, tabs: [] });
+    groups.at(-1)!.tabs.push(t);
+  }
   return (
-    <nav className="dept-tab-nav no-print">
-      {tabs.map((t, i) => {
-        const header = t.group && t.group !== tabs[i - 1]?.group
-          ? <div key={`g-${t.group}`} className="tab-group">{t.group}</div>
-          : null;
-        const href = `/staff/${dept}/${t.slug}`;
-        if (!t.ready) {
-          return [header,
-            <span key={t.slug} title="በቅርቡ">
-              {t.label} · በቅርቡ
-            </span>,
-          ];
-        }
-        return [header,
-          <Link key={t.slug} href={href} className={path.startsWith(href) || (ALIAS[t.slug] ?? []).some((x) => path.startsWith(`/staff/${dept}/${x}`)) && !(dept !== 'education' && t.slug === 'abnet') ? 'active' : ''}>
-            {t.label}
-          </Link>,
-        ];
-      })}
+    <nav className="dept-tab-nav no-print" aria-label={deptName}>
+      <div className="nav-head">
+        {deeper
+          ? <Link href={`/staff/${dept}/${current!.slug}`} className="nav-back" title="ተመለስ">← {current!.label}</Link>
+          : <Link href="/staff" className="nav-back" title="ሁሉም ክፍሎች">← ሁሉም ክፍሎች</Link>}
+        <b>{deptName}</b>
+      </div>
+      {groups.map((g) => (
+        <div key={g.name || 'all'} className="tab-sec">
+          {g.name && <div className="tab-group">{g.name}</div>}
+          <div className="tab-grid">
+            {g.tabs.map((t) => t.ready
+              ? <Link key={t.slug} href={`/staff/${dept}/${t.slug}`} className={isOn(t) ? 'active' : ''}><i aria-hidden>{ICON[t.slug] ?? '•'}</i><span>{t.label}</span></Link>
+              : <span key={t.slug} className="soon" title="በቅርቡ"><i aria-hidden>{ICON[t.slug] ?? '•'}</i><span>{t.label}</span></span>)}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 }

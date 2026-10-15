@@ -1,5 +1,6 @@
 'use client';
 import { useActionState, useState, startTransition } from 'react';
+import { useModalClose } from './modal';
 import { uploadTo, resizeImage } from '@/lib/client/upload';
 
 export type FormState = { error?: string; ok?: string };
@@ -25,10 +26,11 @@ export function MediaForm({
   onSaved?: () => void;
   children: React.ReactNode;
 }) {
+  const closeModal = useModalClose();
   const [state, run, pending] = useActionState<FormState & { n?: number }, FormData>(
     async (prev, fd) => {
       const res = await action(prev, fd);
-      if (res.ok) onSaved?.();
+      if (res.ok) { onSaved?.(); closeModal?.(); }
       return { ...res, n: (prev.n ?? 0) + (res.ok ? 1 : 0) };
     },
     {},

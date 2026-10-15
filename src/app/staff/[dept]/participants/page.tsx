@@ -5,7 +5,7 @@ import { formatEc } from '@/lib/ethiopian-calendar';
 import { addToProgram, returnToWaiting } from '@/lib/actions/programs';
 import { PickList } from '@/components/pick-list';
 import { ActionButton } from '@/components/action-button';
-import { SegLinks } from '@/components/seg-links';
+import Link from 'next/link';
 import { PrintButton } from '@/components/print-button';
 
 type Row = { member_id: string; status: 'chosen' | 'active' | 'declined'; decided_at: string | null; members: { full_name: string; reg_no: string; phone: string | null } };
@@ -31,57 +31,62 @@ export default async function Participants({ params, searchParams }: {
   const declined = rows.filter((r) => r.status === 'declined');
   const base = `/staff/${dept}/participants`;
 
+  const title = dept === 'education' ? 'አቴንዳንስ — ተሳታፊዎች' : 'ተሳታፊዎች';
+
   return (
     <>
-      <div className="head-row">
-        <h2 className="section" style={{ margin: 0 }}>ተሳታፊዎች — {PROGRAMS[program].label}</h2>
+      <div className="page-bar">
+        <h2 className="section" style={{ margin: 0 }}>{title}</h2>
+        {programs.length > 1 && (
+          <div className="seg no-print">
+            {programs.map((p) => <Link key={p} className={p === program ? 'on' : ''} href={`${base}?p=${p}`}>{PROGRAMS[p].label}</Link>)}
+          </div>
+        )}
+        <span className="spacer" />
+        <form className="toolbar slim no-print" action={base}>
+          {programs.length > 1 && <input type="hidden" name="p" value={program} />}
+          <input name="q" type="search" defaultValue={q} placeholder="🔍 ስም / ቁጥር" aria-label="ፈልግ" style={{ width: 170 }} />
+        </form>
         <PrintButton />
       </div>
-      {programs.length > 1 && <SegLinks current={program} items={programs.map((p) => [p, PROGRAMS[p].label, `${base}?p=${p}`])} />}
-      <p className="small muted">አባላት በምዝገባ ወቅት (ወይም ሰው ሃብት በሚያስተካክለው) የመረጡትን ብቻ ይማራሉ/ያገለግላሉ። የመረጡትን እዚህ ሲጨምሩ በክትትል ዝርዝሩ ውስጥ ይገባሉ።{program === 'course' ? ' ኮርስ የተጨመሩ በዚህ ዓመት ዝርዝር ውስጥ ይገባሉ፤ ክፍላቸውን በ“ክፍሎችና ተማሪዎች” ይመድቡ።' : ''}</p>
-      <div className="stat-cards">
-        <span className="stat-card"><b>{waiting.length}</b>መደመር የሚጠብቁ</span>
-        <span className="stat-card"><b>{active.length}</b>ተሳታፊዎች</span>
-        <span className="stat-card"><b>{declined.length}</b>ያልመረጡ</span>
+
+      <div className="two-col">
+        <section className="card no-print">
+          <div className="card-head">
+            <b>መደመር የሚጠብቁ</b><span className="count-badge warn">{waiting.length}</span>
+          </div>
+          <p className="small muted" style={{ margin: '0 0 8px' }}>{PROGRAMS[program].label}ን የመረጡ። ሲጨመሩ በክትትል ዝርዝሩ ይገባሉ{program === 'course' ? '፤ በዚህ ዓመት ተማሪዎች ውስጥም ያለ ክፍል ይገባሉ' : ''}።</p>
+          <PickList action={addToProgram} hidden={{ program }} button="✓ ጨምር" empty="የሚጠብቅ የለም።"
+            rows={waiting.map((r) => ({ id: r.member_id, name: r.members.full_name, sub: r.members.reg_no, extra: r.members.phone ?? '' }))} />
+          {declined.length > 0 && (
+            <details className="fold-card" style={{ marginTop: 10 }}>
+              <summary className="small"><b>ያልመረጡ ({declined.length})</b> <span className="muted">— ምርጫን የሚቀይረው ሰው ሃብት ነው</span></summary>
+              <p className="small" style={{ marginBottom: 0 }}>{declined.map((r) => r.members.full_name).join('፣ ')}</p>
+            </details>
+          )}
+        </section>
+
+        <section className="card">
+          <div className="card-head"><b>ተሳታፊዎች</b><span className="count-badge">{active.length}</span></div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>አባል</th><th>ስልክ</th><th>የተጨመሩበት</th><th className="no-print" /></tr></thead>
+              <tbody>
+                {active.map((r, i) => (
+                  <tr key={r.member_id}>
+                    <td className="num">{i + 1}</td>
+                    <td><b>{r.members.full_name}</b> <span className="small muted">{r.members.reg_no}</span></td>
+                    <td dir="ltr" className="small">{r.members.phone ?? '—'}</td>
+                    <td className="small">{r.decided_at ? formatEc(r.decided_at.slice(0, 10)) : '—'}</td>
+                    <td className="no-print"><ActionButton action={returnToWaiting.bind(null, program, r.member_id)} label="↩" className="btn xs secondary" confirmText="ወደ ተጠባባቂ ይመለስ? ከክትትል ዝርዝሩ ይወጣል።" /></td>
+                  </tr>
+                ))}
+                {active.length === 0 && <tr><td colSpan={5} className="muted">እስካሁን የተጨመረ የለም።</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-      <form className="toolbar no-print" action={base}>
-        {programs.length > 1 && <input type="hidden" name="p" value={program} />}
-        <div className="field"><label htmlFor="q">ስም / ቁጥር</label><input id="q" name="q" type="search" defaultValue={q} /></div>
-        <button className="btn sm">ፈልግ</button>
-      </form>
-
-      <section className="card no-print" style={{ marginBottom: 14 }}>
-        <h3 style={{ marginTop: 0 }}>የመረጡ — መደመር የሚጠብቁ ({waiting.length})</h3>
-        <PickList action={addToProgram} hidden={{ program }} button="✓ ጨምር"
-          empty="የሚጠብቅ የለም።"
-          rows={waiting.map((r) => ({ id: r.member_id, name: r.members.full_name, sub: r.members.reg_no, extra: r.members.phone ?? '' }))} />
-      </section>
-
-      <h3>ተሳታፊዎች ({active.length})</h3>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>#</th><th>አባል</th><th>ስልክ</th><th>የተጨመሩበት</th><th className="no-print" /></tr></thead>
-          <tbody>
-            {active.map((r, i) => (
-              <tr key={r.member_id}>
-                <td className="num">{i + 1}</td>
-                <td><b>{r.members.full_name}</b> <span className="small muted">{r.members.reg_no}</span></td>
-                <td dir="ltr" className="small">{r.members.phone ?? '—'}</td>
-                <td className="small">{r.decided_at ? formatEc(r.decided_at.slice(0, 10)) : '—'}</td>
-                <td className="no-print"><ActionButton action={returnToWaiting.bind(null, program, r.member_id)} label="ወደ ተጠባባቂ መልስ" className="link small" /></td>
-              </tr>
-            ))}
-            {active.length === 0 && <tr><td colSpan={5} className="muted">እስካሁን የተጨመረ የለም።</td></tr>}
-          </tbody>
-        </table>
-      </div>
-
-      {declined.length > 0 && (
-        <details className="card fold-card no-print" style={{ marginTop: 14 }}>
-          <summary><b>ያልመረጡ ({declined.length})</b> <span className="small muted">— ምርጫቸውን የሚቀይረው ሰው ሃብት ነው</span></summary>
-          <p className="small" style={{ marginBottom: 0 }}>{declined.map((r) => r.members.full_name).join('፣ ')}</p>
-        </details>
-      )}
     </>
   );
 }

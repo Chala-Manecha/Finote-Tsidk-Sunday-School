@@ -44,7 +44,7 @@ export default async function Exams({ params, searchParams }: {
     <>
       <h2 className="section" style={{ marginTop: 0 }}>የፈተና ፈቃድና ድጋሚ ፈተና</h2>
       <p className="muted small">
-        ክትትላቸው ከ{semester.min_attendance}% (የሳምንት መጨረሻ፦ {semester.min_attendance_distance}%) በታች የሆኑ ተማሪዎች ያለ ፈቃድ ዋና ፈተና አይመዘገብላቸውም። በቂ ምክንያት ካለ እዚህ ፈቃድ ይስጡ።
+        ክትትላቸው ከ{semester.min_attendance}% (የርቀት ተማሪዎች፦ {semester.min_attendance_distance}%) በታች የሆኑ ተማሪዎች ያለ ፈቃድ ዋና ፈተና አይመዘገብላቸውም። በቂ ምክንያት ካለ እዚህ ፈቃድ ይስጡ።
         ዋና ፈተና ያመለጣቸው ተማሪዎች ደግሞ ድጋሚ ፈተና ሊፈቀድላቸው ይችላል — ውጤቱ ከጸደቀ በኋላም መምህሩ አንድ ጊዜ ማስገባት ይችላል።
       </p>
       <EduPicker action="/staff/education/exams" years={years} semesters={semesters} semesterId={semester.id} classLevel={cls} />

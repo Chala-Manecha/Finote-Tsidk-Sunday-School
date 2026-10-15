@@ -20,27 +20,19 @@ export async function MemberStats({ basePath }: { basePath: string }) {
   const pct = (n: number) => (total ? `${Math.round((n / total) * 100)}%` : '');
 
   return (
-    <div className="member-stats">
-      <div className="stat-card total"><b>{total}</b>ንቁ አባላት</div>
-      <section>
-        <h3>የአባልነት ሁኔታ</h3>
-        <div className="stat-cards">
-          {types.map((t, i) => (
-            <Link key={t} className="stat-card" href={`${basePath}?type=${t}`}><b>{typeCounts[i]}</b>{MEMBER_TYPE[t]}<small>{pct(typeCounts[i])}</small></Link>
-          ))}
-        </div>
-      </section>
-      <section>
-        <h3>የዕድሜ ክፍሎች</h3>
-        <div className="stat-cards">
-          {(groups ?? []).map((g, i) => (
-            <Link key={g.code} className="stat-card" href={`${basePath}?group=${g.code}`}>
-              <b>{groupCounts[i]}</b>{g.name}<small>{g.max_age == null ? `${g.min_age}+` : `${g.min_age}–${g.max_age}`} ዓመት · {pct(groupCounts[i])}</small>
-            </Link>
-          ))}
-          {noGroup > 0 && <Link className="stat-card" href={`${basePath}?group=none`}><b>{noGroup}</b>ያልተመደቡ<small>የትውልድ ቀን የሌላቸው</small></Link>}
-        </div>
-      </section>
+    <div className="member-stats chips no-print">
+      <Link className="stat-card total" href={basePath}><b>{total}</b>ንቁ አባላት</Link>
+      <span className="chip-sep" aria-hidden />
+      {types.map((t, i) => (
+        <Link key={t} className="stat-card" href={`${basePath}?type=${t}`} title={pct(typeCounts[i])}><b>{typeCounts[i]}</b>{MEMBER_TYPE[t]}</Link>
+      ))}
+      <span className="chip-sep" aria-hidden />
+      {(groups ?? []).map((g, i) => (
+        <Link key={g.code} className="stat-card" href={`${basePath}?group=${g.code}`} title={`${g.max_age == null ? `${g.min_age}+` : `${g.min_age}–${g.max_age}`} ዓመት · ${pct(groupCounts[i])}`}>
+          <b>{groupCounts[i]}</b>{g.name}
+        </Link>
+      ))}
+      {noGroup > 0 && <Link className="stat-card" href={`${basePath}?group=none`} title="የትውልድ ቀን የሌላቸው"><b>{noGroup}</b>ያልተመደቡ</Link>}
     </div>
   );
 }

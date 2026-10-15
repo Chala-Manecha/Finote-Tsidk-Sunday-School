@@ -71,7 +71,7 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   education: [
     { slug: 'academic', label: 'የትምህርት ዘመን', ready: true },
-    { slug: 'participants', label: 'ተሳታፊዎች (ኮርስና አብነት)', ready: true },
+    { slug: 'participants', label: 'አቴንዳንስ', ready: true },
     { slug: 'online-exams', label: 'ኦንላይን ፈተናዎች', ready: true },
     { slug: 'classes', label: 'ክፍሎችና ተማሪዎች', ready: true },
     { slug: 'courses', label: 'ኮርሶችና መምህራን', ready: true },

@@ -1,3 +1,4 @@
+import { AutoSubmit } from './auto-submit';
 import { CLASS_LEVELS, classLabel, semesterLabel, type AcademicYear, type Semester } from '@/lib/education';
 
 /** GET form to choose semester (and optionally class). */
@@ -6,7 +7,7 @@ export function EduPicker({ action, years, semesters, semesterId, classLevel, wi
   extra?: Record<string, string>;
 }) {
   return (
-    <form className="toolbar no-print" action={action}>
+    <form className="toolbar slim no-print" action={action}>
       {Object.entries(extra ?? {}).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       <div className="field">
         <label htmlFor="s">ሴሚስተር</label>
@@ -25,7 +26,8 @@ export function EduPicker({ action, years, semesters, semesterId, classLevel, wi
           </select>
         </div>
       )}
-      <button className="btn sm">አሳይ</button>
+      <AutoSubmit />
+      <noscript><button className="btn sm">አሳይ</button></noscript>
     </form>
   );
 }
