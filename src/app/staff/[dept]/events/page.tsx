@@ -7,8 +7,10 @@ import { EventForm } from '@/components/event-form';
 import { ActionButton } from '@/components/action-button';
 import { decideEvent, deleteEvent } from '@/lib/actions/events';
 import { PrintButton } from '@/components/print-button';
+import { FIXED_KINDS, fixedSchedules } from '@/lib/schedules';
+import { dayNames } from '@/components/day-checks';
 
-type Ev = { id: string; title: string; event_date: string; event_time: string; status: EventStatus; dept: string };
+type Ev = { id: string; title: string; event_date: string; event_time: string; status: EventStatus; dept: string; kind: string | null; place: string | null };
 
 export default async function ScheduleEventsPage({
   params,
@@ -25,13 +27,24 @@ export default async function ScheduleEventsPage({
   const supabase = await createClient();
   let q = supabase
     .from('events')
-    .select('id, title, event_date, event_time, status, dept')
+    .select('id, title, event_date, event_time, status, dept, kind, place')
     .order('event_date')
     .order('event_time');
   // Upcoming events, plus every pending one whatever its date, so nothing waits unseen.
   if (!sp.past) q = q.or(`event_date.gte.${today},status.eq.pending`);
   if (sp.status) q = q.eq('status', sp.status);
-  const { data: events } = await q.returns<Ev[]>();
+  const [{ data: events }, fixed, { data: abnet }, { data: prayer }] = await Promise.all([
+    q.returns<Ev[]>(),
+    fixedSchedules(supabase),
+    supabase.from('abnet_sessions').select('id, subject, teacher, day_text, time_text').order('created_at'),
+    supabase.from('prayer_schedule').select('id, program, days, times').order('created_at'),
+  ]);
+  // Every weekly schedule in one list, so a new ቀጠሮ doesn't clash with a fixed one.
+  const weekly: { key: string; what: string; who: string; when: string }[] = [
+    ...fixed.map((f) => ({ key: f.id, what: `${f.title} (${FIXED_KINDS[f.kind]})`, who: DEPT_NAME[f.dept], when: [f.day_text, f.time_text, f.place].filter(Boolean).join(' · ') })),
+    ...(abnet ?? []).map((a) => ({ key: a.id, what: `አብነት፦ ${a.subject ?? ''}`, who: DEPT_NAME.education, when: [a.day_text, a.time_text].filter(Boolean).join(' · ') || '—' })),
+    ...(prayer ?? []).map((p) => ({ key: p.id, what: p.program, who: 'የጸሎት መርኀ ግብር', when: [dayNames(p.days), (p.times ?? []).join('፣ ')].filter(Boolean).join(' · ') || '—' })),
+  ];
 
   // Same date+time as another APPROVED event → warn (doesn't block)
   const approvedSlots = new Map<string, string[]>();
@@ -52,6 +65,18 @@ export default async function ScheduleEventsPage({
         <summary className="btn sm" style={{ display: 'inline-flex' }}>+ የመርሓ ግብራት ቀጠሮ ጨምር</summary>
         <div style={{ marginTop: 10 }}><EventForm dept="schedule" /></div>
       </details>
+
+      {weekly.length > 0 && (
+        <details className="card fold-card" style={{ margin: '12px 0' }}>
+          <summary><b>🔁 ቋሚ (ሳምንታዊ) መርሐ ግብሮች</b> <span className="small muted">({weekly.length}) — አዲስ ቀጠሮ ከነዚህ ጋር እንዳይደራረብ</span></summary>
+          <div className="table-wrap" style={{ marginTop: 10 }}>
+            <table>
+              <thead><tr><th>መርሐ ግብር</th><th>ክፍል</th><th>ቀንና ሰዓት</th></tr></thead>
+              <tbody>{weekly.map((w) => <tr key={w.key}><td>{w.what}</td><td className="small">{w.who}</td><td>{w.when}</td></tr>)}</tbody>
+            </table>
+          </div>
+        </details>
+      )}
 
       <form className="toolbar no-print" action="/staff/schedule/events">
         <div className="field">
@@ -79,7 +104,8 @@ export default async function ScheduleEventsPage({
                 <td>{formatEc(e.event_date, { weekday: true })}</td>
                 <td dir="ltr">{e.event_time.slice(0, 5)}</td>
                 <td>
-                  {e.title}
+                  {e.kind === 'wereb' && <span className="pill">ወረብ ጥናት</span>} {e.title}
+                  {e.place && <div className="small muted">📍 {e.place}</div>}
                   {clashes(e) && <div className="small" style={{ color: 'var(--danger)' }}>⚠ ተደራቢ — በዚህ ሰዓት ሌላ የጸደቀ ቀጠሮ አለ</div>}
                 </td>
                 <td>{DEPT_NAME[e.dept]}</td>

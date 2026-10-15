@@ -24,6 +24,7 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   mezmur: [
     { slug: 'attendance', label: 'ክትትል መያዝ', ready: true },
+    { slug: 'fixed-schedule', label: 'ቋሚ መርሐ ግብር', ready: true },
     { slug: 'songs', label: 'መዝሙራት', ready: true },
     { slug: 'wereb', label: 'ወረብ', ready: true },
     { slug: 'duty', label: 'አባል መድብ', ready: true },

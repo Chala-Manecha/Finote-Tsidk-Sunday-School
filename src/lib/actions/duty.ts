@@ -46,3 +46,13 @@ export async function deleteDuty(id: string) {
   if (!count) return { error: 'ማጥፋት አልተቻለም።' };
   refresh();
 }
+
+/** The assigning department confirms whether the member did the job (null = back to “not confirmed”). */
+export async function confirmDuty(id: string, status: 'done' | 'missed' | null) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('duty_assignments').update({ status }, { count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+}

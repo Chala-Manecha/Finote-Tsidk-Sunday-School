@@ -9,6 +9,8 @@ import { termLabel, type Term } from '@/lib/periods';
 import { DocHeader, DocSigns, QrCode, verifyUrl } from '@/components/doc-sheet';
 import { DocPrintButton } from '@/components/doc-print-button';
 import { markCertificatePrinted } from '@/lib/actions/receipts';
+import { loadBands, memberParticipation } from '@/lib/participation';
+import { BandLegend, ParticipationView } from '@/components/participation-view';
 
 type RoleRow = { dept: string; role: LeaderRole; leadership_terms: Term | null };
 
@@ -28,6 +30,8 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
     supabase.from('enrollments').select('class_level, study_mode, academic_years(ec_year)').eq('member_id', d.member_id),
   ]);
   if (!m) notFound();
+  // How active the member was in each area while a member (HR's bands: በጣም ጥሩ / ጥሩ / ደካማ).
+  const [part, bands] = await Promise.all([memberParticipation(supabase, d.member_id, undefined, d.leave_date), loadBands(supabase)]);
   const photo = m.photo_path
     ? (await supabase.storage.from('member-docs').createSignedUrl(m.photo_path, 600)).data?.signedUrl
     : null;
@@ -83,6 +87,10 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
           </div>
           {photo ? <img className="cert-photo" src={photo} alt="" /> : <div className="cert-photo" />}
         </div>
+
+        <h3 className="serif" style={{ marginBottom: 6 }}>የተሳትፎ ማጠቃለያ</h3>
+        <ParticipationView data={part} bands={bands} />
+        <BandLegend bands={bands} />
 
         {results.length > 0 && (
           <>

@@ -4,9 +4,9 @@ import { requireDept } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { ageFromIso, formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
-  ATTENDANCE_STATUS, DEPT_NAME, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_STATUS, memberTypeLabel, SESSION_TYPES, SEX, TITLES, WORK_STATUS,
-  type AttendanceStatus, type SessionType,
+  DEPT_NAME, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_STATUS, memberTypeLabel, SEX, TITLES, WORK_STATUS,
 } from '@/lib/constants';
+import { PART_AREAS, type PartArea } from '@/lib/participation';
 import { PrintButton } from '@/components/print-button';
 import { ActionButton } from '@/components/action-button';
 import { canAccess } from '@/lib/auth';
@@ -14,10 +14,7 @@ import { deactivateMember, restoreMember, deleteMember } from '@/app/staff/membe
 import { RegistrationSlip, type SlipData } from '@/components/registration-slip';
 import { yearsLabel, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
-type AttRow = {
-  status: AttendanceStatus;
-  attendance_sessions: { id: string; session_type: SessionType; session_date: string; session_time: string | null; dept: string };
-};
+type Absence = { on_date: string; area: PartArea; label: string; status: 'absent' | 'half' };
 
 export default async function MemberDetail({
   params,
@@ -33,28 +30,18 @@ export default async function MemberDetail({
 
   const [{ data: m }, { data: att }, { data: ageGroups }, { data: history }] = await Promise.all([
     supabase.from('members').select('*, member_departments(dept)').eq('id', id).maybeSingle(),
-    supabase
-      .from('attendance')
-      .select('status, attendance_sessions!inner(id, session_type, session_date, session_time, dept)')
-      .eq('member_id', id)
-      .returns<AttRow[]>(),
+    supabase.rpc('member_absences', { p_member: id, p_limit: 300 }),
     supabase.from('age_groups').select('code, name'),
     supabase.rpc('member_history_count', { p_member: id }),
   ]);
   const isHr = canAccess(staff, 'hr');
   if (!m) notFound();
 
-  // Attendance broken down by session type (each belongs to a department)
-  const byType = new Map<SessionType, Record<AttendanceStatus, number>>();
-  for (const a of att ?? []) {
-    const t = a.attendance_sessions.session_type;
-    const c = byType.get(t) ?? { present: 0, half: 0, absent: 0 };
-    c[a.status]++;
-    byType.set(t, c);
-  }
-  const absences = (att ?? [])
-    .filter((a) => a.status === 'absent')
-    .sort((a, b) => b.attendance_sessions.session_date.localeCompare(a.attendance_sessions.session_date));
+  // Absences per area (department sheets, course classes, teaching) — newest first, folded by area.
+  const absences = (att ?? []) as Absence[];
+  const byArea = (Object.keys(PART_AREAS) as PartArea[])
+    .map((a) => ({ area: a, rows: absences.filter((x) => x.area === a) }))
+    .filter((g) => g.rows.length);
 
   const signed = async (path?: string | null) =>
     path ? (await supabase.storage.from('member-docs').createSignedUrl(path, 600)).data?.signedUrl : null;
@@ -115,6 +102,7 @@ export default async function MemberDetail({
     ...education.map((e, i) => [`ትምህርት ${i + 1}${e.level ? ` (${e.level})` : ''}`, eduUrls[i]] as const),
     ['አለማዊ ትምህርት', secularUrl] as const,
     ['ቀድሞ ሰ/ት/ቤት', priorUrl] as const,
+    ['ፎቶ', photoUrl] as const,
   ].filter(([, u]) => !!u) as [string, string][];
 
   return (
@@ -143,62 +131,63 @@ export default async function MemberDetail({
         </div>
       </div>
 
-      <RegistrationSlip slip={slip} regNo={m.reg_no} qrUrl={`/verify?c=${encodeURIComponent(m.reg_no)}`} registeredIso={m.registered_on ?? m.created_at} />
+      <nav className="sec-nav no-print" aria-label="ክፍሎች">
+        <a href="#cert">📜 ምስክር ወረቀት</a>
+        <a href="#docs">📎 የተያያዙ ሰነዶች <span className="chip-n">{evidence.length}</span></a>
+        {absences.length > 0 && <a href="#absent">🗓 የቀሩባቸው ቀናት <span className="chip-n">{absences.length}</span></a>}
+      </nav>
 
-      {evidence.length > 0 && (
-        <section className="card no-print" style={{ marginTop: 14 }}>
-          <b>የተያያዙ ማስረጃዎች</b>
-          <div className="btn-row" style={{ marginTop: 8 }}>
-            {evidence.map(([k, u]) => <a key={k} className="btn sm secondary" href={u} target="_blank" rel="noopener noreferrer">📎 {k}</a>)}
-          </div>
-        </section>
-      )}
+      <section id="cert" className="detail-sec">
+        <RegistrationSlip slip={slip} regNo={m.reg_no} qrUrl={`/verify?c=${encodeURIComponent(m.reg_no)}`} registeredIso={m.registered_on ?? m.created_at} />
+      </section>
 
-      {/* Attendance is for follow-up on screen only — never on the registration printout, and hidden until there is any. */}
-      {(att ?? []).length > 0 && (
-        <div className="no-print">
-      <h2 className="section">ክትትል በክፍል</h2>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr><th>ክፍለ ጊዜ</th><th>ክፍል</th><th>ተገኝቷል</th><th>ግማሽ</th><th>ቀሪ</th></tr>
-          </thead>
-          <tbody>
-            {(Object.keys(SESSION_TYPES) as SessionType[]).map((t) => {
-              const c = byType.get(t) ?? { present: 0, half: 0, absent: 0 };
+      <section id="docs" className="detail-sec card no-print">
+        <h2 className="section" style={{ marginTop: 0 }}>የተያያዙ ሰነዶች</h2>
+        {evidence.length === 0
+          ? <p className="muted small" style={{ margin: 0 }}>ምንም የተያያዘ ሰነድ የለም።</p>
+          : (
+            <div className="doc-tiles">
+              {evidence.map(([k, u]) => (
+                <a key={k} className="doc-tile" href={u} target="_blank" rel="noopener noreferrer">
+                  <span aria-hidden>📎</span><b>{k}</b><span className="small muted">ክፈት ↗</span>
+                </a>
+              ))}
+            </div>
+          )}
+      </section>
+
+      {/* Absences: for follow-up on screen only — never on the printout, and only when there are any. */}
+      {absences.length > 0 && (
+        <section id="absent" className="detail-sec card no-print">
+          <h2 className="section" style={{ marginTop: 0 }}>የቀሩባቸው ቀናት</h2>
+          <p className="small muted" style={{ marginTop: -4 }}>በዘርፍ ተከፋፍሏል — ዘርፉን ሲጫኑ ቀኖቹ ይታያሉ። ሙሉ ሪፖርቱ በ“አጠቃላይ አቴንዳንስ” ይገኛል።</p>
+          <div className="abs-list">
+            {byArea.map((g) => {
+              const full = g.rows.filter((r) => r.status === 'absent').length;
               return (
-                <tr key={t}>
-                  <td>{SESSION_TYPES[t].label}</td>
-                  <td>{DEPT_NAME[SESSION_TYPES[t].dept]}</td>
-                  <td>{c.present}</td><td>{c.half}</td><td>{c.absent}</td>
-                </tr>
+                <details key={g.area} className="abs-row">
+                  <summary>
+                    <span><b>{PART_AREAS[g.area]}</b></span>
+                    <span className="num"><span className={`abs-count ${full >= 3 ? 'hi' : ''}`}>{full}</span></span>
+                    <span className="num small">{g.rows.length - full ? `${g.rows.length - full} ${g.area === 'teaching' ? 'አርፍዷል' : 'ግማሽ'}` : '—'}</span>
+                  </summary>
+                  <table>
+                    <thead><tr><th>ቀን</th><th>ዝርዝር</th><th>ሁኔታ</th></tr></thead>
+                    <tbody>
+                      {g.rows.map((r, i) => (
+                        <tr key={i}>
+                          <td>{formatEc(r.on_date, { weekday: true })}</td>
+                          <td>{r.label || PART_AREAS[g.area]}</td>
+                          <td><span className="pill absent">{r.status === 'half' ? (g.area === 'teaching' ? 'አርፍዷል' : 'ግማሽ') : 'ቀሪ'}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-
-      <h2 className="section">የቀረባቸው ቀናት ({absences.length})</h2>
-      {absences.length === 0 ? (
-        <p className="muted">ምንም የቀረበት ቀን የለም።</p>
-      ) : (
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>ቀን</th><th>ክፍለ ጊዜ</th><th>ክፍል</th><th>ሁኔታ</th></tr></thead>
-            <tbody>
-              {absences.map((a) => (
-                <tr key={a.attendance_sessions.id}>
-                  <td>{formatEc(a.attendance_sessions.session_date, { weekday: true })}</td>
-                  <td>{SESSION_TYPES[a.attendance_sessions.session_type].label}</td>
-                  <td>{DEPT_NAME[a.attendance_sessions.dept]}</td>
-                  <td><span className="pill absent">{ATTENDANCE_STATUS[a.status]}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-        </div>
+          </div>
+        </section>
       )}
     </>
   );

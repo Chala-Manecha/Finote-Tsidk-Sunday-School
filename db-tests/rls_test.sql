@@ -822,4 +822,40 @@ reset role;
 -- ---------- member card QR verifies; marks note/absent ----------
 select pg_temp.must_equal((select (public.verify_code((select reg_no from public.members where id = '10000000-0000-0000-0000-0000000000e1'))->>'type' = 'member')::int), 1, 'member card verifies');
 
+-- ---------- round 13: duty confirmation, participation, bands, fixed schedules ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+insert into public.duty_assignments (member_id, dept, duty, duty_date, occasion)
+  values ('10000000-0000-0000-0000-0000000000e1', 'hr', 'አስተናጋጅ', '2026-09-20', 'መስቀል'),
+         ('10000000-0000-0000-0000-0000000000e1', 'hr', 'አስተናጋጅ', '2026-09-21', 'መስቀል');
+update public.duty_assignments set status = 'done' where member_id = '10000000-0000-0000-0000-0000000000e1' and duty_date = '2026-09-20';
+select pg_temp.must_equal((select count(*) from public.duty_assignments where status = 'done' and confirmed_by = '00000000-0000-0000-0000-0000000000a1' and confirmed_at is not null), 1, 'duty confirmation stamped');
+select pg_temp.must_equal((select pending from public.participation('10000000-0000-0000-0000-0000000000e1') where area = 'duty'), 1, 'unconfirmed duty is pending');
+select pg_temp.must_equal((select attended::int from public.participation('10000000-0000-0000-0000-0000000000e1') where area = 'duty'), 1, 'confirmed duty counted');
+select pg_temp.must_equal((select (count(*) > 0)::int from public.participation()), 1, 'hr sees everybody');
+update public.hr_settings set very_good = 90, good = 70 where id;
+select pg_temp.must_fail($q$update public.hr_settings set good = 95 where id$q$);
+select pg_temp.must_fail($q$insert into public.fixed_schedules (dept, title, day_text) values ('mezmur', 'x', 'ቅዳሜ')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+update public.duty_assignments set status = 'missed' where dept = 'hr';
+select pg_temp.must_equal((select count(*) from public.duty_assignments where dept = 'hr' and status = 'missed'), 0, 'other dept cannot confirm');
+insert into public.fixed_schedules (dept, kind, title, day_text, time_text) values ('mezmur', 'mezmur', 'የመዝሙር ጥናት', 'ቅዳሜ', '8:00');
+select pg_temp.must_fail($q$select * from public.participation()$q$);
+update public.hr_settings set good = 10 where id;
+select pg_temp.must_equal((select good::int from public.hr_settings), 70, 'only hr changes bands');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*) from public.my_duties()), 2, 'member sees own duties');
+select pg_temp.must_equal((select attended::int from public.participation('10000000-0000-0000-0000-0000000000e1') where area = 'duty'), 1, 'member sees own participation');
+select pg_temp.must_fail($q$select * from public.participation('10000000-0000-0000-0000-0000000000e2')$q$);
+select pg_temp.must_fail($q$select * from public.member_absences('10000000-0000-0000-0000-0000000000e2')$q$);
+select pg_temp.must_equal((select (count(*) >= 0)::int from public.member_absences('10000000-0000-0000-0000-0000000000e1')), 1, 'member sees own absences');
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((select count(*) from public.fixed_schedules), 1, 'public sees fixed schedules');
+select pg_temp.must_fail($q$select * from public.participation()$q$);
+reset role;
+
 \echo ALL RLS TESTS PASSED

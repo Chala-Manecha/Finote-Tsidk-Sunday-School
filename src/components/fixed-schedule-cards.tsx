@@ -1,0 +1,31 @@
+import { formatEc } from '@/lib/ethiopian-calendar';
+import type { FixedSchedule, WerebEvent } from '@/lib/schedules';
+
+/** Public cards: weekly fixed schedules and dated (approved) sessions. */
+export function ScheduleCards({ fixed, events = [], title }: { fixed: FixedSchedule[]; events?: WerebEvent[]; title: string }) {
+  if (fixed.length === 0 && events.length === 0) return null;
+  return (
+    <section className="sched-box">
+      <h2 className="sched-title">🗓 {title}</h2>
+      <div className="sched-cards">
+        {fixed.map((f) => (
+          <div key={f.id} className="sched-card">
+            <span className="sched-tag">ቋሚ</span>
+            <b>{f.title}</b>
+            <span>{f.day_text}{f.time_text ? ` · ${f.time_text}` : ''}</span>
+            {f.place && <span className="small muted">📍 {f.place}</span>}
+            {f.note && <span className="small muted">{f.note}</span>}
+          </div>
+        ))}
+        {events.map((e) => (
+          <div key={e.id} className="sched-card dated">
+            <span className="sched-tag">ቀጠሮ</span>
+            <b>{e.title}</b>
+            <span>{formatEc(e.event_date, { weekday: true })} · <span dir="ltr">{e.event_time.slice(0, 5)}</span></span>
+            {e.place && <span className="small muted">📍 {e.place}</span>}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}

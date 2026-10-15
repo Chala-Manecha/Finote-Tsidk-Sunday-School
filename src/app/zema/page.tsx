@@ -6,6 +6,8 @@ import { fetchSongs, fetchWereb } from '@/lib/songs-data';
 import { SongList } from '@/components/song-list';
 import { CategoryTabs } from '@/components/category-tabs';
 import { PublicHeader, PublicFooter } from '@/components/public-header';
+import { ScheduleCards } from '@/components/fixed-schedule-cards';
+import { fixedSchedules, upcomingWereb } from '@/lib/schedules';
 
 export const metadata: Metadata = { title: 'ዜማ' };
 
@@ -18,7 +20,11 @@ export default async function ZemaPage({
   const isWereb = tab === 'wereb';
   const category = cat && cat in SONG_CATEGORY_LABEL ? cat : undefined;
   const supabase = await createClient();
-  const all = isWereb ? await fetchWereb(supabase) : await fetchSongs(supabase, category);
+  const [all, fixed, wereb] = await Promise.all([
+    isWereb ? fetchWereb(supabase) : fetchSongs(supabase, category),
+    fixedSchedules(supabase, { dept: 'mezmur', kinds: isWereb ? ['wereb'] : ['mezmur', 'other'] }),
+    isWereb ? upcomingWereb(supabase) : Promise.resolve([]),
+  ]);
   const term = (q ?? '').trim();
   const items = term ? all.filter((x) => x.title.includes(term)) : all;
 
@@ -31,6 +37,9 @@ export default async function ZemaPage({
           <Link scroll={false} href="/zema" className={`btn sm ${!isWereb ? 'green' : 'secondary'}`}>መዝሙራት</Link>
           <Link scroll={false} href="/zema?tab=wereb" className={`btn sm ${isWereb ? 'green' : 'secondary'}`}>ወረብ</Link>
         </div>
+        {!term && !category && (
+          <ScheduleCards fixed={fixed} events={wereb} title={isWereb ? 'የወረብ ጥናት ፕሮግራም' : 'የመዝሙር ጥናት ፕሮግራም'} />
+        )}
         {!isWereb && <CategoryTabs base="/zema" active={category} />}
         <form className="song-search" action="/zema">
           {isWereb && <input type="hidden" name="tab" value="wereb" />}

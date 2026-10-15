@@ -8,9 +8,10 @@ import { todayIsoAddis } from '@/lib/ethiopian-calendar';
 type Initial = { id: string; member_id: string; duty: string; duty_date: string; occasion: string };
 
 export function DutyForm({
-  dept, members, initial,
+  dept, members, initial, plain = false,
 }: {
   dept: string;
+  plain?: boolean;
   members: { id: string; full_name: string }[];
   initial?: Initial;
 }) {
@@ -25,7 +26,7 @@ export function DutyForm({
   const sfx = initial?.id ?? 'new';
 
   return (
-    <form action={action} className={initial ? '' : 'card'}>
+    <form action={action} className={initial || plain ? '' : 'card'}>
       <input type="hidden" name="dept" value={dept} />
       {initial && <input type="hidden" name="id" value={initial.id} />}
       <div className="form-grid">

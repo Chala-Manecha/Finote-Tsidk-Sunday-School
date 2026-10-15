@@ -6,10 +6,40 @@ import {
 } from '@/lib/education';
 import { ActionButton } from '@/components/action-button';
 import { enrollSelf } from '@/lib/actions/student-auth';
+import { ownPhoto } from '@/lib/member-photo';
+import { DEPT_NAME } from '@/lib/constants';
+import { ecToIso, formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
+import { PART_AREAS, bandOf, loadBands, memberParticipation, overall, type PartArea } from '@/lib/participation';
+import { BandLegend, ParticipationView } from '@/components/participation-view';
+import { DutyPill, type DutyStatus } from '@/components/duty-table';
+
+type Duty = { id: string; dept: string; duty: string; duty_date: string; occasion: string; status: DutyStatus };
+type Absence = { on_date: string; area: PartArea; label: string; status: 'absent' | 'half' };
+
 
 export default async function StudentHome() {
   const me = await requireMember();
   const supabase = await createClient();
+  const ecYear = isoToEc(todayIsoAddis()).year;
+  const yearFrom = ecToIso({ year: ecYear, month: 1, day: 1 });
+  const [{ data: prof }, part, bands, { data: dutyData }, { data: absData }, photo] = await Promise.all([
+    supabase.rpc('my_member_profile'),
+    memberParticipation(supabase, me.memberId, yearFrom),
+    loadBands(supabase),
+    supabase.rpc('my_duties'),
+    supabase.rpc('member_absences', { p_member: me.memberId, p_limit: 8 }),
+    ownPhoto(me.photoPath),
+  ]);
+  const p = ((prof ?? []) as { sex: 'male' | 'female' | null; joined_year: number | null }[])[0];
+  const female = p?.sex === 'female';
+  const first = me.fullName.replace(/^(ቀሲስ|ዲያቆን|ዶክተር|መምህር|መምህርት) /, '').split(' ')[0];
+  const duties = (dutyData ?? []) as Duty[];
+  const today = todayIsoAddis();
+  const upcoming = duties.filter((d) => d.duty_date >= today).reverse();
+  const pastDuties = duties.filter((d) => d.duty_date < today);
+  const absences = (absData ?? []) as Absence[];
+  const all = overall(part);
+  const allBand = bandOf(all, bands);
   const { data: yearData } = await supabase.from('academic_years').select('id, ec_year, is_active').eq('is_active', true).maybeSingle();
   const year = yearData as AcademicYear | null;
 
@@ -33,8 +63,62 @@ export default async function StudentHome() {
 
   return (
     <>
-      <h1 className="title" style={{ marginTop: 0 }}>ሰላም፣ {me.fullName}</h1>
-      <p className="muted small">መለያ ቁ. {me.regNo}</p>
+      <section className="me-hero">
+        {photo
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img className="me-photo" src={photo} alt="" />
+          : <span className="me-photo empty" aria-hidden>{first.slice(0, 1)}</span>}
+        <div className="me-hello">
+          <span className="small">{female ? 'ሰላም እህታችን' : 'ሰላም ወንድማችን'}</span>
+          <h1 className="serif">{me.fullName}</h1>
+          <p>{female ? `እንኳን ደህና መጣሽ፤ ${first}! በአገልግሎትሽ እግዚአብሔር ይባርክሽ።` : `እንኳን ደህና መጣህ፤ ${first}! በአገልግሎትህ እግዚአብሔር ይባርክህ።`}</p>
+          <div className="me-tags">
+            <span>መለያ ቁ. <b>{me.regNo}</b></span>
+            {p?.joined_year && <span>ከ{p.joined_year} ዓ.ም ጀምሮ</span>}
+          </div>
+        </div>
+        <div className="me-stats">
+          <div><b>{all !== null ? `${all}%` : '—'}</b><span>ተሳትፎ ({ecYear}){allBand && <em className={`band b-${allBand.key}`}>{allBand.label}</em>}</span></div>
+          <div><b>{duties.filter((d) => d.status === 'done').length}<small>/{duties.length}</small></b><span>የፈጸምኳቸው ምደባዎች</span></div>
+          <div><b>{upcoming.length}</b><span>የሚመጡ ምደባዎች</span></div>
+        </div>
+      </section>
+
+      <div className="me-grid">
+        <section className="card">
+          <h2 className="section" style={{ marginTop: 0 }}>የእኔ ተሳትፎ — {ecYear} ዓ.ም</h2>
+          <ParticipationView data={part} bands={bands} compact />
+          <BandLegend bands={bands} />
+        </section>
+
+        <section className="card">
+          <h2 className="section" style={{ marginTop: 0 }}>የተመደብኩባቸው አገልግሎቶች</h2>
+          {duties.length === 0 ? <p className="muted small">እስካሁን የተመደቡበት አገልግሎት የለም።</p> : (
+            <ul className="me-list">
+              {[...upcoming, ...pastDuties.slice(0, 8)].map((d) => (
+                <li key={d.id}>
+                  <span><b>{d.duty}</b> · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })} · {DEPT_NAME[d.dept]}</span></span>
+                  <DutyPill status={d.status} date={d.duty_date} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="card">
+          <h2 className="section" style={{ marginTop: 0 }}>የቀረሁባቸው ቀናት</h2>
+          {absences.length === 0 ? <p className="muted small">የቀሩበት ቀን የለም። በርቱ!</p> : (
+            <ul className="me-list">
+              {absences.map((a, i) => (
+                <li key={i}>
+                  <span>{PART_AREAS[a.area] ?? a.area}{a.label ? ` — ${a.label}` : ''}<br /><span className="small muted">{formatEc(a.on_date, { weekday: true })}</span></span>
+                  <span className="pill absent">{a.status === 'half' ? (a.area === 'teaching' ? 'አርፍዷል' : 'ግማሽ') : 'ቀሪ'}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
 
       <h2 className="section">የእኔ ትምህርት</h2>
       {!year && <p className="muted">የትምህርት ዘመኑ ገና አልተከፈተም።</p>}

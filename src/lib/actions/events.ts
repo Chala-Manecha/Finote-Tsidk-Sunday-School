@@ -17,12 +17,15 @@ function readEvent(fd: FormData) {
   if (!title) return { error: 'የዝግጅቱን ስም ያስገቡ።' } as const;
   if (!DATE_RE.test(date)) return { error: 'ቀን ይምረጡ።' } as const;
   if (!TIME_RE.test(time)) return { error: 'ሰዓት ያስገቡ።' } as const;
-  return { title, event_date: date, event_time: time } as const;
+  const kind = String(fd.get('kind') ?? '') === 'wereb' ? 'wereb' : null;
+  const place = String(fd.get('place') ?? '').trim().slice(0, 120) || null;
+  return { title, event_date: date, event_time: time, kind, place } as const;
 }
 
 const refresh = () => {
   revalidatePath('/staff', 'layout');
   revalidatePath('/');
+  revalidatePath('/zema');
 };
 
 /** ቀጠሮ ላክ — any dept proposes for itself (starts pending). መርሓ ግብራት's own entries start approved. */

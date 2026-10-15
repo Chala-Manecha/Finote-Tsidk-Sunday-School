@@ -6,7 +6,7 @@ import { EventForm } from '@/components/event-form';
 import { ActionButton } from '@/components/action-button';
 import { deleteEvent } from '@/lib/actions/events';
 
-type Ev = { id: string; title: string; event_date: string; event_time: string; status: EventStatus; decided_at: string | null };
+type Ev = { id: string; title: string; event_date: string; event_time: string; status: EventStatus; decided_at: string | null; kind: string | null; place: string | null };
 
 export default async function RequestEventPage({ params }: { params: Promise<{ dept: string }> }) {
   const { dept } = await params;
@@ -15,7 +15,7 @@ export default async function RequestEventPage({ params }: { params: Promise<{ d
   const supabase = await createClient();
   const { data: events } = await supabase
     .from('events')
-    .select('id, title, event_date, event_time, status, decided_at')
+    .select('id, title, event_date, event_time, status, decided_at, kind, place')
     .eq('dept', dept)
     .order('event_date', { ascending: false })
     .limit(100)
@@ -36,7 +36,7 @@ export default async function RequestEventPage({ params }: { params: Promise<{ d
               <tr key={e.id}>
                 <td>{formatEc(e.event_date, { weekday: true })}</td>
                 <td dir="ltr">{e.event_time.slice(0, 5)}</td>
-                <td>{e.title}</td>
+                <td>{e.kind === 'wereb' && <span className="pill">ወረብ ጥናት</span>} {e.title}{e.place && <div className="small muted">📍 {e.place}</div>}</td>
                 <td><span className={`pill ${STATUS_PILL[e.status]}`}>{EVENT_STATUS[e.status]}</span></td>
                 <td>
                   {e.status === 'pending' && (

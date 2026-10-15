@@ -10,7 +10,7 @@ export default async function HrAllDuties({
   searchParams,
 }: {
   params: Promise<{ dept: string }>;
-  searchParams: Promise<{ q?: string; d?: string; duty?: string; occasion?: string; past?: string }>;
+  searchParams: Promise<{ q?: string; d?: string; duty?: string; occasion?: string; past?: string; st?: string }>;
 }) {
   const { dept } = await params;
   if (dept !== 'hr' && dept !== 'internal_comm') notFound();
@@ -19,12 +19,14 @@ export default async function HrAllDuties({
 
   let q = supabase
     .from('duty_assignments')
-    .select('id, member_id, dept, duty, duty_date, occasion, members(full_name)')
+    .select('id, member_id, dept, duty, duty_date, occasion, status, members(full_name)')
     .order('duty_date');
   if (!sp.past) q = q.gte('duty_date', todayIsoAddis());
   if (sp.d) q = q.eq('dept', sp.d);
   if (sp.duty) q = q.eq('duty', sp.duty);
   if (sp.occasion) q = q.eq('occasion', sp.occasion);
+  if (sp.st === 'done' || sp.st === 'missed') q = q.eq('status', sp.st);
+  if (sp.st === 'pending') q = q.is('status', null);
   const { data } = await q.returns<DutyRow[]>();
   const needle = sp.q?.trim();
   const rows = (data ?? []).filter((r) => !needle || r.members?.full_name.includes(needle));
@@ -61,10 +63,21 @@ export default async function HrAllDuties({
             {OCCASIONS.map((x) => <option key={x}>{x}</option>)}
           </select>
         </div>
+        <div className="field">
+          <label htmlFor="st">ሁኔታ</label>
+          <select id="st" name="st" defaultValue={sp.st ?? ''}>
+            <option value="">ሁሉም</option>
+            <option value="done">ፈጽሟል</option>
+            <option value="missed">አልፈጸመም</option>
+            <option value="pending">ያልተረጋገጠ</option>
+          </select>
+        </div>
         <label className="check"><input type="checkbox" name="past" defaultChecked={!!sp.past} /> ያለፉትንም</label>
         <button className="btn sm">አጣራ</button>
       </form>
-      <p className="muted small">{rows.length} ምደባዎች</p>
+      <p className="muted small">
+        {rows.length} ምደባዎች · ፈጽሟል {rows.filter((r) => r.status === 'done').length} · አልፈጸመም {rows.filter((r) => r.status === 'missed').length} · ያልተረጋገጠ {rows.filter((r) => !r.status).length}
+      </p>
       <DutyTable rows={rows} members={[]} showDept />
     </>
   );

@@ -4,7 +4,7 @@ import { EcDatePicker } from './ec-date-picker';
 import { proposeEvent, updateEvent, type FormState } from '@/lib/actions/events';
 import { todayIsoAddis } from '@/lib/ethiopian-calendar';
 
-type Initial = { id: string; title: string; event_date: string; event_time: string };
+type Initial = { id: string; title: string; event_date: string; event_time: string; kind?: string | null; place?: string | null };
 
 /** Add (ቀጠሮ ላክ) or edit an event. All three fields are mandatory. */
 export function EventForm({ dept, initial }: { dept: string; initial?: Initial }) {
@@ -24,6 +24,15 @@ export function EventForm({ dept, initial }: { dept: string; initial?: Initial }
       <input type="hidden" name="dept" value={dept} />
       {initial && <input type="hidden" name="id" value={initial.id} />}
       <div className="form-grid">
+        {(dept === 'mezmur' || initial?.kind) && (
+          <div className="field">
+            <label htmlFor={`kind-${initial?.id ?? 'new'}`}>አይነት</label>
+            <select id={`kind-${initial?.id ?? 'new'}`} name="kind" defaultValue={initial?.kind ?? ''}>
+              <option value="">ዝግጅት / ሌላ</option>
+              <option value="wereb">ወረብ ጥናት (በሕዝብ ዜማ ገጽ ይታያል)</option>
+            </select>
+          </div>
+        )}
         <div className="field">
           <label htmlFor={`title-${initial?.id ?? 'new'}`}>የዝግጅቱ ስም (ርዕስ) <span className="req">*</span></label>
           <input id={`title-${initial?.id ?? 'new'}`} name="title" required defaultValue={initial?.title} />
@@ -36,6 +45,10 @@ export function EventForm({ dept, initial }: { dept: string; initial?: Initial }
           <label htmlFor={`time-${initial?.id ?? 'new'}`}>ሰዓት <span className="req">*</span></label>
           <input id={`time-${initial?.id ?? 'new'}`} name="event_time" type="time" required
             defaultValue={initial?.event_time?.slice(0, 5)} />
+        </div>
+        <div className="field">
+          <label htmlFor={`place-${initial?.id ?? 'new'}`}>ቦታ</label>
+          <input id={`place-${initial?.id ?? 'new'}`} name="place" defaultValue={initial?.place ?? ''} />
         </div>
       </div>
       <div className="btn-row">
