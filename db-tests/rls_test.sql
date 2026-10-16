@@ -970,4 +970,18 @@ update public.semester_conduct set conduct = 'D' where member_id = '10000000-000
 select pg_temp.must_equal((select count(*)::int from public.semester_conduct where conduct = 'D'), 0, 'the department cannot change ጠባይ');
 reset role;
 
+-- ---------- round 21: ክህነት from the registration form ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select public.set_member_clergy('10000000-0000-0000-0000-0000000000e1', '{"rank": "priest", "ordained_on": "2020-01-05", "bishop": "አቡነ ሀ", "service_status": "serving"}');
+select public.set_member_clergy('10000000-0000-0000-0000-0000000000e1', '{"rank": "deacon", "service_status": "away"}');
+select pg_temp.must_equal((select count(*)::int from public.clergy where member_id = '10000000-0000-0000-0000-0000000000e1' and rank = 'deacon'), 1, 'one ክህነት row per member, updated');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+select pg_temp.must_fail($q$select public.set_member_clergy('10000000-0000-0000-0000-0000000000e1', null)$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select public.set_member_clergy('10000000-0000-0000-0000-0000000000e1', null);
+select pg_temp.must_equal((select count(*)::int from public.clergy where member_id = '10000000-0000-0000-0000-0000000000e1'), 0, 'unticked → removed');
+reset role;
+
 \echo ALL RLS TESTS PASSED

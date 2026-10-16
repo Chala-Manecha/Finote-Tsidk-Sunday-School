@@ -230,6 +230,57 @@ export async function promoteToNext(yearId: string, cls: string, memberIds: stri
   refresh();
 }
 
+/**
+ * ወደ ቀጣይ ክፍል አዛውር: everyone at once — passed → the next class, failed → the same class, in the next
+ * academic year. Students already placed there are left as they are. One class, or every class (cls = null).
+ */
+export async function promoteAll(yearId: string, cls: string | null) {
+  await requireDept('education');
+  if (cls !== null && !isClassLevel(cls)) return { error: 'ክፍል ይምረጡ።' };
+  const supabase = await createClient();
+  const [{ data: years }, { data: enr }] = await Promise.all([
+    supabase.from('academic_years').select('id, ec_year').order('ec_year'),
+    supabase.from('enrollments').select('member_id, class_level, study_mode').eq('year_id', yearId).not('class_level', 'is', null),
+  ]);
+  const at = (years ?? []).findIndex((y) => y.id === yearId);
+  const next = at >= 0 ? years![at + 1] : undefined;
+  if (!next) return { error: 'የሚቀጥለው የትምህርት ዘመን ገና አልተከፈተም — መጀመሪያ በ“የትምህርት ዘመን” ትር ይክፈቱት።' };
+  const levels = cls ? [cls] : [...new Set((enr ?? []).map((e) => e.class_level as string))];
+  const modeOf = new Map((enr ?? []).map((e) => [e.member_id as string, (e.study_mode as string) ?? 'regular']));
+  const { data: placedRows } = await supabase.from('enrollments').select('member_id').eq('year_id', next.id).not('class_level', 'is', null);
+  const placed = new Set((placedRows ?? []).map((e) => e.member_id as string));
+  let up = 0, again = 0, done = 0, graduated = 0;
+  const notReady: string[] = [];
+  const todo: { year_id: string; member_id: string; class_level: string; study_mode: string }[] = [];
+  for (const lv of levels) {
+    const { data: rows } = await supabase.rpc('year_results', { p_year: yearId, p_class: lv });
+    const res = (rows ?? []) as { member_id: string; decision: string | null; auto_decision: string; ready: boolean }[];
+    if (!res.length) continue;
+    if (!res[0].ready) { notReady.push(lv); continue; }
+    for (const r of res) {
+      if (placed.has(r.member_id)) { done++; continue; }
+      const passed = (r.decision ?? r.auto_decision) === 'promoted';
+      const target = passed ? NEXT_CLASS[lv] : lv;
+      if (!target) { graduated++; continue; }   // 12ኛ ክፍል ያለፉ
+      todo.push({ year_id: next.id, member_id: r.member_id, class_level: target, study_mode: modeOf.get(r.member_id) ?? 'regular' });
+      if (passed) up++; else again++;
+    }
+  }
+  if (todo.length) {
+    const { error } = await supabase.from('enrollments').upsert(todo, { onConflict: 'year_id,member_id' });
+    if (error) return { error: explain(error.message) };
+  }
+  refresh();
+  if (!todo.length && !done && !graduated) {
+    return { error: notReady.length ? 'የሁለቱም ሴሚስተሮች ኮርሶች ገና አልጸደቁም።' : 'የሚዛወር ተማሪ የለም።' };
+  }
+  const parts = [`⬆ ${up} ተዛውረዋል`, `↻ ${again} ይደግማሉ`];
+  if (graduated) parts.push(`🎓 ${graduated} 12ኛ ክፍልን ጨርሰዋል`);
+  if (done) parts.push(`${done} ቀድመው ተመድበዋል`);
+  if (notReady.length) parts.push(`ያልጸደቁ ክፍሎች ቀርተዋል (${notReady.length})`);
+  return { ok: `${next.ec_year} ዓ.ም፦ ${parts.join(' · ')}` };
+}
+
 /** Copy courses (with teachers, days/time and book) from another semester into this one; existing names are skipped. */
 export async function copyCourses(fromId: string, toId: string) {
   await requireDept('education');

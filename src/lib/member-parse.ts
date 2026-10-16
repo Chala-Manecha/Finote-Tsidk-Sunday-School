@@ -1,5 +1,5 @@
 import 'server-only';
-import { isDeptCode, isProgram, SEX, WORK_STATUS, TITLES, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_TYPE } from '@/lib/constants';
+import { isDeptCode, isProgram, SEX, WORK_STATUS, TITLES, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_TYPE, CLERGY_RANK, CLERGY_SERVICE } from '@/lib/constants';
 import { cleanEducation, cleanWork } from '@/lib/member-details';
 
 export const DUPLICATE_NAME_MSG = 'በቅድሚያ ተመዝግበዋል። እባክዎ ስምዎትን በትክክል መሙላትዎን ያረጋግጡ!';
@@ -14,7 +14,8 @@ const oneOf = <T extends Record<string, string>>(v: string | null, map: T) =>
 /** Uploaded files arrive as storage paths; only our own folders are accepted. */
 const docPath = (v: string | null) => (v && /^(members|applications)\//.test(v) ? v : null);
 
-export type ParsedMember = { member: Record<string, unknown>; depts: string[]; fullName: string; phone: string | null; programs: string[] | null };
+export type Clergy = { rank: string; ordained_on: string | null; bishop: string | null; place: string | null; service_status: string; evidence_path: string | null };
+export type ParsedMember = { member: Record<string, unknown>; depts: string[]; fullName: string; phone: string | null; programs: string[] | null; clergy: Clergy | null };
 
 /** Reads and checks the member form. `isNew` makes the registration-only fields required. */
 export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { error: string } {
@@ -73,6 +74,15 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
   if (depts.length > 2) return { error: 'ቢበዛ 2 ክፍሎች ብቻ መምረጥ ይቻላል።' };
   const phone = str(fd, 'phone');
   // null = the form had no program question (older forms); [] = chose none (all declined)
+  // ክህነት: only for male members who ticked it
+  const clergy: Clergy | null = sex === 'male' && fd.get('has_clergy') === 'on' ? {
+    rank: oneOf(str(fd, 'clergy_rank'), CLERGY_RANK) ?? 'deacon',
+    ordained_on: /^\d{4}-\d{2}-\d{2}$/.test(str(fd, 'clergy_ordained_on') ?? '') ? str(fd, 'clergy_ordained_on') : null,
+    bishop: (str(fd, 'clergy_bishop') ?? '').slice(0, 120) || null,
+    place: (str(fd, 'clergy_place') ?? '').slice(0, 160) || null,
+    service_status: oneOf(str(fd, 'clergy_service'), CLERGY_SERVICE) ?? 'serving',
+    evidence_path: docPath(str(fd, 'clergy_evidence')),
+  } : null;
   const programs = fd.get('programs_asked') === '1' ? fd.getAll('programs').map(String).filter(isProgram) : null;
 
   const member = {
@@ -118,5 +128,5 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
     education,
     work,
   };
-  return { member, depts, fullName, phone, programs };
+  return { member, depts, fullName, phone, programs, clergy };
 }

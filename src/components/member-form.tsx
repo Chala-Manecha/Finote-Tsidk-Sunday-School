@@ -11,7 +11,7 @@ import { MultiSelect } from './multi-select';
 import { ageFromIso, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
   DEPARTMENTS, EDUCATION_LEVELS, EMERGENCY_RELATIONS, GEEZ_LEVEL, LANGUAGES, MARITAL_STATUS, MEMBER_TYPE,
-  REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
+  CLERGY_RANK, CLERGY_SERVICE, REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
 } from '@/lib/constants';
 import { emptyEducation, emptyWork, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
@@ -35,6 +35,8 @@ export type MemberInitial = {
   is_ethiopian?: boolean;
   nationality?: string | null;
   prior_school?: { name?: string | null; years?: number | null; evidence_path?: string | null } | null;
+  /** ክህነት (male members): rank, ordination date, bishop, place, service, certificate */
+  clergy?: { rank?: string | null; ordained_on?: string | null; bishop?: string | null; place?: string | null; service_status?: string | null; evidence_path?: string | null } | null;
   secular_school?: { name?: string | null; evidence_path?: string | null } | null;
   depts?: string[];
   /** programs the member takes part in / chose (undefined = never asked) */
@@ -149,6 +151,8 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   const [dob, setDob] = useState<string | null>(initial.dob ?? null);
   const [joined, setJoined] = useState<string>(initial.joined_year ? String(initial.joined_year) : '');
   const [hasPrior, setHasPrior] = useState(!!initial.prior_school);
+  const [sex, setSex] = useState(initial.sex ?? '');
+  const [hasClergy, setHasClergy] = useState(!!initial.clergy);
   const [isEthiopian, setIsEthiopian] = useState(initial.is_ethiopian ?? true);
   const [memberType, setMemberType] = useState(initial.member_type ?? 'regular');
   const [workStatus, setWorkStatus] = useState(initial.work_status ?? '');
@@ -220,6 +224,9 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
       fd.delete('prior_school_file');
       if (prior instanceof File && prior.size > 0) fd.set('prior_school_evidence', await upload(mode, prior, prior.name));
       if (fd.get('has_prior_school') === 'on' && !String(fd.get('prior_school_evidence') ?? '')) throw new Error('የቀድሞ ሰ/ት/ቤት ማስረጃ ያያይዙ።');
+      const cert = fd.get('clergy_file');
+      fd.delete('clergy_file');
+      if (cert instanceof File && cert.size > 0) fd.set('clergy_evidence', await upload(mode, cert, cert.name));
       eduRows = await Promise.all(education.map(async (row) => {
         const file = fd.get(`edu_file_${row._k}`);
         fd.delete(`edu_file_${row._k}`);
@@ -336,7 +343,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
           </div>
           <div className="field">
             <label htmlFor="sex">ፆታ <span className="req">*</span></label>
-            <select id="sex" name="sex" required defaultValue={initial.sex ?? ''}>
+            <select id="sex" name="sex" required value={sex} onChange={(e) => setSex(e.target.value)}>
               <option value="" disabled>ይምረጡ</option>
               {Object.entries(SEX).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
@@ -355,6 +362,42 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
             </select>
           </div>
         </div>
+        {sex === 'male' && (
+          <>
+            <label className="check">
+              <input type="checkbox" name="has_clergy" checked={hasClergy} onChange={(e) => setHasClergy(e.target.checked)} />
+              ⛪ ክህነት አለኝ
+            </label>
+            {hasClergy && (
+              <div className="form-grid clergy-box">
+                <div className="field">
+                  <label htmlFor="clergy_rank">የክህነት ማዕረግ <span className="req">*</span></label>
+                  <select id="clergy_rank" name="clergy_rank" required defaultValue={initial.clergy?.rank ?? 'deacon'}>
+                    {Object.entries(CLERGY_RANK).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <span className="label">ክህነት የተቀበሉበት ቀን (ዓ.ም)</span>
+                  <EcDatePicker name="clergy_ordained_on" defaultIso={initial.clergy?.ordained_on ?? null} yearsBack={80} yearsForward={0} />
+                </div>
+                <div className="field"><label htmlFor="clergy_bishop">የሾሟቸው ብፁዕ አቡነ …</label><input id="clergy_bishop" name="clergy_bishop" maxLength={120} placeholder="የጳጳሱ ስም" defaultValue={initial.clergy?.bishop ?? ''} /></div>
+                <div className="field"><label htmlFor="clergy_place">የተሾሙበት ቦታ</label><input id="clergy_place" name="clergy_place" maxLength={160} defaultValue={initial.clergy?.place ?? ''} /></div>
+                <div className="field">
+                  <label htmlFor="clergy_service">የአገልግሎት ሁኔታ</label>
+                  <select id="clergy_service" name="clergy_service" defaultValue={initial.clergy?.service_status ?? 'serving'}>
+                    {Object.entries(CLERGY_SERVICE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="clergy_file">የክህነት ማስረጃ (አማራጭ)</label>
+                  <input id="clergy_file" name="clergy_file" type="file" accept="image/*,.pdf" />
+                  <input type="hidden" name="clergy_evidence" defaultValue={initial.clergy?.evidence_path ?? ''} />
+                  {initial.clergy?.evidence_path && <span className="hint">ማስረጃ ተያይዟል — አዲስ ፋይል ከመረጡ ይተካል</span>}
+                </div>
+              </div>
+            )}
+          </>
+        )}
         <label className="check">
           <input type="checkbox" name="is_ethiopian" checked={isEthiopian} onChange={(e) => setIsEthiopian(e.target.checked)} />
           ዜግነት ኢትዮጵያዊ

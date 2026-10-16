@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, DECISION, classLabel, isClassLevel, semesterLabel, type AcademicYear, type ResultRow, type Semester, type YearRow } from '@/lib/education';
 import { ActionButton } from '@/components/action-button';
 import { PrintButton } from '@/components/print-button';
-import { openYearTranscript, promoteToNext } from '@/lib/actions/education-admin';
+import { openYearTranscript, promoteToNext, promoteAll } from '@/lib/actions/education-admin';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
@@ -38,6 +38,10 @@ export default async function YearEnd({ params, searchParams }: {
         {sems.length > 0 && <ResultsSwitch dept={dept} year={year} semesters={sems} current="year" cls={cls} />}
         <span className="spacer" />
         <span className="small muted">የዓመት ማጠቃለያ · {cls ? classLabel(cls) : 'ሁሉም ክፍሎች'} · {year.ec_year} ዓ.ም</span>
+        {dept === 'education' && !cls && years.some((x) => x.ec_year > year.ec_year) && (
+          <ActionButton action={promoteAll.bind(null, year.id, null)} label="⬆ ሁሉንም ክፍሎች አዛውር" className="btn sm green"
+            confirmText="በሁሉም ክፍሎች፦ ያለፉ ወደ ቀጣዩ ክፍል፣ የወደቁ በዚያው ክፍል በሚቀጥለው ዓመት ይመደቡ? ቀድመው የተመደቡት አይነኩም፤ ያልጸደቁ ክፍሎች ይቀራሉ።" />
+        )}
         <PrintButton />
       </div>
       <p className="small muted">
@@ -96,7 +100,8 @@ async function ClassYear({ dept, year, years, cls, m }: {
     : { data: [] };
   const placed = new Map((nextEnr ?? []).map((e) => [e.member_id as string, e.class_level as string | null]));
   const decisionOf = (r: YearRow) => r.decision ?? r.auto_decision;
-  const passedLeft = rows.filter((r) => decisionOf(r) === 'promoted' && !placed.get(r.member_id)).length;
+  const passedLeft = cls === '12' ? 0 : rows.filter((r) => decisionOf(r) === 'promoted' && !placed.get(r.member_id)).length;
+  const failedLeft = rows.filter((r) => decisionOf(r) === 'repeat' && !placed.get(r.member_id)).length;
 
   // የወደቁ ኮርሶች of the clicked student (both semesters of this year).
   const picked = sp.m ? rows.find((r) => r.member_id === sp.m) : undefined;
@@ -117,20 +122,20 @@ async function ClassYear({ dept, year, years, cls, m }: {
       {rows.length > 0 && (ready
         ? <p className="alert ok">✓ የሁለቱም ሴሚስተሮች ውጤቶች ጸድቀዋል።</p>
         : <p className="small muted">የሁለቱም ሴሚስተሮች ሁሉም ኮርሶች ሲጸድቁ የዓመት ትራንስክሪፕትና የክብር ሰርተፍኬት ይከፈታሉ።</p>)}
-      {dept === 'education' && ready && cls !== '12' && (
+      {dept === 'education' && ready && (
         <div className="card no-print promote-bar">
           {nextYear ? (
             <>
               <span>
-                <b>ወደ ቀጣይ አሳልፍ</b> — ያለፉ ተማሪዎች ወደ <b>{classLabel(String(cls === 'kids' ? 1 : Number(cls) + 1))}</b> ({nextYear.ec_year} ዓ.ም)።
-                {' '}<span className="small muted">ቀሪ፦ {passedLeft}</span>
+                <b>ወደ ቀጣይ ክፍል አዛውር</b> — ያለፉ → {cls === '12' ? '12ኛ ክፍልን ጨርሰዋል' : <b>{classLabel(String(cls === 'kids' ? 1 : Number(cls) + 1))}</b>}፣ የወደቁ → <b>{classLabel(cls)}</b> ({nextYear.ec_year} ዓ.ም)።
+                {' '}<span className="small muted">ያልተመደቡ፦ ያለፉ {passedLeft} · የወደቁ {failedLeft}</span>
               </span>
-              {passedLeft > 0 && (
-                <ActionButton action={promoteToNext.bind(null, year.id, cls, [])} label={`ያለፉትን ${passedLeft} በሙሉ አሳልፍ`} className="btn sm green"
-                  confirmText={`ያለፉ ${passedLeft} ተማሪዎች በ${nextYear.ec_year} ዓ.ም ወደ ቀጣዩ ክፍል ይዛወሩ?`} />
-              )}
+              {passedLeft + failedLeft > 0
+                ? <ActionButton action={promoteAll.bind(null, year.id, cls)} label="⬆ ወደ ቀጣይ ክፍል አዛውር" className="btn sm green"
+                    confirmText={`${classLabel(cls)}፦ ያለፉ ${passedLeft} ወደ ቀጣዩ ክፍል፣ የወደቁ ${failedLeft} በዚያው ክፍል በ${nextYear.ec_year} ዓ.ም ይመደቡ?`} />
+                : <span className="pill present">✓ ሁሉም ተመድበዋል</span>}
             </>
-          ) : <span className="small">ለማሳለፍ መጀመሪያ የ{year.ec_year + 1} ዓ.ም የትምህርት ዘመን በ“የትምህርት ዘመን” ትር ይክፈቱ።</span>}
+          ) : <span className="small">ለማዛወር መጀመሪያ የ{year.ec_year + 1} ዓ.ም የትምህርት ዘመን በ“የትምህርት ዘመን” ትር ይክፈቱ።</span>}
         </div>
       )}
       {picked && (

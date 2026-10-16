@@ -6,6 +6,8 @@ import { formatEc, todayIsoAddis, weekdayOf, WEEKDAYS_AM } from '@/lib/ethiopian
 import { EduPicker } from './edu-picker';
 import { EcDatePicker } from './ec-date-picker';
 import { MediaForm } from './media-form';
+import { Modal } from './modal';
+import Link from 'next/link';
 import { saveTeacherAttendance } from '@/lib/actions/education-admin';
 import { classAbsences } from '@/lib/absences';
 import { AbsenceList } from './absence-list';
@@ -115,13 +117,14 @@ export async function StudentAttendance({ supabase, base, years, semesters, seme
 export async function TeacherAttendance({ supabase, base, semester, date: d, all, canEdit, view = 'teachers' }: {
   supabase: Sb; base: string; semester: NonNullable<Terms['semester']>; date?: string; all: boolean; canEdit: boolean; view?: string;
 }) {
-  const date = d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : todayIsoAddis();
+  const picked = d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;   // null = the list of days taken
+  const date = picked ?? todayIsoAddis();
   const dow = weekdayOf(date);
   const [{ data: offs }, { data: marks }, { data: semAll }] = await Promise.all([
     supabase.from('course_offerings').select('id, name, class_level, days, time_text, offering_teachers(member_id, members(full_name))')
       .eq('semester_id', semester.id).order('class_level').order('name'),
     supabase.from('teacher_attendance').select('offering_id, member_id, status, note').eq('att_date', date),
-    supabase.from('teacher_attendance').select('member_id, status, offering_id, course_offerings!inner(semester_id)').eq('course_offerings.semester_id', semester.id),
+    supabase.from('teacher_attendance').select('member_id, status, offering_id, att_date, course_offerings!inner(semester_id)').eq('course_offerings.semester_id', semester.id),
   ]);
   type O = { id: string; name: string; class_level: string; days: number[]; time_text: string | null; offering_teachers: { member_id: string; members: { full_name: string } | null }[] };
   const offerings = (offs ?? []) as unknown as O[];
@@ -139,6 +142,18 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
     x[r.status] += 1;
     sum.set(r.member_id, x);
   }
+  const byDay = new Map<string, Record<TStatus, number>>();
+  for (const r of (semAll ?? []) as { att_date: string; status: TStatus }[]) {
+    const x = byDay.get(r.att_date) ?? { present: 0, late: 0, absent: 0, excused: 0 };
+    x[r.status] += 1;
+    byDay.set(r.att_date, x);
+  }
+  const days = [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([day, x]) => {
+    const counted = x.present + x.late + x.absent;
+    return { day, ...x, pct: counted ? Math.round(((x.present + x.late) / counted) * 100) : null };
+  });
+  const taken = new Set(byDay.keys());
+  const listHref = `${base}?v=${view}&s=${semester.id}`;
   const summary = [...names.entries()].map(([id, name]) => {
     const x = sum.get(id) ?? { present: 0, late: 0, absent: 0, excused: 0 };
     const counted = x.present + x.late + x.absent;
@@ -147,19 +162,17 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
 
   return (
     <>
+      {picked ? (
+        <>
       <section className="card">
         <div className="card-head">
           <b>✍ የመምህራን ክትትል መያዝ</b>
           <span className="pill">{formatEc(date, { weekday: true })}</span>
+          {taken.has(date) && <span className="pill present">ተይዟል — ማስተካከል ይችላሉ</span>}
           <span className="spacer" />
-          <form className="toolbar slim no-print" action={base}>
-            <input type="hidden" name="v" value={view} />
-            <input type="hidden" name="s" value={semester.id} />
-            <EcDatePicker name="d" defaultIso={date} yearsBack={1} yearsForward={0} />
-            <button className="btn sm secondary">ቀን ቀይር</button>
-          </form>
+          <Link className="btn sm secondary no-print" href={listHref}>← ወደ ዝርዝሩ</Link>
         </div>
-        <p className="small muted" style={{ marginTop: 0 }}>ለእያንዳንዱ መምህር ሁኔታውን ይምረጡና “አስቀምጥ” ይጫኑ። በ{WEEKDAYS_AM[dow]} የሚያስተምሩት ከላይ ናቸው (📌)። የተያዘውን ለማስተካከል ቀኑን ይምረጡ።</p>
+        <p className="small muted" style={{ marginTop: 0 }}>ለእያንዳንዱ መምህር ሁኔታውን ይምረጡና “አስቀምጥ” ይጫኑ። በ{WEEKDAYS_AM[dow]} የሚያስተምሩት ከላይ ናቸው (📌)።</p>
       {rows.length === 0 ? (
         <p className="muted">መምህር የተመደበለት ኮርስ የለም — በ“📌 ምደባ” ይመድቡ።</p>
       ) : (
@@ -195,6 +208,44 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
         </MediaForm>
       )}
       </section>
+
+        </>
+      ) : (
+        <>
+      <div className="card-head">
+        <b>የመምህራን ክትትል</b><span className="small muted">{days.length} ቀናት ተይዘዋል</span>
+        <span className="spacer" />
+        {canEdit && (
+          <Modal label="+ አዲስ ክትትል" title="አዲስ የመምህራን ክትትል" sub="ቀኑን ይምረጡ — የመምህራን ዝርዝሩ ይከፈታል" size="sm">
+            <form className="new-session" action={base}>
+              <input type="hidden" name="v" value={view} />
+              <input type="hidden" name="s" value={semester.id} />
+              <div className="field"><span className="label">ቀን</span><EcDatePicker name="d" defaultIso={todayIsoAddis()} yearsBack={1} yearsForward={0} required /></div>
+              <button className="btn green" style={{ width: '100%', justifyContent: 'center' }}>ዝርዝሩን ክፈትና ክትትል ያዝ →</button>
+            </form>
+          </Modal>
+        )}
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>ቀን</th>{(Object.keys(T_STATUS) as TStatus[]).map((k) => <th key={k} className="num">{T_STATUS[k]}</th>)}<th className="num">%</th><th /></tr></thead>
+          <tbody>
+            {days.map((x) => (
+              <tr key={x.day}>
+                <td>{formatEc(x.day, { weekday: true })}</td>
+                <td className="num">{x.present}</td><td className="num">{x.late}</td>
+                <td className={`num ${x.absent ? 'neg' : ''}`}>{x.absent}</td><td className="num">{x.excused}</td>
+                <td className="num">{x.pct === null ? '—' : <span className={`pill ${x.pct >= 75 ? 'present' : x.pct >= 50 ? 'half' : 'absent'}`}>{x.pct}%</span>}</td>
+                <td><Link className="btn xs secondary" href={`${base}?v=${view}&s=${semester.id}&d=${x.day}`}>{canEdit ? 'ክፈት / አስተካክል' : 'ክፈት'}</Link></td>
+              </tr>
+            ))}
+            {days.length === 0 && <tr><td colSpan={7} className="muted">በዚህ ሴሚስተር እስካሁን ክትትል አልተያዘም{canEdit ? ' — “+ አዲስ ክትትል” ይጫኑ' : ''}።</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+        </>
+      )}
 
       <h3 className="section">📊 የሴሚስተሩ ማጠቃለያ</h3>
       <div className="table-wrap">

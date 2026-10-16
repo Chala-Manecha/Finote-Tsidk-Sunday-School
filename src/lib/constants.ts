@@ -26,6 +26,9 @@ export const SEX = { male: 'ወንድ', female: 'ሴት' } as const;
 export const TITLES = { qesis: 'ቀሲስ', diakon: 'ዲያቆን', doctor: 'ዶክተር' } as const;
 export const WORK_STATUS = { student: 'ተማሪ', worker: 'ሠራተኛ' } as const;
 export const MEMBER_STATUS = { new: 'አዲስ', existing: 'ነባር', lost: 'የጠፉ' } as const;
+/** ክህነት — asked at registration for male members who have it */
+export const CLERGY_RANK = { deacon: 'ዲያቆን', priest: 'ቄስ / ካህን', other: 'ሌላ' } as const;
+export const CLERGY_SERVICE = { serving: 'በአገልግሎት ላይ', not_serving: 'አያገለግሉም', away: 'ርቀው ያሉ' } as const;
 export const GEEZ_LEVEL = { none: 'ምንም', understand: 'መረዳት ደረጃ', correct: 'ማረም ደረጃ' } as const;
 
 export const MARITAL_STATUS = {

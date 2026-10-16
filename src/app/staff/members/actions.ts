@@ -30,6 +30,10 @@ export async function saveMember(_: MemberFormState, fd: FormData): Promise<Memb
     if (error.message.includes('max_two_departments')) return { error: 'ቢበዛ 2 ክፍሎች ብቻ መምረጥ ይቻላል።' };
     return { error: `ማስቀመጥ አልተቻለም፦ ${error.message}` };
   }
+  {
+    const { error: cErr } = await supabase.rpc('set_member_clergy', { p_member: data, p_clergy: parsed.clergy });
+    if (cErr) return { error: `የክህነት መረጃው አልተቀመጠም፦ ${cErr.message}` };
+  }
   if (parsed.programs) {
     const { error: pErr } = await supabase.rpc('set_member_programs', { p_member: data, p_chosen: parsed.programs });
     if (pErr) return { error: `ተሳትፎው አልተቀመጠም፦ ${pErr.message}` };

@@ -1838,3 +1838,4 @@ tr.today-row td { background: #FFF8E6; }
 .assign-grid select, .assign-grid input:not([type=checkbox]):not([type=radio]) { padding: 8px 10px; border: 1px solid var(--field-border); border-radius: 8px; background: #fff; font: inherit; font-size: .88rem; }
 .teacher-chip > span:last-child { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .teacher-chip > span:first-child { min-width: 0; }
+.clergy-box { background: #FBF6EA; border: 1px solid #E8D9B0; border-radius: 12px; padding: 12px; margin-bottom: 10px; }

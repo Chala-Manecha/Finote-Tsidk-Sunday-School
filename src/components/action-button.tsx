@@ -1,7 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 
-export type ActionResult = { error?: string } | void;
+export type ActionResult = { error?: string; ok?: string } | void;
 
 /** Button that runs a server action, with optional confirm and inline error. */
 export function ActionButton({
@@ -19,6 +19,7 @@ export function ActionButton({
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
   return (
     <>
       <button
@@ -28,15 +29,18 @@ export function ActionButton({
         onClick={() => {
           if (confirmText && !confirm(confirmText)) return;
           setError(null);
+          setOk(null);
           start(async () => {
             const res = await action();
             if (res && res.error) setError(res.error);
+            if (res && res.ok) setOk(res.ok);
           });
         }}
       >
         {pending ? pendingLabel : label}
       </button>
       {error && <span className="alert error small" style={{ margin: '0 6px' }}>{error}</span>}
+      {ok && <span className="alert ok small" style={{ margin: '0 6px' }}>{ok}</span>}
     </>
   );
 }

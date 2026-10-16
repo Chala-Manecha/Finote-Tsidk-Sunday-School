@@ -39,7 +39,7 @@ export async function submitApplication(_: ApplicationState, fd: FormData): Prom
   if ('error' in parsed) return { error: parsed.error };
   if (!parsed.phone) return { error: 'ስልክ ቁጥር ያስገቡ።' };
   const paths = [parsed.member.photo_path, (parsed.member.prior_school as { evidence_path?: string } | null)?.evidence_path,
-    ...(parsed.member.education as { evidence_path?: string | null }[]).map((e) => e.evidence_path)].filter(Boolean) as string[];
+    ...(parsed.member.education as { evidence_path?: string | null }[]).map((e) => e.evidence_path), parsed.clergy?.evidence_path].filter(Boolean) as string[];
   if (paths.some((p) => !p.startsWith('applications/'))) return { error: 'ፋይሉ ትክክል አይደለም። እንደገና ይጫኑ።' };
 
   const admin = createAdminClient();
@@ -61,7 +61,7 @@ export async function submitApplication(_: ApplicationState, fd: FormData): Prom
   if (uErr || !user.user) return { error: 'መላክ አልተቻለም። እንደገና ይሞክሩ።' };
 
   const { data: row, error } = await admin.from('member_applications').insert({
-    data: parsed.member, depts: parsed.depts, programs: parsed.programs ?? [], full_name: parsed.fullName, phone: parsed.phone,
+    data: { ...parsed.member, clergy: parsed.clergy }, depts: parsed.depts, programs: parsed.programs ?? [], full_name: parsed.fullName, phone: parsed.phone,
     reg_key: key, auth_user_id: user.user.id,
   }).select('id, reg_no').single();
   if (error || !row) {

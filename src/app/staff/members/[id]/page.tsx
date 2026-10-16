@@ -4,6 +4,7 @@ import { requireDept } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { ageFromIso, formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
+  CLERGY_RANK, CLERGY_SERVICE,
   DEPT_NAME, PROGRAMS, type ProgramCode, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_STATUS, memberTypeLabel, SEX, TITLES, WORK_STATUS,
 } from '@/lib/constants';
 import { PART_AREAS, type PartArea } from '@/lib/participation';
@@ -49,6 +50,8 @@ export default async function MemberDetail({
   const signed = async (path?: string | null) =>
     path ? (await supabase.storage.from('member-docs').createSignedUrl(path, 600)).data?.signedUrl : null;
   const priorUrl = await signed(m.prior_school?.evidence_path);
+  const { data: cg } = await supabase.from('clergy').select('rank, ordained_on, bishop, place, service_status, file_path').eq('member_id', m.id).maybeSingle();
+  const clergyUrl = cg?.file_path && /^(members|applications)\//.test(cg.file_path) ? await signed(cg.file_path) : null;
   const photoUrl = await signed(m.photo_path);
   const secularUrl = await signed(m.secular_school?.evidence_path);
   const eduUrls = await Promise.all(((m.education ?? []) as EducationEntry[]).map((e) => signed(e.evidence_path)));
@@ -98,6 +101,13 @@ export default async function MemberDetail({
         ['ሁኔታ', WORK_STATUS[m.work_status as keyof typeof WORK_STATUS] ?? ''],
         ...work.map((w, i): [string, string] => [`ሥራ ${i + 1}`, `${[w.field, w.workplace].filter(Boolean).join(' · ')} ${yearsLabel(w)}`]),
       ] },
+      ...(cg ? [{ title: '⛪ ክህነት', rows: [
+        ['ማዕረግ', CLERGY_RANK[cg.rank as keyof typeof CLERGY_RANK] ?? cg.rank],
+        ['የተቀበሉበት ቀን', cg.ordained_on ? formatEc(cg.ordained_on) : ''],
+        ['የሾሟቸው', dash(cg.bishop)],
+        ['ቦታ', dash(cg.place)],
+        ['አገልግሎት', CLERGY_SERVICE[cg.service_status as keyof typeof CLERGY_SERVICE] ?? ''],
+      ] as [string, string][] }] : []),
       { title: 'ዝንባሌና ተሳትፎ', rows: [
         ['ማገልገል የሚፈልጉበት ክፍል', m.member_departments.map((d: { dept: string }) => DEPT_NAME[d.dept]).join('፣ ')],
         ['መሳተፍ የመረጡት', progLabels(m.member_programs, (s) => s !== 'declined')],
@@ -108,6 +118,7 @@ export default async function MemberDetail({
   const evidence = [
     ...education.map((e, i) => [`ትምህርት ${i + 1}${e.level ? ` (${e.level})` : ''}`, eduUrls[i]] as const),
     ['አለማዊ ትምህርት', secularUrl] as const,
+    ['የክህነት ማስረጃ', clergyUrl] as const,
     ['ቀድሞ ሰ/ት/ቤት', priorUrl] as const,
     ['ፎቶ', photoUrl] as const,
   ].filter(([, u]) => !!u) as [string, string][];
