@@ -4,7 +4,7 @@ import { ResultsSwitch } from '@/components/results-switch';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, COMPONENTS, CONDUCT, classLabel, gradeOf, isClassLevel, semesterLabel, type ResultRow } from '@/lib/education';
 import { loadTerms } from '@/lib/edu-data';
-import { EduPicker } from '@/components/edu-picker';
+import { AutoSubmit } from '@/components/auto-submit';
 import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { PrintButton } from '@/components/print-button';
@@ -30,12 +30,24 @@ export default async function Results({ params, searchParams }: {
 
   return (
     <>
-      <ResultsSwitch dept={dept} year={year} semesters={semesters} current={semester.id} cls={cls} />
-      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-        <h2 className="section" style={{ margin: 0 }}>የተማሪ ውጤት — {cls ? classLabel(cls) : 'ሁሉም ክፍሎች'} · {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
+      <div className="page-bar">
+        <h2 className="section" style={{ margin: 0 }}>የተማሪ ውጤት</h2>
+        <ResultsSwitch dept={dept} year={year} semesters={semesters} current={semester.id} cls={cls} />
+        {years.length > 1 && (
+          <form className="toolbar slim no-print" action={`/staff/${dept}/results`}>
+            <select name="s" defaultValue={semester.id} aria-label="ዓመት">
+              {years.map((y) => {
+                const first = semesters.filter((x) => x.year_id === y.id).sort((a, b) => a.no - b.no)[0];
+                return first ? <option key={y.id} value={y.id === year.id ? semester.id : first.id}>{y.ec_year} ዓ.ም</option> : null;
+              })}
+            </select>
+            <AutoSubmit />
+          </form>
+        )}
+        <span className="spacer" />
+        <span className="small muted">{cls ? classLabel(cls) : 'ሁሉም ክፍሎች'} · {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</span>
         <PrintButton />
       </div>
-      <EduPicker action={`/staff/${dept}/results`} years={years} semesters={semesters} semesterId={semester.id} classLevel={cls ?? ''} />
       {levels.length === 0 && <p className="muted card">ለዚህ ሴሚስተር ኮርስ ገና አልተመዘገበም።</p>}
       {cls
         ? <ClassSheet dept={dept} semester={semester} cls={cls} sp={sp} conduct={conduct} />

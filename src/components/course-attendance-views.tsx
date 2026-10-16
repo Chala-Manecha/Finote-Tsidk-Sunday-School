@@ -87,7 +87,7 @@ export async function StudentAttendance({ supabase, base, years, semesters, seme
               let a = 0; let n = 0;
               return (
                 <tr key={st.member_id}>
-                  <td>{st.members?.full_name}<div className="small muted">{st.members?.reg_no}{st.study_mode === 'distance' ? ' · የሳምንት መጨረሻ' : ''}</div></td>
+                  <td>{st.members?.full_name}<div className="small muted">{st.members?.reg_no}{st.study_mode === 'distance' ? ' · የርቀት' : ''}</div></td>
                   {courses.map((x) => {
                     const r = cell.get(`${st.member_id}|${x.id}`);
                     const p = r && r.sessions ? Math.round((r.attended / r.sessions) * 100) : null;

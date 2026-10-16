@@ -32,7 +32,7 @@ export default async function Classes({ params, searchParams }: {
     if (!terms.semester) return <>{seg}<p className="muted">የትምህርት ዘመን ገና አልተከፈተም።</p></>;
     return (
       <>
-        <div className="page-bar"><h2 className="section" style={{ margin: 0 }}>ክፍሎችና ተማሪዎች</h2>{seg}</div>
+        <div className="page-bar"><h2 className="section" style={{ margin: 0 }}>ክፍላት</h2>{seg}</div>
         <StudentAttendance supabase={supabase} base="/staff/education/classes" years={years} semesters={terms.semesters}
           semester={terms.semester} cls={sp.c} extra={{ v: 'attendance' }} />
       </>
@@ -67,7 +67,7 @@ export default async function Classes({ params, searchParams }: {
   return (
     <>
       <div className="page-bar">
-        <h2 className="section" style={{ margin: 0 }}>ክፍሎችና ተማሪዎች</h2>
+        <h2 className="section" style={{ margin: 0 }}>ክፍላት</h2>
         <form className="toolbar slim no-print" action="/staff/education/classes">
           <div className="field">
             <label htmlFor="y">ዓመት</label>

@@ -60,7 +60,7 @@ export default async function HrOverview({ params, searchParams }: {
   type PRow = { id: string; name: string; reg: string; data: Partial<Record<PartArea, PartCell>>; all: number | null };
   let prow: PRow[] = [];
   // ---------- duties ----------
-  type DRow = { id: string; member_id: string; dept: string; duty: string; duty_date: string; occasion: string; status: DutyStatus; members: { full_name: string; reg_no: string } | null };
+  type DRow = { id: string; member_id: string; dept: string | null; duty: string; duty_date: string; occasion: string; status: DutyStatus; source: "given" | "chosen"; accepted_at: string | null; members: { full_name: string; reg_no: string } | null };
   let duties: { id: string; name: string; reg: string; rows: DRow[] }[] = [];
 
   try {
@@ -74,7 +74,7 @@ export default async function HrOverview({ params, searchParams }: {
       prow.sort((a, b) => (a.all ?? 101) - (b.all ?? 101) || a.name.localeCompare(b.name));
     } else if (view === 'duty') {
       const { data, error: e } = await supabase.from('duty_assignments')
-        .select('id, member_id, dept, duty, duty_date, occasion, status, members(full_name, reg_no)')
+        .select('id, member_id, dept, duty, duty_date, occasion, status, source, accepted_at, members(full_name, reg_no)')
         .gte('duty_date', from).lte('duty_date', to).order('duty_date', { ascending: false }).returns<DRow[]>();
       if (e) throw new Error(e.message);
       const by = new Map<string, DRow[]>();
@@ -222,7 +222,7 @@ export default async function HrOverview({ params, searchParams }: {
                       {g.rows.map((r) => (
                         <tr key={r.id}>
                           <td>{formatEc(r.duty_date, { weekday: true })}</td><td>{r.duty}</td><td>{r.occasion}</td>
-                          <td className="small">{DEPT_NAME[r.dept]}</td><td><DutyPill status={r.status} date={r.duty_date} /></td>
+                          <td className="small">{r.dept ? DEPT_NAME[r.dept] : 'በራሳቸው'}</td><td><DutyPill {...r} /></td>
                         </tr>
                       ))}
                     </tbody>

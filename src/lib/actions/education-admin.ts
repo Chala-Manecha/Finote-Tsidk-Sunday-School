@@ -106,7 +106,7 @@ const NEXT_CLASS: Record<string, string | null> = {
   kids: '1', 1: '2', 2: '3', 3: '4', 4: '5', 5: '6', 6: '7', 7: '8', 8: '9', 9: '10', 10: '11', 11: '12', 12: null,
 };
 
-/** Bulk: put the ticked students into one class (and optionally change መደበኛ/የሳምንት መጨረሻ). */
+/** Bulk: put the ticked students into one class (and optionally change መደበኛ/የርቀት). */
 export async function bulkAssignClass(_: FormState, fd: FormData): Promise<FormState> {
   await requireDept('education');
   const ids = fd.getAll('ids').map(String).filter((x) => UUID_RE.test(x));
@@ -149,7 +149,7 @@ export async function bulkAssignClass(_: FormState, fd: FormData): Promise<FormS
 
 /**
  * New year: place last year's students by their year-end decision —
- * ተዛውረዋል → next class, ይደግማሉ → same class (12ኛ ያጠናቀቁ are left out). Keeps መደበኛ/የሳምንት መጨረሻ.
+ * ተዛውረዋል → next class, ይደግማሉ → same class (12ኛ ያጠናቀቁ are left out). Keeps መደበኛ/የርቀት.
  */
 export async function carryOverYear(yearId: string) {
   await requireDept('education');

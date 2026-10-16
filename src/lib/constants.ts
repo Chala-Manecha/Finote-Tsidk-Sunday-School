@@ -54,7 +54,7 @@ export const MEMBER_TYPE = { regular: 'መደበኛ', special: 'ልዩ መደበ
 export type MemberType = keyof typeof MEMBER_TYPE;
 export const memberTypeLabel = (t: string | null | undefined, other?: string | null) =>
   t === 'other' ? (other || 'ሌላ') : MEMBER_TYPE[(t ?? 'regular') as MemberType] ?? '—';
-export const STUDY_MODE = { regular: 'መደበኛ', distance: 'የሳምንት መጨረሻ' } as const;
+export const STUDY_MODE = { regular: 'መደበኛ', distance: 'የርቀት' } as const;
 export type StudyMode = keyof typeof STUDY_MODE;
 
 export type SessionType = 'mezmur' | 'wereb' | 'course' | 'abnet' | 'meeting';
@@ -117,12 +117,14 @@ export const DUTIES = [
   'ጸበል አስተባባሪ', 'ሰልፍ አስተባባሪ', 'መዝሙር መሪ', 'ሳር ማጨድ', 'ባንዲራ መዘርጋት', 'ልብስ ማጠብ', 'ማብሰል',
   'መሸመት/መግዛት', 'ምዕመናንን ማስተባበር', 'ዘማሪ', 'ወረብ አቅራቢ', 'ከበሮ መቺ', 'ውሃ አሳላፊ', 'ምግብ አሳላፊ',
   'ልብስ መልቀም', 'Postcard መስጠት', 'ሙዳየ ምጽዋት ማዞር', 'ጸሎት ከፋች', 'መድረክ መሪ', 'ፈታኝ',
-  'Print ማድረግ', 'ደረጃ/ካርድ መስራት', 'አስተባባሪ',
+  'Print ማድረግ', 'ደረጃ/ካርድ መስራት', 'አስተባባሪ', 'ነዳያን ጥየቃ', 'ባዛር', 'በጎ አድራጎት',
 ] as const;
+/** በአል — the occasion a job is for */
 export const OCCASIONS = [
-  'በዓለ አርሴማ', 'በዓለ ሩፋኤል', 'መስቀል', 'ልደት', 'ፍልሰታ', 'ነነዌ', 'ጷጉሜ ጸበል',
-  'የዘወትር ስራ', 'ባዛር', 'ነዳያን ጥየቃ', 'ሱቅ', 'አመታዊ በዓል',
+  'በዓለ አርሴማ', 'በዓለ ሩፋኤል', 'መስቀል', 'ልደት', 'ትንሳኤ', 'ደብረ ዘይት', 'ፍልሰታ', 'ነነዌ', 'ጷጉሜ ጸበል',
+  'ሰርክ ጸሎት', 'የዘወትር ስራ', 'ሱቅ', 'አመታዊ በዓል',
 ] as const;
+export const DUTY_SOURCE = { given: 'ተመድበው', chosen: 'መርጠው' } as const;
 
 // ---------- Songs (ዜማ) ----------
 export const SONG_CATEGORIES = [
@@ -212,7 +214,8 @@ export const PROGRAMS = {
   duty: { label: 'የተለያዩ አገልግሎቶች (ምደባ)', dept: 'hr' },
 } as const;
 export type ProgramCode = keyof typeof PROGRAMS;
-export const PROGRAM_CODES = Object.keys(PROGRAMS) as ProgramCode[];
+/** chosen at registration (ምደባ is now taken job by job, not as a program) */
+export const PROGRAM_CODES: ProgramCode[] = ['course', 'abnet', 'mezmur'];
 export const isProgram = (v: string): v is ProgramCode => v in PROGRAMS;
 export const programsForDept = (dept: string) => PROGRAM_CODES.filter((p) => PROGRAMS[p].dept === dept);
 export type ProgramStatus = 'chosen' | 'active' | 'declined';

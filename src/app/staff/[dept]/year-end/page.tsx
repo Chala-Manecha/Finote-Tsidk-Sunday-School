@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, DECISION, classLabel, isClassLevel, semesterLabel, type AcademicYear, type ResultRow, type Semester, type YearRow } from '@/lib/education';
 import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
+import { AutoSubmit } from '@/components/auto-submit';
 import { PrintButton } from '@/components/print-button';
 import { setYearDecision, openYearTranscript, promoteToNext } from '@/lib/actions/education-admin';
 
@@ -33,12 +34,14 @@ export default async function YearEnd({ params, searchParams }: {
 
   return (
     <>
-      {sems.length > 0 && <ResultsSwitch dept={dept} year={year} semesters={sems} current="year" cls={cls} />}
-      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-        <h2 className="section" style={{ margin: 0 }}>የዓመት ማጠቃለያ — {cls ? classLabel(cls) : 'ሁሉም ክፍሎች'} · {year.ec_year} ዓ.ም</h2>
+      <div className="page-bar">
+        <h2 className="section" style={{ margin: 0 }}>የተማሪ ውጤት</h2>
+        {sems.length > 0 && <ResultsSwitch dept={dept} year={year} semesters={sems} current="year" cls={cls} />}
+        <span className="spacer" />
+        <span className="small muted">የዓመት ማጠቃለያ · {cls ? classLabel(cls) : 'ሁሉም ክፍሎች'} · {year.ec_year} ዓ.ም</span>
         <PrintButton />
       </div>
-      <form className="toolbar no-print" action={base}>
+      <form className="toolbar slim no-print" action={base}>
         <div className="field">
           <label htmlFor="y">ዓመት</label>
           <select id="y" name="y" defaultValue={year.id}>{years.map((x) => <option key={x.id} value={x.id}>{x.ec_year} ዓ.ም</option>)}</select>
@@ -47,7 +50,7 @@ export default async function YearEnd({ params, searchParams }: {
           <label htmlFor="c">ክፍል</label>
           <select id="c" name="c" defaultValue={cls ?? ''}><option value="">ሁሉም</option>{CLASS_LEVELS.map((c) => <option key={c} value={c}>{classLabel(c)}</option>)}</select>
         </div>
-        <button className="btn sm">አሳይ</button>
+        <AutoSubmit />
       </form>
       <p className="small muted">
         የመዛወሪያ ደንብ፦ የዓመት አማካይ ≥ {year.promote_min_average} እና የወደቁ ኮርሶች ≤ {year.max_failed_courses} (በ“የትምህርት ዘመን” ትር ይቀየራል)። ውሳኔውን ለየብቻ መቀየር ይቻላል። የተማሪውን ስም ሲጫኑ ሊታተም የሚችል የዓመት ውጤት ካርድ ይከፈታል።

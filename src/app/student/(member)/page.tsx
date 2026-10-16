@@ -18,8 +18,13 @@ import { ecToIso, formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calen
 import { PART_AREAS, bandOf, loadBands, memberParticipation, overall, type PartArea } from '@/lib/participation';
 import { BandLegend, ParticipationView } from '@/components/participation-view';
 import { DutyPill, type DutyStatus } from '@/components/duty-table';
+import { DutyFields } from '@/components/duty-fields';
+import { Modal } from '@/components/modal';
+import { MediaForm } from '@/components/media-form';
+import { EcDatePicker } from '@/components/ec-date-picker';
+import { acceptDuty, chooseDuty } from '@/lib/actions/duty';
 
-type Duty = { id: string; dept: string; duty: string; duty_date: string; occasion: string; status: DutyStatus };
+type Duty = { id: string; dept: string | null; duty: string; duty_date: string; occasion: string; status: DutyStatus; source: 'given' | 'chosen'; accepted_at: string | null };
 const addDaysIso = (iso: string, n: number) => { const d = new Date(`${iso}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 type Absence = { on_date: string; area: PartArea; label: string; status: 'absent' | 'half' };
 
@@ -42,8 +47,10 @@ export default async function StudentHome() {
   const first = me.fullName.replace(/^(ቀሲስ|ዲያቆን|ዶክተር|መምህር|መምህርት) /, '').split(' ')[0];
   const duties = (dutyData ?? []) as Duty[];
   const today = todayIsoAddis();
-  const upcoming = duties.filter((d) => d.duty_date >= today).reverse();
-  const pastDuties = duties.filter((d) => d.duty_date < today);
+  const toAccept = duties.filter((d) => d.source === 'given' && !d.accepted_at && d.duty_date >= today).reverse();
+  const taken = duties.filter((d) => d.accepted_at);
+  const upcoming = taken.filter((d) => d.duty_date >= today).reverse();
+  const pastDuties = taken.filter((d) => d.duty_date < today);
   const absences = (absData ?? []) as Absence[];
   const all = overall(part);
   const allBand = bandOf(all, bands);
@@ -114,7 +121,7 @@ export default async function StudentHome() {
         </div>
         <div className="me-stats">
           <div><b>{all !== null ? `${all}%` : '—'}</b><span>ተሳትፎ ({ecYear}){allBand && <em className={`band b-${allBand.key}`}>{allBand.label}</em>}</span></div>
-          <div><b>{duties.filter((d) => d.status === 'done').length}<small>/{duties.length}</small></b><span>የፈጸምኳቸው ምደባዎች</span></div>
+          <div><b>{duties.filter((d) => d.status === 'done').length}<small>/{taken.length}</small></b><span>የፈጸምኳቸው ምደባዎች</span></div>
           <div><b>{upcoming.length}</b><span>የሚመጡ ምደባዎች</span></div>
         </div>
       </section>
@@ -150,13 +157,35 @@ export default async function StudentHome() {
         </section>
 
         <section className="card">
-          <h2 className="section" style={{ marginTop: 0 }}>የተመደብኩባቸው አገልግሎቶች</h2>
-          {duties.length === 0 ? <p className="muted small">እስካሁን የተመደቡበት አገልግሎት የለም።</p> : (
+          <div className="card-head">
+            <b>የአባላት ስራ ምደባ</b>
+            <span style={{ flex: 1 }} />
+            <Modal label="+ አገልግሎት ልምረጥ" title="አገልግሎት ልምረጥ" sub="ከተላከ በኋላ መቀየር አይቻልም" size="sm" btnClass="btn xs green">
+              <MediaForm action={chooseDuty} submitLabel="ላክ" card={false}>
+                <DutyFields sfx="me" />
+                <div className="field"><span className="label">ቀን <span className="req">*</span></span>
+                  <EcDatePicker name="duty_date" defaultIso={today} yearsBack={0} yearsForward={1} required /></div>
+              </MediaForm>
+            </Modal>
+          </div>
+          {toAccept.length > 0 && (
+            <div className="duty-accept">
+              <div className="small"><b>እንዲቀበሉ የተመደቡ</b> — ከቀኑ በፊት ካልተቀበሉ ጊዜው ያልፋል፤ ከተቀበሉ በኋላ መመለስ አይቻልም።</div>
+              {toAccept.map((d) => (
+                <div key={d.id} className="duty-accept-row">
+                  <span><b>{d.duty}</b> · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })}{d.dept ? ` · ${DEPT_NAME[d.dept]}` : ''}</span></span>
+                  <ActionButton action={acceptDuty.bind(null, d.id)} label="✓ እቀበላለሁ" className="btn xs green"
+                    confirmText={`“${d.duty}” (${d.occasion}) ይቀበላሉ? ከተቀበሉ በኋላ መመለስ አይቻልም።`} />
+                </div>
+              ))}
+            </div>
+          )}
+          {taken.length === 0 && toAccept.length === 0 ? <p className="muted small">እስካሁን አገልግሎት የለም። “+ አገልግሎት ልምረጥ” ብለው መምረጥ ይችላሉ።</p> : (
             <ul className="me-list">
               {[...upcoming, ...pastDuties.slice(0, 8)].map((d) => (
                 <li key={d.id}>
-                  <span><b>{d.duty}</b> · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })} · {DEPT_NAME[d.dept]}</span></span>
-                  <DutyPill status={d.status} date={d.duty_date} />
+                  <span><b>{d.duty}</b> · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })} · {d.source === 'chosen' ? 'የመረጥኩት' : d.dept ? DEPT_NAME[d.dept] : ''}</span></span>
+                  <DutyPill {...d} />
                 </li>
               ))}
             </ul>

@@ -66,7 +66,7 @@ export default async function Exams({ params, searchParams }: {
                     const m = find(makeups, r);
                     return (
                       <tr key={r.member_id}>
-                        <td>{r.full_name}<div className="small muted">{r.reg_no}{distance.has(r.member_id) && ' · የሳምንት መጨረሻ'}</div></td>
+                        <td>{r.full_name}<div className="small muted">{r.reg_no}{distance.has(r.member_id) && ' · የርቀት'}</div></td>
                         <td className={`num ${low ? 'neg' : ''}`}>{p === null ? '—' : `${p}%`}</td>
                         <td>{r.final ?? <span className="muted">አልገባም</span>}</td>
                         <td>

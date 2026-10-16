@@ -24,11 +24,11 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   mezmur: [
     { slug: 'attendance', label: 'ክትትል መያዝ', ready: true },
-    { slug: 'participants', label: 'የክፍሉ ተማሪዎች', ready: true },
+    { slug: 'participants', label: 'ተማሪዎች', ready: true },
     { slug: 'fixed-schedule', label: 'ቋሚ መርሐ ግብር', ready: true },
     { slug: 'songs', label: 'መዝሙራት', ready: true },
     { slug: 'wereb', label: 'ወረብ', ready: true },
-    { slug: 'duty', label: 'አባል መድብ', ready: true },
+    { slug: 'duty', label: 'የአባላት ስራ ምደባ', ready: true },
   ],
   hr: [
     { slug: 'applications', label: 'ምዝገባና ተመዝጋቢዎች', ready: true },
@@ -36,9 +36,8 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'age-groups', label: 'የዕድሜ ክፍሎች', ready: true },
     { slug: 'overview', label: 'አጠቃላይ አቴንዳንስ', ready: true },
     { slug: 'attendance', label: 'ስብሰባ ክትትል መያዝ', ready: true },
-    { slug: 'duty', label: 'አባል መድብ', ready: true },
-    { slug: 'participants', label: 'የምደባ ተሳታፊዎች', ready: true },
-    { slug: 'all-duties', label: 'ሁሉም ምደባዎች', ready: true },
+    { slug: 'duty', label: 'የአባላት ስራ ምደባ', ready: true },
+    { slug: 'all-duties', label: 'ሁሉም የስራ ምደባዎች', ready: true },
     { slug: 'departures', label: 'መልቀቂያ', ready: true },
     { slug: 'leadership', label: 'የክፍላት አመራሮች', ready: true },
     { slug: 'lost-members', label: 'የጠፉ አባላት', ready: true },
@@ -56,7 +55,7 @@ const specific: Record<DeptCode, Tab[]> = {
   development: [
     { slug: 'purchases', label: 'የተገዙ ዕቃዎች መዝገብ', ready: true },
     { slug: 'sale-items', label: 'የሽያጭ ዕቃዎች', ready: true },
-    { slug: 'duty', label: 'አባል መድብ', ready: true },
+    { slug: 'duty', label: 'የአባላት ስራ ምደባ', ready: true },
   ],
   audit: [
     { slug: 'contributions', label: 'የክፍላት ገቢ ወጪ', ready: true },
@@ -71,15 +70,15 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   education: [
     { slug: 'academic', label: 'የትምህርት ዘመን', ready: true },
-    { slug: 'participants', label: 'የክፍሉ ተማሪዎች', ready: true },
+    { slug: 'participants', label: 'ተማሪዎች', ready: true },
     { slug: 'online-exams', label: 'ኦንላይን ፈተናዎች', ready: true },
-    { slug: 'classes', label: 'ክፍሎችና ተማሪዎች', ready: true },
+    { slug: 'classes', label: 'ክፍላት', ready: true },
     { slug: 'courses', label: 'ኮርሶችና መምህራን', ready: true },
     { slug: 'results', label: 'የተማሪ ውጤት', ready: true },
     { slug: 'exams', label: 'የፈተና ፈቃድና ድጋሚ ፈተና', ready: true },
     { slug: 'abnet', label: 'አብነት', ready: true },
     { slug: 'wereb-admin', label: 'ወረብ አስተዳደር', ready: true },
-    { slug: 'duty', label: 'አባል መድብ', ready: true },
+    { slug: 'duty', label: 'የአባላት ስራ ምደባ', ready: true },
   ],
   internal_comm: [
     { slug: 'home-page', label: 'የመነሻ ገጽ', ready: true },
@@ -89,7 +88,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'mahiberat', label: 'ማኅበራት', ready: true },
     { slug: 'prayer', label: 'የጸሎት መርኀ ግብራት', ready: true },
     { slug: 'dept-docs', label: 'ክፍሎቻችን (PDF)', ready: true },
-    { slug: 'all-duties', label: 'የአባላት ምደባዎች', ready: true },
+    { slug: 'all-duties', label: 'የአባላት ስራ ምደባ', ready: true },
   ],
 };
 
@@ -124,7 +123,7 @@ const FINANCE_GROUPS: [string, string[]][] = [
 const HR_GROUPS: [string, string[]][] = [
   ['ምዝገባ', ['applications', 'members', 'student-accounts', 'age-groups']],
   ['ክትትል', ['overview', 'attendance', 'lost-members', 'departures']],
-  ['ምደባና አመራር', ['duty', 'participants', 'all-duties', 'leadership']],
+  ['ምደባና አመራር', ['duty', 'all-duties', 'leadership']],
   ['የክፍሉ', ['property', 'money', 'request-event', 'feedback']],
 ];
 const GROUPS: Partial<Record<DeptCode, [string, string[]][]>> = { office: OFFICE_GROUPS, education: EDUCATION_GROUPS, hr: HR_GROUPS, audit: AUDIT_GROUPS, finance: FINANCE_GROUPS };

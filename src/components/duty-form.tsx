@@ -2,7 +2,8 @@
 import { useActionState } from 'react';
 import { EcDatePicker } from './ec-date-picker';
 import { saveDuty, type FormState } from '@/lib/actions/duty';
-import { DUTIES, OCCASIONS } from '@/lib/constants';
+import { DutyFields } from './duty-fields';
+import { useModalClose } from './modal';
 import { todayIsoAddis } from '@/lib/ethiopian-calendar';
 
 type Initial = { id: string; member_id: string; duty: string; duty_date: string; occasion: string };
@@ -15,9 +16,11 @@ export function DutyForm({
   members: { id: string; full_name: string }[];
   initial?: Initial;
 }) {
+  const close = useModalClose();
   const [state, action, pending] = useActionState<FormState & { n?: number }, FormData>(
     async (prev, fd) => {
       const res = await saveDuty(prev, fd);
+      if (res.ok && !initial) close?.();
       return { ...res, n: (prev.n ?? 0) + (res.ok ? 1 : 0) };
     },
     {},
@@ -38,27 +41,14 @@ export function DutyForm({
           </select>
         </div>
         <div className="field">
-          <label htmlFor={`d-${sfx}`}>ምድብ <span className="req">*</span></label>
-          <select id={`d-${sfx}`} name="duty" required defaultValue={initial?.duty ?? ''}>
-            <option value="" disabled>ምድብ ይምረጡ</option>
-            {DUTIES.map((d) => <option key={d}>{d}</option>)}
-          </select>
-        </div>
-        <div className="field">
           <span className="label">ቀን (ዓ.ም) <span className="req">*</span></span>
           <EcDatePicker key={key} name="duty_date" defaultIso={initial?.duty_date ?? todayIsoAddis()}
             yearsBack={1} yearsForward={1} required />
         </div>
-        <div className="field">
-          <label htmlFor={`o-${sfx}`}>ምክንያት <span className="req">*</span></label>
-          <select id={`o-${sfx}`} name="occasion" required defaultValue={initial?.occasion ?? ''}>
-            <option value="" disabled>ምክንያት ይምረጡ</option>
-            {OCCASIONS.map((o) => <option key={o}>{o}</option>)}
-          </select>
-        </div>
+        <DutyFields duty={initial?.duty} occasion={initial?.occasion} sfx={sfx} />
       </div>
       <div className="btn-row">
-        <button className="btn" disabled={pending}>{pending ? '…' : initial ? 'ለውጥ አስቀምጥ' : '+ አባል መድብ'}</button>
+        <button className="btn" disabled={pending}>{pending ? '…' : initial ? 'ለውጥ አስቀምጥ' : '+ መድብ'}</button>
         {state.error && <span className="alert error" style={{ margin: 0 }}>{state.error}</span>}
         {state.ok && <span className="alert ok" style={{ margin: 0 }}>{state.ok}</span>}
       </div>

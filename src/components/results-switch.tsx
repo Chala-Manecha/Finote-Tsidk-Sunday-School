@@ -8,7 +8,7 @@ export function ResultsSwitch({ dept, year, semesters, current, cls }: {
   const c = cls ? `&c=${cls}` : '';
   const sems = semesters.filter((s) => s.year_id === year.id).sort((a, b) => a.no - b.no);
   return (
-    <div className="seg big no-print" style={{ marginBottom: 12 }}>
+    <div className="seg no-print">
       {sems.map((s) => (
         <Link key={s.id} className={current === s.id ? 'on' : ''} href={`/staff/${dept}/results?s=${s.id}${c}`}>{semesterLabel(s.no)}</Link>
       ))}

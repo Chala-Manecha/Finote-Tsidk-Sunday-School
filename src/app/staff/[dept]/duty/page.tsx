@@ -1,12 +1,14 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DUTY_DEPTS } from '@/lib/constants';
 import { todayIsoAddis } from '@/lib/ethiopian-calendar';
 import { DutyForm } from '@/components/duty-form';
-import { DutyTable, type DutyRow } from '@/components/duty-table';
+import { DUTY_COLS, DutyTable, type DutyRow } from '@/components/duty-table';
 import { PrintButton } from '@/components/print-button';
-import { SegLinks } from '@/components/seg-links';
+import { Modal } from '@/components/modal';
 
+/** የአባላት ስራ ምደባ: give a member a job (they accept it before the day), then confirm it was done. */
 export default async function DeptDutyPage({
   params,
   searchParams,
@@ -19,53 +21,48 @@ export default async function DeptDutyPage({
   const sp = await searchParams;
   const supabase = await createClient();
 
-  // የሚመጡ = upcoming · ማረጋገጫ = past and not yet confirmed (did the member do the job?) · ሁሉም = everything
+  // የሚመጡ = upcoming · ማረጋገጫ = accepted, the day has passed, not yet confirmed · ሁሉም = everything
   const view = sp.v === 'confirm' || sp.v === 'all' ? sp.v : 'upcoming';
   const today = todayIsoAddis();
-  let q = supabase
-    .from('duty_assignments')
-    .select('id, member_id, dept, duty, duty_date, occasion, status, members(full_name)')
-    .eq('dept', dept)
-    .order('duty_date', { ascending: view !== 'all' });
-  if (view === 'upcoming') q = q.gt('duty_date', today);
-  if (view === 'confirm') q = q.lte('duty_date', today).is('status', null);
-  const [{ data: rows }, { data: members }, { count: waiting }] = await Promise.all([
+  let q = supabase.from('duty_assignments').select(DUTY_COLS).eq('dept', dept).order('duty_date', { ascending: view !== 'all' });
+  if (view === 'upcoming') q = q.gte('duty_date', today);
+  if (view === 'confirm') q = q.lte('duty_date', today).is('status', null).not('accepted_at', 'is', null);
+  const [{ data: rows }, { data: members }, { count: waiting }, { count: awaiting }] = await Promise.all([
     q.returns<DutyRow[]>(),
-    // only members who chose “የተለያዩ አገልግሎቶች” and were added by ሰው ሃብት
-    supabase.from('members').select('id, full_name, member_programs!inner(program, status)').eq('is_active', true)
-      .eq('member_programs.program', 'duty').eq('member_programs.status', 'active').order('full_name'),
-    supabase.from('duty_assignments').select('id', { count: 'exact', head: true }).eq('dept', dept).lte('duty_date', today).is('status', null),
+    supabase.from('members').select('id, full_name').eq('is_active', true).order('full_name'),
+    supabase.from('duty_assignments').select('id', { count: 'exact', head: true }).eq('dept', dept).lte('duty_date', today).is('status', null).not('accepted_at', 'is', null),
+    supabase.from('duty_assignments').select('id', { count: 'exact', head: true }).eq('dept', dept).gte('duty_date', today).is('accepted_at', null),
   ]);
   const base = `/staff/${dept}/duty`;
   const needle = sp.q?.trim();
   const shown = (rows ?? []).filter((r) => !needle || r.members?.full_name.includes(needle));
+  const list = members ?? [];
 
   return (
     <>
-      <div className="head-row">
-        <h2 className="section" style={{ margin: 0 }}>አባል መድብ</h2>
-        <details className="pop no-print">
-          <summary className="btn sm green">+ አዲስ ምደባ</summary>
-          <div className="pop-body"><DutyForm dept={dept} members={(members ?? []).map((m) => ({ id: m.id, full_name: m.full_name }))} plain /></div>
-        </details>
-      </div>
-      <SegLinks current={view} items={[
-        ['upcoming', 'የሚመጡ ምደባዎች', base],
-        ['confirm', `ማረጋገጫ የሚጠብቁ${waiting ? ` (${waiting})` : ''}`, `${base}?v=confirm`],
-        ['all', 'ሁሉም', `${base}?v=all`],
-      ]} />
-      {view === 'confirm' && <p className="small muted">ቀኑ ያለፈ ምደባ — አባሉ የተመደበበትን ሥራ መፈጸሙን ያረጋግጡ። የተረጋገጠው በአባሉ የተሳትፎ መቶኛ ይቆጠራል።</p>}
-      <form className="toolbar no-print" action={base}>
-        {view !== 'upcoming' && <input type="hidden" name="v" value={view} />}
-        <div className="field">
-          <label htmlFor="q">ስም</label>
-          <input id="q" name="q" defaultValue={needle} />
+      <div className="page-bar">
+        <h2 className="section" style={{ margin: 0 }}>የአባላት ስራ ምደባ</h2>
+        <div className="seg no-print">
+          <Link className={view === 'upcoming' ? 'on' : ''} href={base}>የሚመጡ{awaiting ? ` · ${awaiting} ያልተቀበሉ` : ''}</Link>
+          <Link className={view === 'confirm' ? 'on' : ''} href={`${base}?v=confirm`}>ማረጋገጫ የሚጠብቁ{waiting ? ` (${waiting})` : ''}</Link>
+          <Link className={view === 'all' ? 'on' : ''} href={`${base}?v=all`}>ሁሉም</Link>
         </div>
-        <button className="btn sm">አጣራ</button>
-        <span style={{ flex: 1 }} />
+        <span className="spacer" />
+        <form className="toolbar slim no-print" action={base}>
+          {view !== 'upcoming' && <input type="hidden" name="v" value={view} />}
+          <input name="q" type="search" defaultValue={needle} placeholder="🔍 ስም" aria-label="ስም" style={{ width: 150 }} />
+        </form>
         <PrintButton />
-      </form>
-      <DutyTable rows={shown} members={(members ?? []).map((m) => ({ id: m.id, full_name: m.full_name }))} editableDept={dept} />
+        <Modal label="+ አዲስ ምደባ" title="አባል መድብ" sub="አባሉ ከቀኑ በፊት በዳሽቦርዱ ሲቀበል ይጸድቃል" btnClass="btn sm green">
+          <DutyForm dept={dept} members={list} plain />
+        </Modal>
+      </div>
+      <p className="small muted no-print">
+        {view === 'confirm'
+          ? 'ቀኑ ያለፈ፣ አባሉ የተቀበለው ምደባ — መፈጸሙን ያረጋግጡ፤ በአባሉ የተሳትፎ መቶኛ ይቆጠራል።'
+          : 'የተመደበ አባል ከቀኑ በፊት መቀበል አለበት፤ ካልተቀበለ ጊዜው ያልፍበታል። ከተቀበለ በኋላ መቀየርም ማጥፋትም አይቻልም።'}
+      </p>
+      <DutyTable rows={shown} members={list} editableDept={dept} />
     </>
   );
 }

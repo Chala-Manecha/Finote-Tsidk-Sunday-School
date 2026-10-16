@@ -7,7 +7,7 @@ import type { FormState } from './media-form';
 
 export type AssignRow = { id: string; name: string; regNo: string; classLevel: string | null; mode: string; self: boolean };
 
-/** Tick students (or all shown), pick a class and/or መደበኛ/የሳምንት መጨረሻ, apply once. */
+/** Tick students (or all shown), pick a class and/or መደበኛ/የርቀት, apply once. */
 export function ClassAssigner({ rows }: { rows: AssignRow[] }) {
   const [state, run, pending] = useActionState<FormState, FormData>(bulkAssignClass, {});
   const [q, setQ] = useState('');
