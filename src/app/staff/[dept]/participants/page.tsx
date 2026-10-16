@@ -8,6 +8,8 @@ import { ActionButton } from '@/components/action-button';
 import Link from 'next/link';
 import { PrintButton } from '@/components/print-button';
 
+const WANT: Record<string, string> = { course: 'ኮርስ መማር የሚፈልጉ', abnet: 'አብነት መማር የሚፈልጉ', mezmur: 'መዝሙርና ወረብ የሚያጠኑ' };
+
 type Row = { member_id: string; status: 'chosen' | 'active' | 'declined'; decided_at: string | null; members: { full_name: string; reg_no: string; phone: string | null } };
 
 /** Who chose this department's program: add them (→ attendance list) or see who takes part. */
@@ -53,7 +55,7 @@ export default async function Participants({ params, searchParams }: {
       <div className="two-col">
         <section className="card no-print">
           <div className="card-head">
-            <b>መደመር የሚጠብቁ</b><span className="count-badge warn">{waiting.length}</span>
+            <b>{program === 'mezmur' ? 'ያልተጨመሩ' : 'ክፍል ያልተመደበላቸው'}</b><span className="count-badge warn">{waiting.length}</span>
           </div>
           <p className="small muted" style={{ margin: '0 0 8px' }}>{PROGRAMS[program].label}ን የመረጡ። ሲጨመሩ በክትትል ዝርዝሩ ይገባሉ{program === 'course' ? '፤ በዚህ ዓመት ተማሪዎች ውስጥም ያለ ክፍል ይገባሉ' : ''}።</p>
           <PickList action={addToProgram} hidden={{ program }} button="✓ ጨምር" empty="የሚጠብቅ የለም።"
@@ -67,7 +69,7 @@ export default async function Participants({ params, searchParams }: {
         </section>
 
         <section className="card">
-          <div className="card-head"><b>ተሳታፊዎች</b><span className="count-badge">{active.length}</span></div>
+          <div className="card-head"><b>{WANT[program]}</b><span className="count-badge">{active.length}</span></div>
           <div className="table-wrap">
             <table>
               <thead><tr><th>#</th><th>አባል</th><th>ስልክ</th><th>የተጨመሩበት</th><th className="no-print" /></tr></thead>

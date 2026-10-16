@@ -49,23 +49,30 @@ export default async function Courses({ params, searchParams }: {
       </>
     );
   }
-  const cls = sp.c && isClassLevel(sp.c) ? sp.c : undefined;
-
-  let q = supabase.from('course_offerings')
+  const q = supabase.from('course_offerings')
     .select('id, name, class_level, status, book_name, book_path, days, time_text, mode, platform, link, offering_teachers(member_id, members(full_name))')
     .eq('semester_id', semester.id).order('class_level').order('name');
-  if (cls) q = q.eq('class_level', cls);
-  const [{ data }, { data: members }] = await Promise.all([
+  const [{ data }, { data: members }, { data: offers }] = await Promise.all([
     q, supabase.from('members').select('id, full_name, reg_no').eq('is_active', true).order('full_name'),
+    // members who offered to teach (from their dashboard)
+    supabase.from('duty_assignments').select('id, duty, members(full_name, reg_no)').eq('source', 'chosen').like('duty', 'የኮርስ መምህር%'),
   ]);
-  const rows = (data ?? []) as unknown as O[];
+  const all = (data ?? []) as unknown as O[];
+  const tfAll = sp.t === 'none';
+  // the class on the right: chosen in the left panel, else the first class that has courses
+  const firstCls = CLASS_LEVELS.find((c) => all.some((r) => r.class_level === c));
+  const cls = tfAll ? undefined : sp.c && isClassLevel(sp.c) ? sp.c : firstCls;
+  const rows = cls ? all.filter((r) => r.class_level === cls) : all;
+  const perClass = (c: string) => all.filter((r) => r.class_level === c);
+  const offersFor = ((offers ?? []) as unknown as { id: string; duty: string; members: { full_name: string; reg_no: string } | null }[])
+    .filter((x) => cls && x.duty.endsWith(classLabel(cls)));
   const order = (c: string) => CLASS_LEVELS.indexOf(c as (typeof CLASS_LEVELS)[number]);
   rows.sort((a, b) => order(a.class_level) - order(b.class_level) || a.name.localeCompare(b.name));
-  const pending = rows.filter((r) => r.status === 'submitted').length;
-  const noTeacher = rows.filter((r) => r.offering_teachers.length === 0).length;
-  const tf = sp.t === 'none' || sp.t === 'has' ? sp.t : 'all';
-  const shown = rows.filter((r) => tf === 'all' || (tf === 'none' ? r.offering_teachers.length === 0 : r.offering_teachers.length > 0));
-  const link = (t: string) => `/staff/education/courses?s=${semester.id}${cls ? `&c=${cls}` : ''}${t !== 'all' ? `&t=${t}` : ''}`;
+  const pending = all.filter((r) => r.status === 'submitted').length;
+  const noTeacher = all.filter((r) => r.offering_teachers.length === 0).length;
+  const shown = tfAll ? all.filter((r) => r.offering_teachers.length === 0) : rows;
+  const tf = tfAll ? 'none' : 'all';
+  const cl = (c: string) => `/staff/education/courses?s=${semester.id}&c=${c}`;
   // The semester just before this one (1ኛ → last year's 2ኛ, 2ኛ → this year's 1ኛ).
   const ordered = semesters.map((x) => ({ ...x, ec: years.find((yy) => yy.id === x.year_id)?.ec_year ?? 0 }))
     .sort((a, b) => a.ec - b.ec || a.no - b.no);
@@ -97,18 +104,36 @@ export default async function Courses({ params, searchParams }: {
             confirmText={`የ${prevSem.ec} ዓ.ም ${semesterLabel(prevSem.no)} ኮርሶች ከመምህራን፣ ቀንና ሰዓት እና መጽሐፍ ጋር ይቀዳሉ (ያሉት አይደገሙም)። ይቀጥል?`} />
         )}
       </div>
-      <div className="page-bar no-print">
-        <EduPicker action="/staff/education/courses" years={years} semesters={semesters} semesterId={semester.id} classLevel={cls} />
-        <div className="seg">
-          <Link className={tf === 'all' ? 'on' : ''} href={link('all')}>ሁሉም {rows.length}</Link>
-          <Link className={tf === 'none' ? 'on' : ''} href={link('none')}>መምህር የሌላቸው {noTeacher}</Link>
-          <Link className={tf === 'has' ? 'on' : ''} href={link('has')}>መምህር ያላቸው {rows.length - noTeacher}</Link>
-        </div>
-        {pending > 0 && <span className="pill half">ለማጽደቅ የቀረቡ {pending}</span>}
-      </div>
-
+      <div className="split">
+        <aside className="rail no-print" aria-label="ክፍሎች">
+          <div className="rail-title">ሴሚስተር</div>
+          <EduPicker action="/staff/education/courses" years={years} semesters={semesters} semesterId={semester.id} withClass={false} />
+          <div className="rail-title">ክፍል</div>
+          {CLASS_LEVELS.map((c) => {
+            const list = perClass(c);
+            const missing = list.filter((r) => r.offering_teachers.length === 0).length;
+            return (
+              <Link key={c} href={cl(c)} className={`${cls === c ? 'on' : ''} ${missing ? 'warn' : ''}`}>
+                <span>{classLabel(c)}</span><b title={missing ? `${missing} መምህር የሌላቸው` : ''}>{list.length}</b>
+              </Link>
+            );
+          })}
+          <div className="rail-title">ማጣሪያ</div>
+          <Link href={`/staff/education/courses?s=${semester.id}&t=none`} className={`${tfAll ? 'on' : ''} ${noTeacher ? 'warn' : ''}`}><span>👤 መምህር የሌላቸው</span><b>{noTeacher}</b></Link>
+          {pending > 0 && <span className="small muted" style={{ padding: '4px 8px' }}>ለማጽደቅ የቀረቡ፦ {pending}</span>}
+        </aside>
+        <div className="split-main">
+          <div className="split-head">
+            <b>{tfAll ? 'መምህር ያልተመደበላቸው ኮርሶች' : cls ? classLabel(cls) : ''}</b>
+            <span className="small muted">{shown.length} ኮርሶች</span>
+          </div>
+          {offersFor.length > 0 && (
+            <div className="duty-accept" style={{ marginBottom: 10 }}>
+              <div className="small"><b>ይህን ክፍል ለማስተማር የፈለጉ</b> — ከታች ባለው “መምህር” ምርጫ መመደብ ይችላሉ፦ {offersFor.map((x) => x.members?.full_name).filter(Boolean).join('፣ ')}</div>
+            </div>
+          )}
       {shown.map((o) => (
-        <details key={o.id} className="course-item" open={tf === 'none' ? true : undefined}>
+        <details key={o.id} className="course-item" open={tf === 'none' || !!cls}>
           <summary>
             <span className="ci-name"><b>{o.name}</b> <span className="small muted">{classLabel(o.class_level)}</span></span>
             <span className="ci-teacher">
@@ -159,8 +184,9 @@ export default async function Courses({ params, searchParams }: {
           </div>
         </details>
       ))}
-      {shown.length === 0 && rows.length > 0 && <p className="muted">በዚህ ምርጫ ኮርስ የለም።</p>}
-      {rows.length === 0 && <p className="muted">ለዚህ ሴሚስተር ኮርስ አልተጨመረም።</p>}
+      {shown.length === 0 && <p className="muted card">{all.length === 0 ? 'ለዚህ ሴሚስተር ኮርስ አልተጨመረም። “+ ኮርስ ጨምር” ይጫኑ።' : 'በዚህ ክፍል ኮርስ የለም።'}</p>}
+        </div>
+      </div>
     </>
   );
 }

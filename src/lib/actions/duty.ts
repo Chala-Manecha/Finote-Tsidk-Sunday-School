@@ -4,6 +4,8 @@ import { requireStaff, canAccess } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { DUTIES, DUTY_DEPTS } from '@/lib/constants';
 import { requireMember } from '@/lib/member-auth';
+import { CLASS_LEVELS, classLabel, isClassLevel } from '@/lib/education';
+import { todayIsoAddis } from '@/lib/ethiopian-calendar';
 
 export type FormState = { error?: string; ok?: string };
 
@@ -70,17 +72,34 @@ export async function acceptDuty(id: string) {
   refresh();
 }
 
-/** The member offers to do a job (ምድብ, በአል, ቀን) — cannot be changed once sent. */
+/** The member offers to do a job (ምድብ, በአል, ቀን) or to teach — cannot be changed once sent. */
 export async function chooseDuty(_: FormState, fd: FormData): Promise<FormState> {
-  await requireMember();
+  const me = await requireMember();
   const pick = String(fd.get('duty') ?? '');
-  const duty = pick === 'other' ? String(fd.get('duty_other') ?? '').trim() : pick;
-  const occasion = String(fd.get('occasion') ?? '');
-  const date = String(fd.get('duty_date') ?? '');
+  const supabase = await createClient();
+  let duty = pick === 'other' ? String(fd.get('duty_other') ?? '').trim() : pick;
+  let occasion = String(fd.get('occasion') ?? '');
+  let date = String(fd.get('duty_date') ?? '');
+  if (pick === 'teach_course' || pick === 'teach_abnet') {
+    occasion = 'የዘወትር ስራ';
+    date = todayIsoAddis();
+    if (pick === 'teach_abnet') {
+      const subject = String(fd.get('teach_subject') ?? '').trim().slice(0, 60);
+      duty = `የአብነት መምህር${subject ? ` · ${subject}` : ''}`;
+    } else {
+      const cls = String(fd.get('teach_class') ?? '');
+      if (!isClassLevel(cls)) return { error: 'ክፍል ይምረጡ።' };
+      // only a class below the member's own (when they are a student this year)
+      const { data: yr } = await supabase.from('academic_years').select('id').eq('is_active', true).maybeSingle();
+      const { data: enr } = yr ? await supabase.from('enrollments').select('class_level').eq('year_id', yr.id).eq('member_id', me.memberId).maybeSingle() : { data: null };
+      const own = enr?.class_level ?? null;
+      if (own && CLASS_LEVELS.indexOf(cls as never) >= CLASS_LEVELS.indexOf(own as never)) return { error: 'ከራስዎ ክፍል በታች ያለ ክፍል ይምረጡ።' };
+      duty = `የኮርስ መምህር · ${classLabel(cls)}`;
+    }
+  }
   if (!duty) return { error: 'ምድብ ይምረጡ ወይም ይጻፉ።' };
   if (!occasion) return { error: 'በአል ይምረጡ።' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: 'ቀን ይምረጡ።' };
-  const supabase = await createClient();
   const { error } = await supabase.rpc('choose_duty', { p_duty: duty, p_occasion: occasion, p_date: date });
   if (error) return { error: error.message.includes('duty_date') ? 'ያለፈ ቀን መምረጥ አይቻልም።' : 'መላክ አልተቻለም።' };
   revalidatePath('/student');

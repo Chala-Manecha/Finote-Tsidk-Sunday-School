@@ -55,25 +55,23 @@ export default async function TeacherHome() {
 
   return (
     <>
-      <section className="me-hero">
+      <section className="me-strip">
         {photo
           // eslint-disable-next-line @next/next/no-img-element
-          ? <img className="me-photo" src={photo} alt="" />
-          : <span className="me-photo empty" aria-hidden>📖</span>}
-        <div className="me-hello">
-          <span className="small">{female ? 'መምህርት' : 'መምህር'}</span>
-          <h1 className="serif">{me.fullName}</h1>
-          <p>{female ? `ሰላም ${first}፤ ስለ አገልግሎትሽ እናመሰግናለን።` : `ሰላም ${first}፤ ስለ አገልግሎትህ እናመሰግናለን።`}</p>
-          <div className="me-tags"><span>መለያ ቁ. <b>{me.regNo}</b></span></div>
+          ? <img className="me-avatar" src={photo} alt="" />
+          : <span className="me-avatar empty" aria-hidden>📖</span>}
+        <div className="me-strip-text">
+          <b className="serif">{female ? 'መምህርት' : 'መምህር'} {me.fullName}</b>
+          <span className="small">{female ? `ሰላም ${first}፤ ስለ አገልግሎትሽ እናመሰግናለን።` : `ሰላም ${first}፤ ስለ አገልግሎትህ እናመሰግናለን።`} · መለያ ቁ. {me.regNo}</span>
         </div>
-        <div className="me-stats">
-          <div><b>{current.length}</b><span>በዚህ ዓመት የማስተምራቸው ኮርሶች</span></div>
-          <div><b>{totalHeld}</b><span>የተካሄዱ ክፍለ ጊዜዎች</span></div>
-          <div><b>{myPct !== null ? `${myPct}%` : '—'}</b><span>የእኔ ክትትል{myBand && <em className={`band b-${myBand.key}`}>{myBand.label}</em>}</span></div>
+        <div className="me-strip-stats">
+          <span><b>{current.length}</b>ኮርሶች</span>
+          <span><b>{totalHeld}</b>ክፍለ ጊዜዎች</span>
+          <span><b>{myPct !== null ? `${myPct}%` : '—'}</b>የእኔ ክትትል{myBand && <em className={`band b-${myBand.key}`}>{myBand.label}</em>}</span>
         </div>
       </section>
 
-      <h2 className="section">የዚህ ዓመት ኮርሶች</h2>
+      <div className="card-head"><b>የዚህ ዓመት ኮርሶች</b><span className="count-badge">{current.length}</span></div>
       {current.length === 0 ? <p className="muted card">በዚህ የትምህርት ዘመን የተመደቡበት ኮርስ የለም። ትምህርት ክፍል ይመድባል።</p> : (
         <div className="teach-cards">
           {current.map((o) => (

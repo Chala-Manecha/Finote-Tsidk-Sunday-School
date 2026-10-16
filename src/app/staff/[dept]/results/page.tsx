@@ -20,12 +20,14 @@ export default async function Results({ params, searchParams }: {
   const supabase = await createClient();
   const { years, semesters, semester, year } = await loadTerms(supabase, sp.s);
   if (!semester || !year) return <p className="muted">የትምህርት ዘመን ገና አልተከፈተም።</p>;
-  const cls = sp.c && isClassLevel(sp.c) ? sp.c : null;   // null = every class
+  const reqCls = sp.c && isClassLevel(sp.c) ? sp.c : null;
   const [{ data: offs }, { data: cond }] = await Promise.all([
     supabase.from('course_offerings').select('class_level').eq('semester_id', semester.id),
     supabase.from('semester_conduct').select('member_id, conduct, remark').eq('semester_id', semester.id),
   ]);
-  const levels = cls ? [cls] : CLASS_LEVELS.filter((c) => (offs ?? []).some((o) => o.class_level === c));
+  const levels = CLASS_LEVELS.filter((c) => (offs ?? []).some((o) => o.class_level === c));
+  // the class on the right (chosen in the left panel; else the first with courses)
+  const cls = reqCls ?? levels[0] ?? null;
   const conduct = new Map((cond ?? []).map((c) => [c.member_id as string, c as { conduct: string | null }]));
 
   return (
@@ -45,18 +47,22 @@ export default async function Results({ params, searchParams }: {
           </form>
         )}
         <span className="spacer" />
-        <span className="small muted">{cls ? classLabel(cls) : 'ሁሉም ክፍሎች'} · {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</span>
+        <span className="small muted">{cls ? classLabel(cls) : ''} · {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</span>
         <PrintButton />
       </div>
-      {levels.length === 0 && <p className="muted card">ለዚህ ሴሚስተር ኮርስ ገና አልተመዘገበም።</p>}
-      {cls
-        ? <ClassSheet dept={dept} semester={semester} cls={cls} sp={sp} conduct={conduct} />
-        : levels.map((c) => (
-          <details key={c} className="class-fold">
-            <summary><b>{classLabel(c)}</b><span className="small muted">ለማየት ይጫኑ</span></summary>
-            <div className="class-fold-body"><ClassSheet dept={dept} semester={semester} cls={c} sp={sp} conduct={conduct} /></div>
-          </details>
-        ))}
+      {levels.length === 0 ? <p className="muted card">ለዚህ ሴሚስተር ኮርስ ገና አልተመዘገበም።</p> : (
+        <div className="split">
+          <aside className="rail no-print" aria-label="ክፍሎች">
+            <div className="rail-title">ክፍል</div>
+            {levels.map((c) => (
+              <Link key={c} href={`/staff/${dept}/results?s=${semester.id}&c=${c}`} className={cls === c ? 'on' : ''}><span>{classLabel(c)}</span></Link>
+            ))}
+          </aside>
+          <div className="split-main">
+            {cls && <ClassSheet dept={dept} semester={semester} cls={cls} sp={sp} conduct={conduct} />}
+          </div>
+        </div>
+      )}
       <p className="small muted">ማለፊያ፦ {semester.pass_mark}/100 · ቀይ = አላለፈም · አማካይ = የኮርሶቹ ውጤት አማካይ · ደረጃ በክፍሉ ውስጥ በአማካይ ነው · የተማሪውን ስም ሲጫኑ የሁሉም ኮርሶች ውጤት ይታያል።</p>
     </>
   );

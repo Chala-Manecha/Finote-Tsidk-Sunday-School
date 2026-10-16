@@ -11,9 +11,10 @@ import { submitOffering } from '@/lib/actions/teaching';
 type Offering = { id: string; name: string; class_level: string; status: OfferingStatus; book_path: string | null; book_name: string | null; semester_id: string };
 
 /** A teacher's own class: reference book, attendance, marks, submit for approval. */
-export default async function TeachPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ d?: string }> }) {
+export default async function TeachPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ d?: string; v?: string }> }) {
   const { id } = await params;
-  const { d } = await searchParams;
+  const { d, v } = await searchParams;
+  const view = v === 'att' || d ? 'att' : 'marks';
   const me = await requireMember();
   const supabase = await createClient();
   const { data: isTeacher } = await supabase.rpc('is_teacher_of', { p_offering: id });
@@ -62,73 +63,93 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
   const locked = offering.status !== 'draft';
   const finalsDone = students.length > 0 && students.every((x) => marks[x.id]?.final != null || barredIds.includes(x.id) || makeupIds.includes(x.id));
 
+  const base = `/student/teach/${id}`;
   return (
     <>
-      <Link className="link small" href="/student/teach">← የማስተምራቸው ክፍሎች</Link>
-      <h1 className="title">{offering.name}</h1>
-      <p className="muted">{classLabel(offering.class_level)} · {semesterLabel(s.no)} · <span className={`pill ${offering.status === 'approved' ? 'present' : 'half'}`}>{OFFERING_STATUS[offering.status]}</span></p>
+      <div className="page-bar">
+        <Link className="back-pill" href="/student/teach">← የማስተምራቸው</Link>
+        <h1 className="title" style={{ margin: 0, fontSize: '1.3rem' }}>{offering.name}</h1>
+        <span className="small muted">{classLabel(offering.class_level)} · {semesterLabel(s.no)}</span>
+        <span className={`pill ${offering.status === 'approved' ? 'present' : 'half'}`}>{OFFERING_STATUS[offering.status]}</span>
+        <span className="spacer" />
+        <div className="seg">
+          <Link className={view === 'marks' ? 'on' : ''} href={base}>📊 ውጤት</Link>
+          <Link className={view === 'att' ? 'on' : ''} href={`${base}?v=att`}>🧾 የክፍል ክትትል</Link>
+          <Link href={`${base}/exams`}>🖊 ኦንላይን ፈተናዎች</Link>
+        </div>
+      </div>
 
-      <Link href={`/student/teach/${id}/exams`} className="card exam-link" style={{ marginBottom: 16 }}>
-        <span aria-hidden>🖊</span>
-        <span><b>ኦንላይን ፈተናዎች</b><br /><span className="small muted">Quiz፣ የአጋማሽና ዋና ፈተና አዘጋጅ → ትምህርት ክፍል ያጸድቃል → ተማሪዎች በኦንላይን ይፈተናሉ → ውጤቱ ወደ ማርክ ሉህ ይገባል</span></span>
-        <span className="link">ክፈት →</span>
-      </Link>
+      <div className="exam-layout">
+        <div className="exam-main">
+          {view === 'marks' ? (
+            <section className="card">
+              <div className="card-head"><b>ውጤት</b><span className="count-badge">{students.length} ተማሪዎች</span></div>
+              <p className="small muted" style={{ marginTop: 0 }}>ነጥቦቹ የሚገቡት ከእያንዳንዱ ክፍል ከፍተኛ ነጥብ ውስጥ ነው። ማለፊያ፦ {s.pass_mark}/100።{s.min_attendance > 0 && ` ለዋና ፈተና ዝቅተኛ ክትትል፦ መደበኛ ${s.min_attendance}% · የርቀት ተማሪዎች ${s.min_attendance_distance}%።`}</p>
+              <MarksGrid offeringId={id} students={students} marks={marks} weights={weights} locked={locked}
+                attendance={attendance} barred={barredIds} makeup={makeupIds} passMark={s.pass_mark} />
+              {offering.status === 'draft' && (
+                <div style={{ marginTop: 12 }}>
+                  {finalsDone
+                    ? <ActionButton action={submitOffering.bind(null, id)} label="🔒 ለትምህርት ክፍል ላክና ቆልፍ" className="btn green"
+                        confirmText="ከላኩ በኋላ ውጤቱን መቀየር አይችሉም። ይላክ?" />
+                    : <p className="small muted">የሁሉም ተማሪዎች የዋና ፈተና ውጤት ሲገባ “ለማጽደቅ ላክ” ይታያል።</p>}
+                </div>
+              )}
+              {offering.status === 'submitted' && <p className="alert ok">ለትምህርት ክፍል ተልኳል፤ ማጽደቁን በመጠባበቅ ላይ።</p>}
+            </section>
+          ) : (
+            <section className="card">
+              <div className="card-head"><b>የክፍል ክትትል</b>{editSession && <span className="pill present">የ{formatEc(editDate)} ተይዟል — ማስተካከል ይችላሉ</span>}</div>
+              <ClassAttendanceForm key={editDate} offeringId={id} students={students} today={editDate} initial={initial} />
+              {(sessions ?? []).length > 0 && (
+                <details className="fold-card" style={{ marginTop: 12 }}>
+                  <summary><b>የተያዙ ቀናት ({sessions!.length})</b></summary>
+                  <div className="table-wrap" style={{ marginTop: 8 }}>
+                    <table>
+                      <thead><tr><th>ቀን</th><th className="num">የተገኙ</th><th /></tr></thead>
+                      <tbody>
+                        {sessions!.map((x) => (
+                          <tr key={x.id}>
+                            <td>{formatEc(x.session_date, { weekday: true })}</td>
+                            <td className="num">{presentOf(x.id)}/{students.length}</td>
+                            <td><Link className="link small" href={`${base}?v=att&d=${x.session_date}`} scroll={false}>አስተካክል</Link></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              )}
+            </section>
+          )}
+        </div>
 
-      <section className="card" style={{ marginBottom: 16 }}>
-        <h2 className="section" style={{ marginTop: 0 }}>ማጣቀሻ መጽሐፍ</h2>
-        {book ? <a className="btn secondary" href={book} target="_blank" rel="noopener noreferrer">📘 {offering.book_name ?? 'መጽሐፉን ክፈት'}</a>
-              : <p className="muted small">ትምህርት ክፍል ገና አልጫነም።</p>}
-      </section>
-
-      <section className="card" style={{ marginBottom: 16 }}>
-        <h2 className="section" style={{ marginTop: 0 }}>ውጤት</h2>
-        <p className="small muted">ነጥቦቹ የሚገቡት ከእያንዳንዱ ክፍል ከፍተኛ ነጥብ ውስጥ ነው። ማለፊያ፦ {s.pass_mark}/100።{s.min_attendance > 0 && ` ለዋና ፈተና ዝቅተኛ ክትትል፦ መደበኛ ${s.min_attendance}% · የርቀት ተማሪዎች ${s.min_attendance_distance}%።`}</p>
-        <MarksGrid offeringId={id} students={students} marks={marks} weights={weights} locked={locked}
-          attendance={attendance} barred={barredIds} makeup={makeupIds} passMark={s.pass_mark} />
-        {offering.status === 'draft' && (
-          <div style={{ marginTop: 12 }}>
-            {finalsDone
-              ? <ActionButton action={submitOffering.bind(null, id)} label="🔒 ለትምህርት ክፍል ላክና ቆልፍ" className="btn green"
-                  confirmText="ከላኩ በኋላ ውጤቱን መቀየር አይችሉም። ይላክ?" />
-              : <p className="small muted">የሁሉም ተማሪዎች የዋና ፈተና ውጤት ሲገባ “ለማጽደቅ ላክ” ይታያል።</p>}
+        <aside className="exam-side">
+          <dl className="exam-facts-list">
+            <div><dt>ክፍል</dt><dd>{classLabel(offering.class_level)}</dd></div>
+            <div><dt>ሴሚስተር</dt><dd>{semesterLabel(s.no)}</dd></div>
+            <div><dt>ተማሪዎች</dt><dd>{students.length}</dd></div>
+            <div><dt>ክፍለ ጊዜዎች</dt><dd>{(sessions ?? []).length}</dd></div>
+          </dl>
+          <div className="exam-side-actions">
+            {book
+              ? <a className="btn secondary" href={book} target="_blank" rel="noopener noreferrer">📘 ማጣቀሻ መጽሐፍ</a>
+              : <span className="small muted">📘 ማጣቀሻ መጽሐፍ ገና አልተጫነም።</span>}
+            <Link className="btn secondary" href={`${base}/exams`}>🖊 ኦንላይን ፈተናዎች</Link>
           </div>
-        )}
-        {offering.status === 'submitted' && <p className="alert ok">ለትምህርት ክፍል ተልኳል፤ ማጽደቁን በመጠባበቅ ላይ።</p>}
-      </section>
-
-      <section className="card">
-        <h2 className="section" style={{ marginTop: 0 }}>የክፍል ክትትል</h2>
-        {editSession && <p className="alert ok small">የ{formatEc(editDate)} ክትትል ተይዟል — ማስተካከል ይችላሉ።</p>}
-        <ClassAttendanceForm key={editDate} offeringId={id} students={students} today={editDate} initial={initial} />
-        {(sessions ?? []).length > 0 && (
-          <>
-            <h3 className="section">የተያዙ ቀናት ({sessions!.length})</h3>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>ቀን</th><th className="num">የተገኙ</th><th /></tr></thead>
-                <tbody>
-                  {sessions!.map((x) => (
-                    <tr key={x.id}>
-                      <td>{formatEc(x.session_date, { weekday: true })}</td>
-                      <td className="num">{presentOf(x.id)}/{students.length}</td>
-                      <td><Link className="link small" href={`?d=${x.session_date}`} scroll={false}>አስተካክል</Link></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </section>
-
-      <section className="card" style={{ marginTop: 16 }}>
-        <h2 className="section" style={{ marginTop: 0 }}>የእኔ ክትትል (በትምህርት ክፍል የተያዘ)</h2>
-        {(mine ?? []).length === 0 ? <p className="muted small">እስካሁን አልተመዘገበም።</p> : (
-          <p className="small">
-            {(mine ?? []).map((x) => `${formatEc(x.att_date)}፦ ${T_STATUS[x.status]}${x.note ? ` (${x.note})` : ''}`).join(' · ')}
-          </p>
-        )}
-      </section>
+          <div>
+            <div className="small" style={{ fontWeight: 700, marginBottom: 4 }}>የእኔ ክትትል (በትምህርት ክፍል)</div>
+            {(mine ?? []).length === 0 ? <p className="muted small" style={{ margin: 0 }}>እስካሁን አልተመዘገበም።</p> : (
+              <ul className="me-list">
+                {(mine ?? []).slice(0, 8).map((x) => (
+                  <li key={x.att_date}><span className="small">{formatEc(x.att_date)}{x.note ? ` — ${x.note}` : ''}</span>
+                    <span className={`pill ${x.status === 'present' ? 'present' : x.status === 'absent' ? 'absent' : 'half'}`}>{T_STATUS[x.status]}</span></li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </aside>
+      </div>
     </>
   );
 }

@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fmtTime } from '@/lib/ethiopian-calendar';
 import { requireMember } from '@/lib/member-auth';
 import {
-  COMPONENTS, DECISION, READY_MESSAGE, THANKSGIVING, classLabel, gradeOf, semesterLabel,
+  CLASS_LEVELS, COMPONENTS, DECISION, READY_MESSAGE, THANKSGIVING, classLabel, gradeOf, semesterLabel,
   type AcademicYear, type ResultRow, type Semester, type YearRow,
 } from '@/lib/education';
 import { ActionButton } from '@/components/action-button';
@@ -16,20 +16,19 @@ import { fixedSchedules } from '@/lib/schedules';
 import { dayNames } from '@/components/day-checks';
 import { ecToIso, formatEc, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import { PART_AREAS, bandOf, loadBands, memberParticipation, overall, type PartArea } from '@/lib/participation';
-import { BandLegend, ParticipationView } from '@/components/participation-view';
+import { ParticipationView } from '@/components/participation-view';
 import { DutyPill, type DutyStatus } from '@/components/duty-table';
-import { DutyFields } from '@/components/duty-fields';
 import { Modal } from '@/components/modal';
-import { MediaForm } from '@/components/media-form';
-import { EcDatePicker } from '@/components/ec-date-picker';
-import { acceptDuty, chooseDuty } from '@/lib/actions/duty';
+import { ChooseDutyForm } from '@/components/choose-duty-form';
+import { acceptDuty } from '@/lib/actions/duty';
 
 type Duty = { id: string; dept: string | null; duty: string; duty_date: string; occasion: string; status: DutyStatus; source: 'given' | 'chosen'; accepted_at: string | null };
 const addDaysIso = (iso: string, n: number) => { const d = new Date(`${iso}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 type Absence = { on_date: string; area: PartArea; label: string; status: 'absent' | 'half' };
 
 
-export default async function StudentHome() {
+export default async function StudentHome({ searchParams }: { searchParams: Promise<{ sem?: string }> }) {
+  const sp = await searchParams;
   const me = await requireMember();
   const supabase = await createClient();
   const ecYear = isoToEc(todayIsoAddis()).year;
@@ -92,12 +91,21 @@ export default async function StudentHome() {
   const upcomingExams = exams.filter((x) => !x.attempt_id && examWindow(x) === 'upcoming');
   const doneExams = exams.filter((x) => x.submitted_at);
 
-  const results = classLevel
-    ? await Promise.all(semesters.map(async (s) => {
-        const { data } = await supabase.rpc('semester_results', { p_semester: s.id, p_class: classLevel });
-        return { s, rows: (data ?? []) as ResultRow[] };
-      }))
+  // one semester at a time (switch) — the open one first
+  const semSel = semesters.find((x) => x.id === sp.sem) ?? semesters.find((x) => x.is_active) ?? semesters[0];
+  const results = classLevel && semSel
+    ? [{ s: semSel, rows: (((await supabase.rpc('semester_results', { p_semester: semSel.id, p_class: classLevel })).data ?? []) as ResultRow[]) }]
     : [];
+  // classes the member may offer to teach: below their own (all, when not a student this year)
+  const teachClasses = CLASS_LEVELS.filter((c) => !classLevel || CLASS_LEVELS.indexOf(c) < CLASS_LEVELS.indexOf(classLevel as never))
+    .map((c) => ({ value: c, label: classLabel(c) }));
+  // የእኔ ምደባ: jobs (given / chosen) and this week's programmes, by date
+  type Line = { key: string; title: string; sub: string; right: React.ReactNode; date: string };
+  const lines: Line[] = [
+    ...upcoming.map((d) => ({ key: d.id, date: d.duty_date, title: `${d.duty} · ${d.occasion}`,
+      sub: `${formatEc(d.duty_date, { weekday: true })} · ${d.source === 'chosen' ? 'የመረጥኩት' : d.dept ? DEPT_NAME[d.dept] : ''}`, right: <DutyPill {...d} /> })),
+    ...schedule.map((x) => ({ key: x.key, date: '', title: x.title, sub: `${x.when}${x.place ? ` · 📍 ${x.place}` : ''}`, right: <DeliveryBadge d={x.d} compact /> })),
+  ];
 
   const yearRow = classLevel && year
     ? (((await supabase.rpc('year_results', { p_year: year.id, p_class: classLevel })).data ?? []) as YearRow[])[0]
@@ -105,24 +113,19 @@ export default async function StudentHome() {
 
   return (
     <>
-      <section className="me-hero">
+      <section className="me-strip">
         {photo
           // eslint-disable-next-line @next/next/no-img-element
-          ? <img className="me-photo" src={photo} alt="" />
-          : <span className="me-photo empty" aria-hidden>{first.slice(0, 1)}</span>}
-        <div className="me-hello">
-          <span className="small">{female ? 'ሰላም እህታችን' : 'ሰላም ወንድማችን'}</span>
-          <h1 className="serif">{me.fullName}</h1>
-          <p>{female ? `እንኳን ደህና መጣሽ፤ ${first}! በአገልግሎትሽ እግዚአብሔር ይባርክሽ።` : `እንኳን ደህና መጣህ፤ ${first}! በአገልግሎትህ እግዚአብሔር ይባርክህ።`}</p>
-          <div className="me-tags">
-            <span>መለያ ቁ. <b>{me.regNo}</b></span>
-            {p?.joined_year && <span>ከ{p.joined_year} ዓ.ም ጀምሮ</span>}
-          </div>
+          ? <img className="me-avatar" src={photo} alt="" />
+          : <span className="me-avatar empty" aria-hidden>{first.slice(0, 1)}</span>}
+        <div className="me-strip-text">
+          <b className="serif">{female ? 'ሰላም እህታችን' : 'ሰላም ወንድማችን'} {me.fullName}</b>
+          <span className="small">{female ? 'እንኳን ደህና መጣሽ' : 'እንኳን ደህና መጣህ'} · መለያ ቁ. {me.regNo}{classLevel ? ` · ${classLabel(classLevel)}` : ''}{p?.joined_year ? ` · ከ${p.joined_year} ዓ.ም ጀምሮ` : ''}</span>
         </div>
-        <div className="me-stats">
-          <div><b>{all !== null ? `${all}%` : '—'}</b><span>ተሳትፎ ({ecYear}){allBand && <em className={`band b-${allBand.key}`}>{allBand.label}</em>}</span></div>
-          <div><b>{duties.filter((d) => d.status === 'done').length}<small>/{taken.length}</small></b><span>የፈጸምኳቸው ምደባዎች</span></div>
-          <div><b>{upcoming.length}</b><span>የሚመጡ ምደባዎች</span></div>
+        <div className="me-strip-stats">
+          <span><b>{all !== null ? `${all}%` : '—'}</b>ተሳትፎ{allBand && <em className={`band b-${allBand.key}`}>{allBand.label}</em>}</span>
+          <span><b>{duties.filter((d) => d.status === 'done').length}/{taken.length}</b>የፈጸምኳቸው</span>
+          {toAccept.length > 0 && <span className="warn"><b>{toAccept.length}</b>ለመቀበል</span>}
         </div>
       </section>
 
@@ -135,161 +138,135 @@ export default async function StudentHome() {
         </Link>
       ))}
 
-      <div className="me-grid">
-        <section className="card">
-          <h2 className="section" style={{ marginTop: 0 }}>የእኔ ተሳትፎ — {ecYear} ዓ.ም</h2>
-          <ParticipationView data={part} bands={bands} compact />
-          <BandLegend bands={bands} />
-        </section>
-
-        <section className="card">
-          <h2 className="section" style={{ marginTop: 0 }}>የእኔ መርሐ ግብሮች</h2>
-          {schedule.length === 0 ? <p className="muted small">በዚህ ሳምንት የተያዘ መርሐ ግብር የለም።</p> : (
-            <ul className="me-list">
-              {schedule.map((x) => (
-                <li key={x.key}>
-                  <span><b>{x.title}</b><br /><span className="small muted">{x.when}{x.place ? ` · 📍 ${x.place}` : ''}</span></span>
-                  <DeliveryBadge d={x.d} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="card">
-          <div className="card-head">
-            <b>የአባላት ስራ ምደባ</b>
-            <span style={{ flex: 1 }} />
-            <Modal label="+ አገልግሎት ልምረጥ" title="አገልግሎት ልምረጥ" sub="ከተላከ በኋላ መቀየር አይቻልም" size="sm" btnClass="btn xs green">
-              <MediaForm action={chooseDuty} submitLabel="ላክ" card={false}>
-                <DutyFields sfx="me" />
-                <div className="field"><span className="label">ቀን <span className="req">*</span></span>
-                  <EcDatePicker name="duty_date" defaultIso={today} yearsBack={0} yearsForward={1} required /></div>
-              </MediaForm>
-            </Modal>
-          </div>
-          {toAccept.length > 0 && (
-            <div className="duty-accept">
-              <div className="small"><b>እንዲቀበሉ የተመደቡ</b> — ከቀኑ በፊት ካልተቀበሉ ጊዜው ያልፋል፤ ከተቀበሉ በኋላ መመለስ አይቻልም።</div>
-              {toAccept.map((d) => (
-                <div key={d.id} className="duty-accept-row">
-                  <span><b>{d.duty}</b> · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })}{d.dept ? ` · ${DEPT_NAME[d.dept]}` : ''}</span></span>
-                  <ActionButton action={acceptDuty.bind(null, d.id)} label="✓ እቀበላለሁ" className="btn xs green"
-                    confirmText={`“${d.duty}” (${d.occasion}) ይቀበላሉ? ከተቀበሉ በኋላ መመለስ አይቻልም።`} />
-                </div>
-              ))}
-            </div>
-          )}
-          {taken.length === 0 && toAccept.length === 0 ? <p className="muted small">እስካሁን አገልግሎት የለም። “+ አገልግሎት ልምረጥ” ብለው መምረጥ ይችላሉ።</p> : (
-            <ul className="me-list">
-              {[...upcoming, ...pastDuties.slice(0, 8)].map((d) => (
-                <li key={d.id}>
-                  <span><b>{d.duty}</b> · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })} · {d.source === 'chosen' ? 'የመረጥኩት' : d.dept ? DEPT_NAME[d.dept] : ''}</span></span>
-                  <DutyPill {...d} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {(upcomingExams.length > 0 || doneExams.length > 0) && (
+      <div className="dash-grid">
+        <div className="dash-main">
           <section className="card">
-            <h2 className="section" style={{ marginTop: 0 }}>ኦንላይን ፈተናዎች</h2>
-            <ul className="me-list">
-              {upcomingExams.map((x) => (
-                <li key={x.id}>
-                  <span><b>{x.title}</b> <span className="small muted">({EXAM_COMPONENTS[x.component]})</span><br /><span className="small muted">{x.course} · ይከፈታል {fmtAddis(x.opens_at, { weekday: true })}</span></span>
-                  <span className="pill pending">የሚመጣ</span>
-                </li>
-              ))}
-              {doneExams.map((x) => (
-                <li key={x.id}>
-                  <span><Link className="link" href={`/student/exam/${x.id}`}><b>{x.title}</b></Link><br /><span className="small muted">{x.course}</span></span>
-                  {x.released ? <b>{Number(x.score ?? 0)}/{Number(x.total_points)}</b> : <span className="pill half">እየታረመ</span>}
-                </li>
-              ))}
-            </ul>
+            <div className="card-head">
+              <b>የእኔ ትምህርት</b>
+              {classLevel && <span className="pill">{classLabel(classLevel)} · {year?.ec_year} ዓ.ም</span>}
+              <span style={{ flex: 1 }} />
+              {classLevel && semesters.length > 1 && (
+                <div className="seg">
+                  {semesters.map((x) => <Link key={x.id} className={semSel?.id === x.id ? 'on' : ''} href={`/student?sem=${x.id}`}>{semesterLabel(x.no)}</Link>)}
+                </div>
+              )}
+            </div>
+            {!year && <p className="muted small">የትምህርት ዘመኑ ገና አልተከፈተም።</p>}
+            {year && !enr && (
+              <div className="btn-row"><span className="small">ለ{year.ec_year} ዓ.ም የትምህርት ዘመን አልተመዘገቡም።</span>
+                <ActionButton action={enrollSelf} label={`ለ${year.ec_year} ዓ.ም ተመዝገብ`} className="btn sm" /></div>
+            )}
+            {year && enr && !classLevel && <p className="alert ok small">ለ{year.ec_year} ዓ.ም ተመዝግበዋል። ክፍልዎን ትምህርት ክፍል በቅርቡ ይመድባል።</p>}
+            {yearRow?.ready && (
+              <div className="alert ok">
+                <b>የ{year?.ec_year} ዓ.ም የዓመት ውጤት፦</b> አማካይ <b>{yearRow.year_average}</b> · ደረጃ <b>{yearRow.rank}/{yearRow.class_size}</b> ·{' '}
+                <b className={yearRow.decision === 'repeat' ? 'neg' : 'pos'}>{yearRow.decision ? DECISION[yearRow.decision] : '—'}</b>{yearRow.rank !== null && yearRow.rank <= 3 && ' 🏅'}
+                <div className="serif small">{THANKSGIVING}</div>
+              </div>
+            )}
+            {results.map(({ s, rows }) => (
+              <div key={s.id}>
+                {rows.length > 0 && rows[0].ready && <div className="alert ok small"><b>{READY_MESSAGE}</b> — አማካይ {rows[0].average} · ደረጃ {rows[0].rank}/{rows[0].class_size}</div>}
+                {rows.length === 0 ? <p className="muted small">ለዚህ ሴሚስተር ኮርሶች ገና አልተዘጋጁም።</p> : (
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>ኮርስ</th>{COMPONENTS.map((c) => <th key={c.key} className="num">{c.label}</th>)}<th className="num">ድምር</th><th>ደረጃ</th><th className="num">ክትትል</th></tr></thead>
+                      <tbody>
+                        {rows.map((r) => (
+                          <tr key={r.offering_id}>
+                            <td>{r.course}</td>
+                            {r.status === 'approved'
+                              ? <>{COMPONENTS.map((c) => <td key={c.key} className="num">{r[c.key] ?? '—'}</td>)}
+                                  <td className="num"><b>{r.total}</b></td><td>{gradeOf(Number(r.total), s.pass_mark).label}</td></>
+                              : <td colSpan={COMPONENTS.length + 2} className="muted small">ውጤቱ ገና አልጸደቀም።</td>}
+                            <td className="num">{r.sessions ? `${Math.round((r.attended / r.sessions) * 100)}%` : '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <p className="small muted" style={{ margin: '6px 0 0' }}>ፈተና {s.w_quiz} · ደብተር {s.w_notebook} · ተሣትፎ {s.w_participation} · አጋማሽ {s.w_mid} · ዋና {s.w_final} · ማለፊያ {s.pass_mark}</p>
+              </div>
+            ))}
           </section>
-        )}
 
-        <section className="card">
-          <h2 className="section" style={{ marginTop: 0 }}>የቀረሁባቸው ቀናት</h2>
-          {absences.length === 0 ? <p className="muted small">የቀሩበት ቀን የለም። በርቱ!</p> : (
-            <ul className="me-list">
-              {absences.map((a, i) => (
-                <li key={i}>
-                  <span>{PART_AREAS[a.area] ?? a.area}{a.label ? ` — ${a.label}` : ''}<br /><span className="small muted">{formatEc(a.on_date, { weekday: true })}</span></span>
-                  <span className="pill absent">{a.status === 'half' ? (a.area === 'teaching' ? 'አርፍዷል' : 'ግማሽ') : 'ቀሪ'}</span>
-                </li>
-              ))}
-            </ul>
+          {(upcomingExams.length > 0 || doneExams.length > 0) && (
+            <section className="card">
+              <div className="card-head"><b>ኦንላይን ፈተናዎች</b></div>
+              <ul className="me-list">
+                {upcomingExams.map((x) => (
+                  <li key={x.id}>
+                    <span><b>{x.title}</b> <span className="small muted">({EXAM_COMPONENTS[x.component]})</span><br /><span className="small muted">{x.course} · ይከፈታል {fmtAddis(x.opens_at, { weekday: true })}</span></span>
+                    <span className="pill pending">የሚመጣ</span>
+                  </li>
+                ))}
+                {doneExams.map((x) => (
+                  <li key={x.id}>
+                    <span><Link className="link" href={`/student/exam/${x.id}`}><b>{x.title}</b></Link><br /><span className="small muted">{x.course}</span></span>
+                    {x.released ? <b>{Number(x.score ?? 0)}/{Number(x.total_points)}</b> : <span className="pill half">እየታረመ</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
-        </section>
-      </div>
-
-      <h2 className="section">የእኔ ትምህርት</h2>
-      {!year && <p className="muted">የትምህርት ዘመኑ ገና አልተከፈተም።</p>}
-      {year && !enr && (
-        <div className="card">
-          <p style={{ marginTop: 0 }}>ለ{year.ec_year} ዓ.ም የትምህርት ዘመን አልተመዘገቡም።</p>
-          <ActionButton action={enrollSelf} label={`ለ${year.ec_year} ዓ.ም ተመዝገብ`} className="btn" />
         </div>
-      )}
-      {year && enr && !classLevel && (
-        <p className="alert ok">ለ{year.ec_year} ዓ.ም ተመዝግበዋል። ክፍልዎን ትምህርት ክፍል በቅርቡ ይመድባል።</p>
-      )}
 
-      {classLevel && <p><b>{classLabel(classLevel)}</b> · {year?.ec_year} ዓ.ም</p>}
-      {yearRow?.ready && (
-        <section className="card" style={{ marginBottom: 16, borderColor: 'var(--gold)' }}>
-          <h3 style={{ marginTop: 0 }}>የ{year?.ec_year} ዓ.ም የዓመት ውጤት</h3>
-          <div className="alert ok">
-            <div><b>{READY_MESSAGE}</b></div>
-            <div className="serif">{THANKSGIVING}</div>
-          </div>
-          <p>
-            የዓመት አማካይ፦ <b>{yearRow.year_average}</b> · ደረጃ በክፍል፦ <b>{yearRow.rank} ከ{yearRow.class_size}</b> · ውሳኔ፦{' '}
-            <b className={yearRow.decision === 'repeat' ? 'neg' : 'pos'}>{yearRow.decision ? DECISION[yearRow.decision] : '—'}</b>
-            {yearRow.rank !== null && yearRow.rank <= 3 && ' 🏅'}
-          </p>
-        </section>
-      )}
-      {results.map(({ s, rows }) => (
-        <section key={s.id} className="card" style={{ marginBottom: 16 }}>
-          <h3 style={{ marginTop: 0 }}>{semesterLabel(s.no)}</h3>
-          {rows.length > 0 && rows[0].ready && (
-            <div className="alert ok">
-              <div><b>{READY_MESSAGE}</b></div>
-              <div className="serif">{THANKSGIVING}</div>
+        <aside className="dash-side">
+          <section className="card">
+            <div className="card-head">
+              <b>የእኔ ምደባ</b>
+              <span style={{ flex: 1 }} />
+              <Modal label="+ አገልግሎት ልምረጥ" title="አገልግሎት ልምረጥ" sub="መምህርነት ወይም ሌላ አገልግሎት — ከተላከ በኋላ መቀየር አይቻልም" size="sm" btnClass="btn xs green">
+                <ChooseDutyForm today={today} classes={teachClasses} />
+              </Modal>
             </div>
-          )}
-          <p className="small muted">
-            የውጤት አያያዝ፦ ፈተና {s.w_quiz} · ደብተር {s.w_notebook} · ተሣትፎ {s.w_participation} · አጋማሽ {s.w_mid} · ዋና {s.w_final} = 100 · ማለፊያ {s.pass_mark}
-          </p>
-          {rows.length === 0 ? <p className="muted">ለዚህ ሴሚስተር ኮርሶች ገና አልተዘጋጁም።</p> : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>ኮርስ</th>{COMPONENTS.map((c) => <th key={c.key} className="num">{c.label}</th>)}<th className="num">ድምር</th><th>ደረጃ</th><th className="num">ክትትል</th></tr></thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.offering_id}>
-                      <td>{r.course}</td>
-                      {r.status === 'approved'
-                        ? <>{COMPONENTS.map((c) => <td key={c.key} className="num">{r[c.key] ?? '—'}</td>)}
-                            <td className="num"><b>{r.total}</b></td><td>{gradeOf(Number(r.total), s.pass_mark).label}</td></>
-                        : <td colSpan={COMPONENTS.length + 2} className="muted small">ውጤቱ ገና አልጸደቀም።</td>}
-                      <td className="num">{r.sessions ? `${Math.round((r.attended / r.sessions) * 100)}%` : '—'}</td>
-                    </tr>
+            {toAccept.length > 0 && (
+              <div className="duty-accept">
+                <div className="small"><b>እንዲቀበሉ የተመደቡ</b> — ከቀኑ በፊት ይቀበሉ፤ ከተቀበሉ በኋላ መመለስ አይቻልም።</div>
+                {toAccept.map((d) => (
+                  <div key={d.id} className="duty-accept-row">
+                    <span><b>{d.duty}</b> · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })}{d.dept ? ` · ${DEPT_NAME[d.dept]}` : ''}</span></span>
+                    <ActionButton action={acceptDuty.bind(null, d.id)} label="✓ እቀበላለሁ" className="btn xs green"
+                      confirmText={`“${d.duty}” (${d.occasion}) ይቀበላሉ? ከተቀበሉ በኋላ መመለስ አይቻልም።`} />
+                  </div>
+                ))}
+              </div>
+            )}
+            {lines.length === 0 && toAccept.length === 0 ? <p className="muted small">በቅርቡ ምንም የለም። “+ አገልግሎት ልምረጥ” ብለው መምረጥ ይችላሉ።</p> : (
+              <ul className="me-list">
+                {lines.map((l) => <li key={l.key}><span><b>{l.title}</b><br /><span className="small muted">{l.sub}</span></span>{l.right}</li>)}
+              </ul>
+            )}
+            {pastDuties.length > 0 && (
+              <details className="fold-card" style={{ marginTop: 6 }}>
+                <summary className="small"><b>ያለፉ ምደባዎች ({pastDuties.length})</b></summary>
+                <ul className="me-list">
+                  {pastDuties.slice(0, 10).map((d) => <li key={d.id}><span>{d.duty} · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date)}</span></span><DutyPill {...d} /></li>)}
+                </ul>
+              </details>
+            )}
+          </section>
+
+          <section className="card">
+            <div className="card-head"><b>የእኔ ተሳትፎ</b><span className="small muted">{ecYear} ዓ.ም</span></div>
+            <ParticipationView data={part} bands={bands} compact />
+            <details className="fold-card" style={{ marginTop: 8 }}>
+              <summary className="small"><b>የቀረሁባቸው ቀናት ({absences.length})</b></summary>
+              {absences.length === 0 ? <p className="muted small">የቀሩበት ቀን የለም። በርቱ!</p> : (
+                <ul className="me-list">
+                  {absences.map((a, i) => (
+                    <li key={i}>
+                      <span>{PART_AREAS[a.area] ?? a.area}{a.label ? ` — ${a.label}` : ''}<br /><span className="small muted">{formatEc(a.on_date, { weekday: true })}</span></span>
+                      <span className="pill absent">{a.status === 'half' ? (a.area === 'teaching' ? 'አርፍዷል' : 'ግማሽ') : 'ቀሪ'}</span>
+                    </li>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {rows.length > 0 && rows[0].ready && (
-            <p><b>አማካይ፦</b> {rows[0].average} · <b>ደረጃ በክፍል፦</b> {rows[0].rank} ከ{rows[0].class_size}</p>
-          )}
-        </section>
-      ))}
+                </ul>
+              )}
+            </details>
+          </section>
+        </aside>
+      </div>
     </>
   );
 }
