@@ -650,9 +650,9 @@ select pg_temp.must_equal((select count(*) from public.year_results('90000000-00
   where member_id = '10000000-0000-0000-0000-0000000000e1' and ready and decision = 'promoted' and rank = 1), 1, 'year results: promoted, rank 1');
 select pg_temp.must_equal((select count(*) from public.year_results('90000000-0000-0000-0000-000000000001', '3')
   where member_id = '10000000-0000-0000-0000-0000000000e3' and decision = 'repeat'), 1, 'low average repeats');
-insert into public.year_decisions (year_id, member_id, decision, remark) values ('90000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e3', 'promoted', 'በጉባኤ ውሳኔ');
+select pg_temp.must_fail($q$insert into public.year_decisions (year_id, member_id, decision, remark) values ('90000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e3', 'promoted', 'x')$q$);
 select pg_temp.must_equal((select count(*) from public.year_results('90000000-0000-0000-0000-000000000001', '3')
-  where member_id = '10000000-0000-0000-0000-0000000000e3' and decision = 'promoted' and auto_decision = 'repeat'), 1, 'decision override');
+  where member_id = '10000000-0000-0000-0000-0000000000e3' and decision = 'repeat'), 1, 'the rule decides — no override');
 select public.issue_year_transcript('90000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e1');
 select pg_temp.must_equal((select count(*) from public.student_history('10000000-0000-0000-0000-0000000000e1')), 1, 'history has the year');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
@@ -857,6 +857,12 @@ update public.hr_settings set good = 10 where id;
 select pg_temp.must_equal((select good::int from public.hr_settings), 70, 'only hr changes bands');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
 select pg_temp.must_equal((select count(*) from public.my_duties() where duty_date >= '2099-01-01'), 2, 'member sees own duties');
+select pg_temp.must_fail($q$select public.choose_duty('ነዳያን ጥየቃ', 'ትንሳኤ', '2099-04-20')$q$);
+reset role;
+insert into public.member_programs (member_id, program, status) values ('10000000-0000-0000-0000-0000000000e1', 'duty', 'active')
+  on conflict (member_id, program) do update set status = 'active';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
 select public.choose_duty('ነዳያን ጥየቃ', 'ትንሳኤ', '2099-04-20');
 select pg_temp.must_equal((select count(*) from public.my_duties() where source = 'chosen' and accepted_at is not null), 1, 'member chooses a job');
 select pg_temp.must_fail($q$select public.choose_duty('ባዛር', 'ትንሳኤ', '2000-01-01')$q$);
@@ -877,7 +883,7 @@ set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
 select public.set_member_programs('10000000-0000-0000-0000-000000000002', array['course', 'mezmur']);
-select pg_temp.must_equal((select count(*) from public.member_programs where member_id = '10000000-0000-0000-0000-000000000002' and status = 'declined'), 1, 'unticked programs are declined');
+select pg_temp.must_equal((select count(*) from public.member_programs where member_id = '10000000-0000-0000-0000-000000000002' and status = 'declined'), 2, 'unticked programs are declined');
 select pg_temp.must_equal((select count(*) from public.member_programs where member_id = '10000000-0000-0000-0000-000000000002' and program = 'mezmur' and status = 'active'), 1, 'already active stays active');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
 update public.member_programs set status = 'active' where member_id = '10000000-0000-0000-0000-000000000002' and program = 'course';

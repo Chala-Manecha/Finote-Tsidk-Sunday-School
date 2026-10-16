@@ -5,14 +5,14 @@ import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, COMPONENTS, CONDUCT, classLabel, gradeOf, isClassLevel, semesterLabel, type ResultRow } from '@/lib/education';
 import { loadTerms } from '@/lib/edu-data';
 import { AutoSubmit } from '@/components/auto-submit';
-import { MediaForm } from '@/components/media-form';
+import { ConductSelect } from '@/components/conduct-select';
 import { ActionButton } from '@/components/action-button';
 import { PrintButton } from '@/components/print-button';
 import { saveConduct, openTranscript } from '@/lib/actions/education-admin';
 
 /** ትምህርት ክፍል: class result sheet, rank, conduct, transcripts. */
 export default async function Results({ params, searchParams }: {
-  params: Promise<{ dept: string }>; searchParams: Promise<{ s?: string; c?: string; m?: string; o?: string }>;
+  params: Promise<{ dept: string }>; searchParams: Promise<{ s?: string; c?: string; m?: string; o?: string; q?: string }>;
 }) {
   const { dept } = await params;
   if (dept !== 'education' && dept !== 'audit') notFound();
@@ -73,7 +73,7 @@ type Sem = NonNullable<Awaited<ReturnType<typeof loadTerms>>['semester']>;
 /** One class's result sheet (courses as columns, rank, conduct, transcript). */
 async function ClassSheet({ dept, semester, cls, sp, conduct }: {
   dept: string; semester: Sem; cls: string;
-  sp: { m?: string; o?: string }; conduct: Map<string, { conduct: string | null }>;
+  sp: { m?: string; o?: string; q?: string }; conduct: Map<string, { conduct: string | null }>;
 }) {
   const supabase = await createClient();
   const { data } = await supabase.rpc('semester_results', { p_semester: semester.id, p_class: cls });
@@ -82,7 +82,9 @@ async function ClassSheet({ dept, semester, cls, sp, conduct }: {
   const order = sp.o === 'asc' || sp.o === 'desc' ? sp.o : 'rank';
   const students = [...new Map(rows.map((r) => [r.member_id, r])).values()].sort((a, b) =>
     order === 'asc' ? Number(a.average) - Number(b.average) : order === 'desc' ? Number(b.average) - Number(a.average) : a.rank - b.rank);
-  const base = `/staff/${dept}/results?s=${semester.id}&c=${cls}`;
+  const q = (sp.q ?? '').trim().toLowerCase();
+  const shown = q ? students.filter((s) => s.full_name.toLowerCase().includes(q) || (s.reg_no ?? '').toLowerCase().includes(q)) : students;
+  const base = `/staff/${dept}/results?s=${semester.id}&c=${cls}${q ? `&q=${encodeURIComponent(sp.q!.trim())}` : ''}`;
   const picked = sp.m ? rows.filter((r) => r.member_id === sp.m) : [];
   const nextOrder = order === 'desc' ? 'asc' : 'desc';
   const cell = (m: string, o: string) => rows.find((r) => r.member_id === m && r.offering_id === o);
@@ -122,12 +124,20 @@ async function ClassSheet({ dept, semester, cls, sp, conduct }: {
           </div>
         </section>
       )}
+      <form className="toolbar slim no-print name-filter" action={`/staff/${dept}/results`}>
+        <input type="hidden" name="s" value={semester.id} />
+        <input type="hidden" name="c" value={cls} />
+        <input type="search" name="q" defaultValue={sp.q ?? ''} placeholder="🔍 በተማሪ ስም ወይም መለያ ቁ. ፈልግ" aria-label="በተማሪ ስም ፈልግ" />
+        <button className="btn sm secondary">ፈልግ</button>
+        {q && <Link className="btn sm secondary" href={`/staff/${dept}/results?s=${semester.id}&c=${cls}`}>✕</Link>}
+        <span className="small muted">{shown.length}/{students.length} ተማሪዎች</span>
+      </form>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
               <th className="rank" rowSpan={2}><Link className="link" scroll={false} href={base} title="በደረጃ ደርድር">ደረጃ</Link></th><th rowSpan={2}>ተማሪ</th>
-              {courses.length > 0 && <th colSpan={courses.length} className="num course-group">ኮርሶች — ድምር ውጤት (ከ100)</th>}
+              {courses.length > 0 && <th colSpan={courses.length} className="num course-group">ኮርስ</th>}
               <th className="num" rowSpan={2}><Link className="link" scroll={false} href={`${base}&o=${nextOrder}`} title="በአማካይ ደርድር">አማካይ {order === 'desc' ? '▼' : order === 'asc' ? '▲' : '⇅'}</Link></th>
               {dept === 'education' && <><th className="no-print" rowSpan={2}>ጠባይ</th><th className="no-print" rowSpan={2} /></>}
             </tr>
@@ -136,7 +146,7 @@ async function ClassSheet({ dept, semester, cls, sp, conduct }: {
             </tr>
           </thead>
           <tbody>
-            {students.map((s) => (
+            {shown.map((s) => (
               <tr key={s.member_id}>
                 <td className="rank">{s.rank}</td>
                 <td><Link className="link" scroll={false} href={`${base}&o=${order}&m=${s.member_id}`}>{s.full_name}</Link><div className="small muted">{s.reg_no}</div></td>
@@ -149,14 +159,8 @@ async function ClassSheet({ dept, semester, cls, sp, conduct }: {
                 {dept === 'education' && (
                   <>
                     <td className="no-print">
-                      <MediaForm action={saveConduct} submitLabel="✓" card={false} resetOnSuccess={false}>
-                        <input type="hidden" name="semester_id" value={semester.id} />
-                        <input type="hidden" name="member_id" value={s.member_id} />
-                        <select name="conduct" defaultValue={conduct.get(s.member_id)?.conduct ?? ''} aria-label="ጠባይ">
-                          <option value="">—</option>
-                          {Object.entries(CONDUCT).map(([k, v]) => <option key={k} value={k}>{k} · {v}</option>)}
-                        </select>
-                      </MediaForm>
+                      <ConductSelect action={saveConduct} semesterId={semester.id} memberId={s.member_id}
+                        value={conduct.get(s.member_id)?.conduct ?? ''} options={Object.entries(CONDUCT)} />
                     </td>
                     <td className="no-print">
                       {ready && <ActionButton action={openTranscript.bind(null, semester.id, s.member_id)} label="ትራንስክሪፕት" className="btn sm" />}
@@ -165,7 +169,7 @@ async function ClassSheet({ dept, semester, cls, sp, conduct }: {
                 )}
               </tr>
             ))}
-            {students.length === 0 && <tr><td colSpan={courses.length + 5} className="muted">በዚህ ክፍል ተማሪ ወይም ኮርስ የለም።</td></tr>}
+            {shown.length === 0 && <tr><td colSpan={courses.length + 5} className="muted">{q ? 'በዚህ ስም ተማሪ አልተገኘም።' : 'በዚህ ክፍል ተማሪ ወይም ኮርስ የለም።'}</td></tr>}
           </tbody>
         </table>
       </div>

@@ -1,3 +1,4 @@
+import { fmtTimeRange } from '@/lib/ethiopian-calendar';
 import { createClient } from '@/lib/supabase/server';
 import { classLabel } from '@/lib/education';
 import { loadTerms } from '@/lib/edu-data';
@@ -154,7 +155,7 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
       <p className="small muted">{formatEc(date, { weekday: true })} — {all ? 'ሁሉም ኮርሶች' : `በ${WEEKDAYS_AM[dow]} የሚሰጡ ኮርሶች`} ({shown.length})</p>
 
       {rows.length === 0 ? (
-        <p className="muted">{all ? 'መምህር የተመደበለት ኮርስ የለም።' : `በ${WEEKDAYS_AM[dow]} የሚሰጥ ኮርስ የለም (የኮርሱ ቀናት በ“ኮርሶችና መምህራን” ይወሰናሉ)። “ሁሉንም ኮርሶች አሳይ”ን ይጠቀሙ።`}</p>
+        <p className="muted">{all ? 'መምህር የተመደበለት ኮርስ የለም።' : `በ${WEEKDAYS_AM[dow]} የሚሰጥ ኮርስ የለም (የኮርሱ ቀናት በ“መምህራን” ይወሰናሉ)። “ሁሉንም ኮርሶች አሳይ”ን ይጠቀሙ።`}</p>
       ) : (
         <MediaForm action={saveTeacherAttendance} submitLabel="የመምህራን ክትትል አስቀምጥ" resetOnSuccess={false} card={false}>
           <input type="hidden" name="att_date" value={date} />
@@ -173,7 +174,7 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
                   return (
                     <tr key={key}>
                       <td>{t.members?.full_name}<input type="hidden" name="key" value={key} /></td>
-                      <td>{o.name}<div className="small muted">{classLabel(o.class_level)}{o.time_text ? ` · ${o.time_text}` : ''}</div></td>
+                      <td>{o.name}<div className="small muted">{classLabel(o.class_level)}{o.time_text ? ` · ${fmtTimeRange(o.time_text)}` : ''}</div></td>
                       {(Object.keys(T_STATUS) as TStatus[]).map((k) => (
                         <td key={k} className="num"><input type="radio" name={`s_${key}`} value={k} defaultChecked={cur?.status === k} disabled={!canEdit} aria-label={T_STATUS[k]} /></td>
                       ))}

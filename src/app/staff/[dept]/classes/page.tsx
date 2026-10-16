@@ -3,12 +3,10 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, classLabel } from '@/lib/education';
 import { STUDY_MODE } from '@/lib/constants';
-import { loadTerms } from '@/lib/edu-data';
+import { ClassCourses } from './class-courses';
 import { ClassAssigner, type AssignRow } from '@/components/class-assigner';
 import { ActionButton } from '@/components/action-button';
-import { StudentAttendance } from '@/components/course-attendance-views';
 import { carryOverYear } from '@/lib/actions/education-admin';
-import { AutoSubmit } from '@/components/auto-submit';
 
 type E = { id: string; member_id: string; class_level: string | null; study_mode: string; self_registered: boolean; members: { full_name: string; reg_no: string } | null };
 
@@ -20,24 +18,15 @@ export default async function Classes({ params, searchParams }: {
   if (dept !== 'education') notFound();
   const sp = await searchParams;
   const supabase = await createClient();
-  const terms = await loadTerms(supabase, sp.s);
-  const { years } = terms;
+  const { data: ys } = await supabase.from('academic_years').select('id, ec_year, is_active').order('ec_year', { ascending: false });
+  const years = (ys ?? []) as { id: string; ec_year: number; is_active: boolean }[];
   const seg = (
     <div className="seg no-print">
-      <Link className={sp.v === 'attendance' ? '' : 'on'} href="/staff/education/classes">👥 ተማሪዎች</Link>
-      <Link className={sp.v === 'attendance' ? 'on' : ''} href="/staff/education/classes?v=attendance">🧾 ቀሪዎች</Link>
+      <Link className={sp.v === 'courses' ? '' : 'on'} href="/staff/education/classes">👥 ተማሪ ምደባ</Link>
+      <Link className={sp.v === 'courses' ? 'on' : ''} href="/staff/education/classes?v=courses">📘 ኮርሶች</Link>
     </div>
   );
-  if (sp.v === 'attendance') {
-    if (!terms.semester) return <>{seg}<p className="muted">የትምህርት ዘመን ገና አልተከፈተም።</p></>;
-    return (
-      <>
-        <div className="page-bar"><h2 className="section" style={{ margin: 0 }}>ክፍላት</h2>{seg}</div>
-        <StudentAttendance supabase={supabase} base="/staff/education/classes" years={years} semesters={terms.semesters}
-          semester={terms.semester} cls={sp.c} extra={{ v: 'attendance' }} />
-      </>
-    );
-  }
+  if (sp.v === 'courses') return <ClassCourses sp={sp} seg={seg} />;
   const year = years.find((x) => x.id === sp.y) ?? years.find((x) => x.is_active) ?? years[0];
   if (!year) return <p className="muted">መጀመሪያ “የትምህርት ዘመን” ትር ላይ ዓመቱን ይክፈቱ።</p>;
   const { data } = await supabase.from('enrollments')
@@ -68,13 +57,6 @@ export default async function Classes({ params, searchParams }: {
     <>
       <div className="page-bar">
         <h2 className="section" style={{ margin: 0 }}>ክፍላት</h2>
-        <form className="toolbar slim no-print" action="/staff/education/classes">
-          <div className="field">
-            <label htmlFor="y">ዓመት</label>
-            <select id="y" name="y" defaultValue={year.id}>{years.map((x) => <option key={x.id} value={x.id}>{x.ec_year} ዓ.ም{x.is_active ? ' (ክፍት)' : ''}</option>)}</select>
-          </div>
-          <AutoSubmit />
-        </form>
         {seg}
         <span className="spacer" />
         {prevYear && count(null) > 0 && (
@@ -88,6 +70,12 @@ export default async function Classes({ params, searchParams }: {
 
       <div className="split">
         <aside className="rail no-print" aria-label="ክፍሎች">
+          {years.length > 1 && <>
+            <div className="rail-title">ዓመት</div>
+            {years.slice(0, 4).map((x) => (
+              <Link key={x.id} href={`?y=${x.id}&c=${filter}`} className={x.id === year.id ? 'on' : ''}><span>{x.ec_year} ዓ.ም</span>{x.is_active && <b>ክፍት</b>}</Link>
+            ))}
+          </>}
           <div className="rail-title">ክፍል</div>
           {classes.map(([k, label, n]) => (
             <Link key={k} href={link(k)} className={`${filter === k ? 'on' : ''} ${k === 'none' && n > 0 ? 'warn' : ''}`}><span>{label}</span><b>{n}</b></Link>
@@ -100,7 +88,7 @@ export default async function Classes({ params, searchParams }: {
         <div className="split-main">
           <div className="split-head"><b>{filterName}</b>{mode && <span className="pill">{STUDY_MODE[mode]}</span>}<span className="small muted">{rows.length} ተማሪዎች</span></div>
           <ClassAssigner key={`${year.id}-${filter}`} rows={assignRows} />
-          <p className="small muted">ኮርስ የሚወስዱ አባላት (በአቴንዳንስ የተጨመሩ) ያለ ክፍል በራሳቸው ይገባሉ — እዚህ ይመድቧቸው። መምረጥ → <b>መድብ / ቀይር</b> ወይም <b>⬆ ወደ ቀጣይ ክፍል</b> → <b>ተግብር</b>።</p>
+          <p className="small muted">“ኮርስ” የመረጡ አባላት ያለ ክፍል በራሳቸው ይገባሉ — እዚህ ይመድቧቸው። መምረጥ → <b>መድብ / ቀይር</b> ወይም <b>⬆ ወደ ቀጣይ ክፍል</b> → <b>ተግብር</b>።</p>
         </div>
       </div>
     </>

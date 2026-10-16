@@ -65,8 +65,9 @@ export const SESSION_TYPES: Record<SessionType, { label: string; dept: DeptCode 
   abnet: { label: 'አብነት ትምህርት', dept: 'education' },
   meeting: { label: 'ስብሰባ ተሳትፎ', dept: 'hr' },
 };
+/** types a department takes attendance for here (ኮርስ attendance is taken by the teachers, per class) */
 export const sessionTypesForDept = (dept: string) =>
-  (Object.keys(SESSION_TYPES) as SessionType[]).filter((t) => SESSION_TYPES[t].dept === dept);
+  (Object.keys(SESSION_TYPES) as SessionType[]).filter((t) => SESSION_TYPES[t].dept === dept && t !== 'course');
 
 export type AttendanceStatus = 'absent' | 'present' | 'half';
 export const ATTENDANCE_STATUS: Record<AttendanceStatus, string> = {
@@ -208,18 +209,22 @@ export const SCHOOL_ADDRESS = 'አቃቂ ቃሊቲ፣ ወረዳ-13፣ አዲስ 
 
 /** What a member chooses to take part in (ስብሰባ is for everybody). Owning department adds them. */
 export const PROGRAMS = {
-  course: { label: 'ኮርስ ትምህርት', dept: 'education' },
-  abnet: { label: 'አብነት ትምህርት', dept: 'education' },
-  mezmur: { label: 'መዝሙርና ወረብ ጥናት', dept: 'mezmur' },
-  duty: { label: 'የተለያዩ አገልግሎቶች (ምደባ)', dept: 'hr' },
+  abnet: { label: 'አብነት', dept: 'education' },
+  course: { label: 'ኮርስ', dept: 'education' },
+  mezmur: { label: 'መዝሙርና ወረብ', dept: 'mezmur' },
+  duty: { label: 'በተለያዩ አገልግሎቶች', dept: 'hr' },
 } as const;
 export type ProgramCode = keyof typeof PROGRAMS;
-/** chosen at registration (ምደባ is now taken job by job, not as a program) */
-export const PROGRAM_CODES: ProgramCode[] = ['course', 'abnet', 'mezmur'];
+/** chosen at registration; “በተለያዩ አገልግሎቶች” = the pool every department gives jobs from (members then pick a ምድብ themselves) */
+export const PROGRAM_CODES: ProgramCode[] = ['abnet', 'course', 'mezmur', 'duty'];
+export const PROGRAM_HINT: Record<ProgramCode, string> = {
+  abnet: 'የአብነት ትምህርት (ዲያቆናት)', course: 'በክፍል የሚሰጥ የኮርስ ትምህርት', mezmur: 'የመዝሙርና የወረብ ጥናት', duty: 'ክፍሎች ሥራ የሚመድቡበት፤ ከገቡ በኋላ ምድብ ይመርጣሉ',
+};
 export const isProgram = (v: string): v is ProgramCode => v in PROGRAMS;
-export const programsForDept = (dept: string) => PROGRAM_CODES.filter((p) => PROGRAMS[p].dept === dept);
+/** the ተማሪዎች page of a department (አብነት has its own page, ምደባ is followed in የአባላት ስራ ምደባ) */
+export const programsForDept = (dept: string): ProgramCode[] => dept === 'education' ? ['course'] : dept === 'mezmur' ? ['mezmur'] : [];
 export type ProgramStatus = 'chosen' | 'active' | 'declined';
-export const PROGRAM_STATUS: Record<ProgramStatus, string> = { chosen: 'ተመዝግቧል (መደመር ይጠብቃል)', active: 'ተሳታፊ', declined: 'አልመረጡም' };
+export const PROGRAM_STATUS: Record<ProgramStatus, string> = { chosen: 'ተመዝግቧል', active: 'ተሳታፊ', declined: 'አልመረጡም' };
 
 /** Online or at the church (ኮርስ, አብነት, ስብሰባ, ወረብ …). */
 export const PLATFORMS = { meet: 'Google Meet', telegram: 'Telegram', zoom: 'Zoom', other: 'ሌላ' } as const;

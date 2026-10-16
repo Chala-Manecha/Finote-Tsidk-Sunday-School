@@ -71,9 +71,8 @@ const specific: Record<DeptCode, Tab[]> = {
   education: [
     { slug: 'academic', label: 'የትምህርት ዘመን', ready: true },
     { slug: 'participants', label: 'ተማሪዎች', ready: true },
-    { slug: 'online-exams', label: 'ኦንላይን ፈተናዎች', ready: true },
     { slug: 'classes', label: 'ክፍላት', ready: true },
-    { slug: 'courses', label: 'ኮርሶችና መምህራን', ready: true },
+    { slug: 'courses', label: 'መምህራን', ready: true },
     { slug: 'results', label: 'የተማሪ ውጤት', ready: true },
     { slug: 'exams', label: 'የፈተና ፈቃድና ድጋሚ ፈተና', ready: true },
     { slug: 'abnet', label: 'አብነት', ready: true },
@@ -103,7 +102,7 @@ const OFFICE_GROUPS: [string, string[]][] = [
 
 const EDUCATION_GROUPS: [string, string[]][] = [
   ['የትምህርት ዘመን', ['academic', 'participants', 'classes', 'courses']],
-  ['ውጤትና ፈተና', ['results', 'online-exams', 'exams']],
+  ['ውጤትና ፈተና', ['results', 'exams']],
   ['አብነትና ወረብ', ['abnet', 'wereb-admin']],
   ['የክፍሉ', ['members', 'duty', 'property', 'money', 'request-event', 'feedback']],
 ];

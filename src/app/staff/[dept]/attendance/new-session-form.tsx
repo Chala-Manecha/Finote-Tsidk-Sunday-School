@@ -4,11 +4,10 @@ import { EcDatePicker } from '@/components/ec-date-picker';
 import { TimePicker } from '@/components/time-picker';
 import { SESSION_TYPES, type SessionType } from '@/lib/constants';
 import { todayIsoAddis } from '@/lib/ethiopian-calendar';
-import { DeliveryFields } from '@/components/delivery-fields';
 
 const ICON: Partial<Record<SessionType, string>> = { mezmur: '🎵', wereb: '🥁', abnet: '📜', meeting: '👥', course: '📘' };
 
-/** Start a new attendance sheet: type, date, time, title (and online / at the church). */
+/** Start a new attendance sheet: type, date, time, title. */
 export function NewSessionForm({ dept, types }: { dept: string; types: SessionType[] }) {
   const [type, setType] = useState<SessionType>(types[0]);
   const meeting = type === 'meeting';
@@ -37,7 +36,6 @@ export function NewSessionForm({ dept, types }: { dept: string; types: SessionTy
         <label htmlFor="title">{meeting ? 'የስብሰባው ጉዳይ' : 'ርዕስ'} {!meeting && <span className="small muted">(አማራጭ)</span>}</label>
         <input id="title" name="title" maxLength={160} required={meeting} placeholder={meeting ? 'ለምሳሌ፦ የወርሃዊ አጠቃላይ ስብሰባ' : 'ለምሳሌ፦ የመስቀል በዓል ዝግጅት'} />
       </div>
-      {type !== 'mezmur' && <DeliveryFields idPrefix="ns" />}
       <button className="btn green" style={{ width: '100%', justifyContent: 'center' }}>ዝርዝሩን ክፈትና ክትትል ያዝ →</button>
     </form>
   );

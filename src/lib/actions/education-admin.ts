@@ -283,10 +283,36 @@ export async function addCourse(_: FormState, fd: FormData): Promise<FormState> 
   if (!isClassLevel(class_level)) return { error: 'ክፍል ይምረጡ።' };
   if (name.length < 2) return { error: 'የኮርሱን ስም ያስገቡ።' };
   const supabase = await createClient();
-  const { error } = await supabase.from('course_offerings').insert({ semester_id, class_level, name });
+  const book_path = text(fd, 'book_path') || null;
+  const book_name = text(fd, 'book_name') || null;
+  if (book_path && !book_path.startsWith('books/')) return { error: 'ፋይሉ አልተቀበለም።' };
+  const { error } = await supabase.from('course_offerings').insert({ semester_id, class_level, name, book_path, book_name });
   if (error) return { error: explain(error.message) };
   refresh();
   return { ok: 'ኮርሱ ተጨምሯል።' };
+}
+
+/** ክፍላት: replace a course's book (PDF) only. */
+export async function saveCourseBook(_: FormState, fd: FormData): Promise<FormState> {
+  await requireDept('education');
+  const id = text(fd, 'id');
+  const book = text(fd, 'book_path');
+  if (!UUID_RE.test(id)) return { error: 'ኮርሱ አልተገኘም።' };
+  if (!book.startsWith('books/')) return { error: 'ፋይል ይምረጡ።' };
+  const supabase = await createClient();
+  const { data: old } = await supabase.from('course_offerings').select('book_path').eq('id', id).maybeSingle();
+  const { error, count } = await supabase.from('course_offerings')
+    .update({ book_path: book, book_name: text(fd, 'book_name') || null }, { count: 'exact' }).eq('id', id);
+  if (error || !count) {
+    await supabase.storage.from('edu-books').remove([book]);
+    return { error: explain(error?.message ?? 'ፈቃድ የለዎትም።') };
+  }
+  if (old?.book_path && old.book_path !== book) {
+    const { count: users } = await supabase.from('course_offerings').select('id', { count: 'exact', head: true }).eq('book_path', old.book_path);
+    if (!users) await supabase.storage.from('edu-books').remove([old.book_path]);
+  }
+  refresh();
+  return { ok: 'መጽሐፉ ተቀይሯል።' };
 }
 
 export async function deleteCourse(id: string) {
@@ -399,8 +425,14 @@ export async function saveCourseDetails(_: FormState, fd: FormData): Promise<For
   const { data: old } = await supabase.from('course_offerings').select('book_path').eq('id', id).maybeSingle();
   const dl = parseDelivery(fd);
   if ('error' in dl) return dl;
+  const from = text(fd, 'time_from');
+  const to = text(fd, 'time_to');
+  const clock = /^\d{2}:\d{2}$/;
+  if ((from && !clock.test(from)) || (to && !clock.test(to))) return { error: 'ሰዓቱ ትክክል አይደለም።' };
+  if (from && to && to <= from) return { error: 'የሚያልቅበት ሰዓት ከሚጀምርበት በኋላ መሆን አለበት።' };
+  const time_text = from ? (to ? `${from}–${to}` : from) : (text(fd, 'time_text') || null);
   const row = {
-    days, time_text: text(fd, 'time_text') || null, ...dl,
+    days, time_text, ...dl,
     ...(book.startsWith('books/') ? { book_path: book, book_name: text(fd, 'book_name') || null } : {}),
   };
   const { error, count } = await supabase.from('course_offerings').update(row, { count: 'exact' }).eq('id', id);
@@ -491,25 +523,6 @@ export async function revokeMakeup(offeringId: string, memberId: string) {
 }
 
 // ---------- year end ----------
-
-export async function setYearDecision(_: FormState, fd: FormData): Promise<FormState> {
-  await requireDept('education');
-  const year_id = text(fd, 'year_id');
-  const member_id = text(fd, 'member_id');
-  const decision = text(fd, 'decision');
-  const supabase = await createClient();
-  if (decision === 'auto') {
-    const { error } = await supabase.from('year_decisions').delete().eq('year_id', year_id).eq('member_id', member_id);
-    if (error) return { error: explain(error.message) };
-  } else {
-    if (decision !== 'promoted' && decision !== 'repeat') return { error: 'ውሳኔ ይምረጡ።' };
-    const { error } = await supabase.from('year_decisions')
-      .upsert({ year_id, member_id, decision, remark: text(fd, 'remark') || null }, { onConflict: 'year_id,member_id' });
-    if (error) return { error: explain(error.message) };
-  }
-  refresh();
-  return { ok: '✓' };
-}
 
 export async function openYearTranscript(yearId: string, memberId: string) {
   await requireDept('education');

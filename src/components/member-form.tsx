@@ -6,11 +6,12 @@ import { submitApplication, applicationUploadUrl } from '@/lib/actions/applicati
 import { createClient } from '@/lib/supabase/client';
 import { resizeImage } from '@/lib/client/upload';
 import { EcDatePicker } from './ec-date-picker';
+import { ProgramPick } from './program-pick';
 import { MultiSelect } from './multi-select';
 import { ageFromIso, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
   DEPARTMENTS, EDUCATION_LEVELS, EMERGENCY_RELATIONS, GEEZ_LEVEL, LANGUAGES, MARITAL_STATUS, MEMBER_TYPE,
-  PROGRAMS, PROGRAM_CODES, REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
+  REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
 } from '@/lib/constants';
 import { emptyEducation, emptyWork, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
@@ -512,15 +513,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
           {initial.programs === null
             ? <label className="check small"><input type="checkbox" name="programs_asked" value="1" /> ምርጫው ገና አልተመዘገበም — አሁን መዝግብ (ይህ ካልተመረጠ አይቀየርም)</label>
             : <input type="hidden" name="programs_asked" value="1" />}
-          <div className="program-grid">
-            {PROGRAM_CODES.map((p) => (
-              <label key={p} className="program-opt">
-                <input type="checkbox" name="programs" value={p}
-                  defaultChecked={!!initial.programs?.includes(p)} />
-                <span>{PROGRAMS[p].label}</span>
-              </label>
-            ))}
-          </div>
+          <ProgramPick initial={initial.programs ?? null} />
         </fieldset>
       </Section>
 

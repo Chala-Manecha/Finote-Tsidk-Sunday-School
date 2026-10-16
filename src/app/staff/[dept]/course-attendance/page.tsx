@@ -13,7 +13,7 @@ export default async function CourseAttendance({ params, searchParams }: {
 }) {
   const { dept } = await params;
   const sp = await searchParams;
-  if (dept === 'education') redirect(sp.v === 'teachers' ? '/staff/education/courses?v=teachers' : '/staff/education/classes?v=attendance');
+  if (dept === 'education') redirect(sp.v === 'teachers' ? '/staff/education/courses?v=teachers' : '/staff/education/participants?v=attendance');
   if (dept !== 'audit') notFound();
   const view = sp.v === 'teachers' ? 'teachers' : 'students';
   const supabase = await createClient();

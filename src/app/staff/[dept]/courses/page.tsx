@@ -9,11 +9,11 @@ import { DeliveryFields } from '@/components/delivery-fields';
 import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
 import { ReasonForm } from '@/components/reason-form';
-import {
-  addCourse, deleteCourse, approveCourse, unlockCourse, saveCourseDetails, copyCourses,
-} from '@/lib/actions/education-admin';
+import { approveCourse, unlockCourse, saveCourseDetails } from '@/lib/actions/education-admin';
+import { TimePicker } from '@/components/time-picker';
+import { ExamApprovals } from '@/components/exam-approvals';
+import { fmtTimeRange } from '@/lib/ethiopian-calendar';
 import { DayChecks, dayNames } from '@/components/day-checks';
-import { PopForm } from '@/components/pop-form';
 import { TeacherAttendance } from '@/components/course-attendance-views';
 
 type O = {
@@ -22,9 +22,14 @@ type O = {
   offering_teachers: { member_id: string; members: { full_name: string } | null }[];
 };
 
-/** ትምህርት ክፍል: courses per class, teachers, reference books, approval. */
+const rangeOf = (t: string | null): [string | null, string | null] => {
+  const m = t ? /^(\d{2}:\d{2})(?:–(\d{2}:\d{2}))?$/.exec(t) : null;
+  return m ? [m[1], m[2] ?? null] : [null, null];
+};
+
+/** ትምህርት ክፍል → መምህራን: give each course its teacher(s), days and time; teachers' attendance; exam approvals. */
 export default async function Courses({ params, searchParams }: {
-  params: Promise<{ dept: string }>; searchParams: Promise<{ s?: string; c?: string; t?: string; v?: string; d?: string; all?: string }>;
+  params: Promise<{ dept: string }>; searchParams: Promise<{ s?: string; c?: string; t?: string; v?: string; d?: string; all?: string; st?: string }>;
 }) {
   const { dept } = await params;
   if (dept !== 'education') notFound();
@@ -32,20 +37,26 @@ export default async function Courses({ params, searchParams }: {
   const supabase = await createClient();
   const { years, semesters, semester, year } = await loadTerms(supabase, sp.s);
   if (!semester || !year) return <p className="muted">መጀመሪያ “የትምህርት ዘመን” ትር ላይ ዓመቱን ይክፈቱ።</p>;
+  const tab = (v: string) => `/staff/education/courses?s=${semester.id}${v ? `&v=${v}` : ''}`;
   const seg = (
     <div className="seg no-print">
-      <Link href="/staff/education/courses">📘 ኮርሶች</Link>
-      <Link className="on" href={`/staff/education/courses?v=teachers&s=${semester.id}`}>🧾 የመምህራን ክትትል</Link>
+      <Link className={!sp.v ? 'on' : ''} href={tab('')}>📌 ምደባ</Link>
+      <Link className={sp.v === 'teachers' ? 'on' : ''} href={tab('teachers')}>🧾 የመምህራን ክትትል</Link>
+      <Link className={sp.v === 'exams' ? 'on' : ''} href={tab('exams')}>🖊 ፈተናዎች</Link>
     </div>
   );
-  if (sp.v === 'teachers') {
+  if (sp.v === 'teachers' || sp.v === 'exams') {
     return (
       <>
         <div className="page-bar">
-          <h2 className="section" style={{ margin: 0 }}>የመምህራን ክትትል — {year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</h2>
+          <h2 className="section" style={{ margin: 0 }}>መምህራን</h2>
           {seg}
+          <span className="spacer" />
+          <span className="small muted">{year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</span>
         </div>
-        <TeacherAttendance supabase={supabase} base="/staff/education/courses" semester={semester} date={sp.d} all={sp.all === '1'} canEdit view="teachers" />
+        {sp.v === 'teachers'
+          ? <TeacherAttendance supabase={supabase} base="/staff/education/courses" semester={semester} date={sp.d} all={sp.all === '1'} canEdit view="teachers" />
+          : <ExamApprovals st={sp.st} here={tab('exams')} />}
       </>
     );
   }
@@ -73,36 +84,13 @@ export default async function Courses({ params, searchParams }: {
   const shown = tfAll ? all.filter((r) => r.offering_teachers.length === 0) : rows;
   const tf = tfAll ? 'none' : 'all';
   const cl = (c: string) => `/staff/education/courses?s=${semester.id}&c=${c}`;
-  // The semester just before this one (1ኛ → last year's 2ኛ, 2ኛ → this year's 1ኛ).
-  const ordered = semesters.map((x) => ({ ...x, ec: years.find((yy) => yy.id === x.year_id)?.ec_year ?? 0 }))
-    .sort((a, b) => a.ec - b.ec || a.no - b.no);
-  const at = ordered.findIndex((x) => x.id === semester.id);
-  const prevSem = at > 0 ? ordered[at - 1] : null;
-
   return (
     <>
       <div className="page-bar">
-        <h2 className="section" style={{ margin: 0 }}>ኮርሶችና መምህራን</h2>
-        <div className="seg no-print">
-          <Link className="on" href="/staff/education/courses">📘 ኮርሶች</Link>
-          <Link href={`/staff/education/courses?v=teachers&s=${semester.id}`}>🧾 የመምህራን ክትትል</Link>
-        </div>
+        <h2 className="section" style={{ margin: 0 }}>መምህራን</h2>
+        {seg}
         <span className="spacer" />
-        <PopForm label="+ ኮርስ ጨምር" action={addCourse} submitLabel="+ ኮርስ ጨምር">
-          <input type="hidden" name="semester_id" value={semester.id} />
-          <div className="field">
-            <label>ክፍል</label>
-            <select name="class_level" required defaultValue={cls ?? ''}>
-              <option value="" disabled>ይምረጡ</option>
-              {CLASS_LEVELS.map((c) => <option key={c} value={c}>{classLabel(c)}</option>)}
-            </select>
-          </div>
-          <div className="field"><label>የኮርሱ ስም</label><input name="name" required placeholder="ለምሳሌ፦ ዶግማ" /></div>
-        </PopForm>
-        {prevSem && (
-          <ActionButton action={copyCourses.bind(null, prevSem.id, semester.id)} label={`⧉ ከ${prevSem.ec} ${semesterLabel(prevSem.no)} ቅዳ`} className="btn sm secondary"
-            confirmText={`የ${prevSem.ec} ዓ.ም ${semesterLabel(prevSem.no)} ኮርሶች ከመምህራን፣ ቀንና ሰዓት እና መጽሐፍ ጋር ይቀዳሉ (ያሉት አይደገሙም)። ይቀጥል?`} />
-        )}
+        <Link className="btn sm secondary" href={`/staff/education/classes?v=courses&s=${semester.id}${cls ? `&c=${cls}` : ''}`}>📘 ኮርስ ፍጠር (ክፍላት)</Link>
       </div>
       <div className="split">
         <aside className="rail no-print" aria-label="ክፍሎች">
@@ -141,7 +129,7 @@ export default async function Courses({ params, searchParams }: {
                 ? <span className="small">👤 {o.offering_teachers.map((t) => t.members?.full_name).join('፣ ')}</span>
                 : <span className="pill absent">መምህር የለም</span>}
             </span>
-            <span className="small muted ci-days">{o.days?.length ? dayNames(o.days) : '—'}{o.time_text ? ` · ${o.time_text}` : ''}</span>
+            <span className="small muted ci-days">{o.days?.length ? dayNames(o.days) : '—'}{o.time_text ? ` · ${fmtTimeRange(o.time_text)}` : ''}</span>
             <span className={`pill ${o.status === 'approved' ? 'present' : 'half'}`}>{OFFERING_STATUS[o.status]}</span>
           </summary>
           <div className="ci-body">
@@ -150,10 +138,9 @@ export default async function Courses({ params, searchParams }: {
               {o.status === 'submitted' && <ActionButton action={approveCourse.bind(null, o.id)} label="✓ ውጤቱን አጽድቅ" className="btn sm green"
                 confirmText={`የ${o.name} (${classLabel(o.class_level)}) ውጤት ይጽደቅ? ከጸደቀ በኋላ ተማሪዎች ያዩታል።`} />}
               {o.status !== 'draft' && <ReasonForm action={unlockCourse} id={o.id} field="reason" button={o.status === 'submitted' ? 'ለመምህሩ መልስ' : 'ክፈት (አስተካክል)'} placeholder="ምክንያት" />}
-              {o.status === 'draft' && <ActionButton action={deleteCourse.bind(null, o.id)} label="አጥፋ" className="btn sm danger" confirmText="ኮርሱን ማጥፋት ይፈልጋሉ?" />}
             </div>
           </div>
-          <MediaForm action={saveCourseDetails} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false} fileField="book" folder="books" bucket="edu-books">
+          <MediaForm action={saveCourseDetails} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false}>
             <input type="hidden" name="id" value={o.id} />
             <div className="form-grid" style={{ marginTop: 8 }}>
               <div className="field">
@@ -171,12 +158,15 @@ export default async function Courses({ params, searchParams }: {
               <div className="field">
                 <span className="label">የትምህርት ቀንና ሰዓት</span>
                 <DayChecks name="days" selected={o.days} />
-                <input name="time_text" defaultValue={o.time_text ?? ''} placeholder="ለምሳሌ፦ ጠዋት 3:00–4:30" aria-label="ሰዓት" style={{ marginTop: 6 }} />
+                <div className="time-range">
+                  <span className="small muted">ከ</span><TimePicker name="time_from" defaultValue={rangeOf(o.time_text)[0]} label="የሚጀምርበት" />
+                  <span className="small muted">እስከ</span><TimePicker name="time_to" defaultValue={rangeOf(o.time_text)[1]} label="የሚያልቅበት" />
+                </div>
+                {o.time_text && !rangeOf(o.time_text)[0] && <input type="hidden" name="time_text" value={o.time_text} />}
               </div>
               <div className="field">
-                <span className="label">ማጣቀሻ መጽሐፍ (ለመምህሩ ብቻ)</span>
-                <div className="small">{o.book_name ?? (o.book_path ? 'ተጭኗል' : 'አልተጫነም')}</div>
-                <input name="book" type="file" accept=".pdf,.doc,.docx,application/pdf" aria-label="መጽሐፍ" />
+                <span className="label">መጽሐፍ</span>
+                <div className="small">{o.book_name ? `📄 ${o.book_name}` : (o.book_path ? 'ተጭኗል' : 'አልተጫነም')} <span className="muted">· በ“ክፍላት → ኮርሶች” ይቀየራል</span></div>
               </div>
               <DeliveryFields initial={o} idPrefix={`co-${o.id}`} />
             </div>
@@ -184,7 +174,7 @@ export default async function Courses({ params, searchParams }: {
           </div>
         </details>
       ))}
-      {shown.length === 0 && <p className="muted card">{all.length === 0 ? 'ለዚህ ሴሚስተር ኮርስ አልተጨመረም። “+ ኮርስ ጨምር” ይጫኑ።' : 'በዚህ ክፍል ኮርስ የለም።'}</p>}
+      {shown.length === 0 && <p className="muted card">{all.length === 0 ? 'ለዚህ ሴሚስተር ኮርስ አልተፈጠረም — በ“ክፍላት → ኮርሶች” ይፍጠሩ።' : 'በዚህ ክፍል ኮርስ የለም።'}</p>}
         </div>
       </div>
     </>

@@ -28,7 +28,7 @@ export default async function ReviewExam({ params }: { params: Promise<{ dept: s
 
   return (
     <>
-      <div className="crumb no-print"><Link href="/staff/education/online-exams">ኦንላይን ፈተናዎች</Link> › {exam.title}</div>
+      <div className="crumb no-print"><Link href="/staff/education/courses?v=exams">መምህራን › ፈተናዎች</Link> › {exam.title}</div>
       <div className={`status-banner no-print ${exam.status}`}>
         <span>
           <b>{EXAM_STATUS[exam.status]}</b> · መምህር፦ {teachers || '—'}

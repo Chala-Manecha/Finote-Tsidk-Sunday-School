@@ -231,7 +231,7 @@ export async function approveExams(_: FormState, fd: FormData): Promise<FormStat
   const supabase = await createClient();
   const { error, count } = await supabase.from('online_exams').update({ status: 'approved' }, { count: 'exact' }).in('id', ids).eq('status', 'submitted');
   if (error) return { error: explain(error.message) };
-  revalidatePath('/staff/education/online-exams');
+  revalidatePath('/staff/education', 'layout');
   return { ok: `${count ?? 0} ፈተናዎች ጸድቀዋል።` };
 }
 
@@ -241,7 +241,7 @@ export async function decideExam(id: string, status: 'approved' | 'draft') {
   const { error, count } = await supabase.from('online_exams').update({ status }, { count: 'exact' }).eq('id', id);
   if (error) return { error: explain(error.message) };
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
-  revalidatePath('/staff/education/online-exams', 'layout');
+  revalidatePath('/staff/education', 'layout');
 }
 
 export async function rejectExam(_: FormState, fd: FormData): Promise<FormState> {
@@ -253,7 +253,7 @@ export async function rejectExam(_: FormState, fd: FormData): Promise<FormState>
   const { error, count } = await supabase.from('online_exams').update({ status: 'rejected', review_note: note }, { count: 'exact' }).eq('id', id);
   if (error) return { error: explain(error.message) };
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
-  revalidatePath('/staff/education/online-exams', 'layout');
+  revalidatePath('/staff/education', 'layout');
   return { ok: 'ለመምህሩ ተመልሷል።' };
 }
 

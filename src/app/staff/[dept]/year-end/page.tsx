@@ -3,11 +3,9 @@ import { notFound } from 'next/navigation';
 import { ResultsSwitch } from '@/components/results-switch';
 import { createClient } from '@/lib/supabase/server';
 import { CLASS_LEVELS, DECISION, classLabel, isClassLevel, semesterLabel, type AcademicYear, type ResultRow, type Semester, type YearRow } from '@/lib/education';
-import { MediaForm } from '@/components/media-form';
 import { ActionButton } from '@/components/action-button';
-import { AutoSubmit } from '@/components/auto-submit';
 import { PrintButton } from '@/components/print-button';
-import { setYearDecision, openYearTranscript, promoteToNext } from '@/lib/actions/education-admin';
+import { openYearTranscript, promoteToNext } from '@/lib/actions/education-admin';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
@@ -30,7 +28,8 @@ export default async function YearEnd({ params, searchParams }: {
     supabase.from('enrollments').select('class_level').eq('year_id', year.id).not('class_level', 'is', null),
   ]);
   const sems = (sm ?? []) as Semester[];
-  const levels = cls ? [cls] : CLASS_LEVELS.filter((c) => (enr ?? []).some((e) => e.class_level === c));
+  const allLevels = CLASS_LEVELS.filter((c) => (enr ?? []).some((e) => e.class_level === c));
+  const levels = cls ? [cls] : allLevels;
 
   return (
     <>
@@ -41,29 +40,39 @@ export default async function YearEnd({ params, searchParams }: {
         <span className="small muted">የዓመት ማጠቃለያ · {cls ? classLabel(cls) : 'ሁሉም ክፍሎች'} · {year.ec_year} ዓ.ም</span>
         <PrintButton />
       </div>
-      <form className="toolbar slim no-print" action={base}>
-        <div className="field">
-          <label htmlFor="y">ዓመት</label>
-          <select id="y" name="y" defaultValue={year.id}>{years.map((x) => <option key={x.id} value={x.id}>{x.ec_year} ዓ.ም</option>)}</select>
-        </div>
-        <div className="field">
-          <label htmlFor="c">ክፍል</label>
-          <select id="c" name="c" defaultValue={cls ?? ''}><option value="">ሁሉም</option>{CLASS_LEVELS.map((c) => <option key={c} value={c}>{classLabel(c)}</option>)}</select>
-        </div>
-        <AutoSubmit />
-      </form>
       <p className="small muted">
-        የመዛወሪያ ደንብ፦ የዓመት አማካይ ≥ {year.promote_min_average} እና የወደቁ ኮርሶች ≤ {year.max_failed_courses} (በ“የትምህርት ዘመን” ትር ይቀየራል)። ውሳኔውን ለየብቻ መቀየር ይቻላል። የተማሪውን ስም ሲጫኑ ሊታተም የሚችል የዓመት ውጤት ካርድ ይከፈታል።
+        የመዛወሪያ ደንብ፦ የዓመት አማካይ ≥ {year.promote_min_average} እና የወደቁ ኮርሶች ≤ {year.max_failed_courses}። ውሳኔው በዚህ ደንብ ብቻ ይወሰናል (ደንቡ በ“የትምህርት ዘመን” ትር ይቀየራል)። የተማሪውን ስም ሲጫኑ ሊታተም የሚችል የዓመት ውጤት ካርድ ይከፈታል።
       </p>
-      {levels.length === 0 && <p className="muted card">በዚህ ዓመት ክፍል የተመደበለት ተማሪ የለም።</p>}
-      {cls
-        ? <ClassYear dept={dept} year={year} years={years} cls={cls} m={sp.m} />
-        : levels.map((c) => (
-          <details key={c} className="class-fold">
-            <summary><b>{classLabel(c)}</b><span className="small muted">ለማየት ይጫኑ</span></summary>
-            <div className="class-fold-body"><ClassYear dept={dept} year={year} years={years} cls={c} m={sp.m} /></div>
-          </details>
-        ))}
+      <div className="split">
+        <aside className="rail no-print" aria-label="ዓመትና ክፍል">
+          {years.length > 1 && (
+            <div className="rail-group">
+              <div className="rail-title">ዓመት</div>
+              {years.map((x) => (
+                <Link key={x.id} href={`${base}?y=${x.id}${cls ? `&c=${cls}` : ''}`} className={x.id === year.id ? 'on' : ''}><span>{x.ec_year} ዓ.ም</span></Link>
+              ))}
+            </div>
+          )}
+          <div className="rail-group">
+            <div className="rail-title">ክፍል</div>
+            <Link href={`${base}?y=${year.id}`} className={!cls ? 'on' : ''}><span>ሁሉም ክፍሎች</span></Link>
+            {allLevels.map((c) => (
+              <Link key={c} href={`${base}?y=${year.id}&c=${c}`} className={cls === c ? 'on' : ''}><span>{classLabel(c)}</span></Link>
+            ))}
+          </div>
+        </aside>
+        <div className="split-main">
+          {levels.length === 0 && <p className="muted card">በዚህ ዓመት ክፍል የተመደበለት ተማሪ የለም።</p>}
+          {cls
+            ? <ClassYear dept={dept} year={year} years={years} cls={cls} m={sp.m} />
+            : levels.map((c) => (
+              <details key={c} className="class-fold">
+                <summary><b>{classLabel(c)}</b><span className="small muted">ለማየት ይጫኑ</span></summary>
+                <div className="class-fold-body"><ClassYear dept={dept} year={year} years={years} cls={c} m={sp.m} /></div>
+              </details>
+            ))}
+        </div>
+      </div>
     </>
   );
 }
@@ -167,18 +176,7 @@ async function ClassYear({ dept, year, years, cls, m }: {
                     {r.failed_courses ? <Link className="link" scroll={false} href={`${here}&m=${r.member_id}`} title="የወደቁባቸውን ኮርሶች እይ">{r.failed_courses}</Link> : (r.failed_courses ?? '—')}
                   </td>
                   <td>
-                    {dept === 'education' ? (
-                      <MediaForm action={setYearDecision} submitLabel="✓" card={false} resetOnSuccess={false}>
-                        <input type="hidden" name="year_id" value={year.id} />
-                        <input type="hidden" name="member_id" value={r.member_id} />
-                        <select name="decision" defaultValue={r.decision && r.decision !== r.auto_decision ? r.decision : 'auto'} aria-label="ውሳኔ">
-                          <option value="auto">በደንቡ፦ {DECISION[r.auto_decision]}</option>
-                          <option value="promoted">{DECISION.promoted}</option>
-                          <option value="repeat">{DECISION.repeat}</option>
-                        </select>
-                        <input name="remark" defaultValue={r.remark ?? ''} placeholder="ማስታወሻ" style={{ maxWidth: 140 }} />
-                      </MediaForm>
-                    ) : <span className={r.decision === 'repeat' ? 'neg' : 'pos'}>{r.decision ? DECISION[r.decision] : '—'}</span>}
+                    <span className={`pill ${decisionOf(r) === 'repeat' ? 'absent' : 'present'}`}>{DECISION[decisionOf(r)]}</span>
                   </td>
                   {dept === 'education' && (
                     <td className="no-print">

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DEPT_NAME, DUTIES, DUTY_DEPTS, OCCASIONS } from '@/lib/constants';
@@ -11,7 +12,7 @@ export default async function HrAllDuties({
   searchParams,
 }: {
   params: Promise<{ dept: string }>;
-  searchParams: Promise<{ q?: string; d?: string; duty?: string; occasion?: string; past?: string; st?: string; src?: string }>;
+  searchParams: Promise<{ q?: string; d?: string; duty?: string; occasion?: string; past?: string; st?: string; src?: string; k?: string }>;
 }) {
   const { dept } = await params;
   if (dept !== 'hr' && dept !== 'internal_comm') notFound();
@@ -22,7 +23,10 @@ export default async function HrAllDuties({
     .from('duty_assignments')
     .select(DUTY_COLS)
     .order('duty_date');
-  if (!sp.past) q = q.gte('duty_date', todayIsoAddis());
+  const teach = sp.k === 'teach';
+  // መምህርነት offers are standing (no date) — always shown in that view
+  if (teach) q = q.like('duty', 'የ%መምህር%');
+  else if (!sp.past) q = q.gte('duty_date', todayIsoAddis());
   if (sp.d === 'self') q = q.is('dept', null);
   else if (sp.d) q = q.eq('dept', sp.d);
   if (sp.src === 'given' || sp.src === 'chosen') q = q.eq('source', sp.src);
@@ -30,17 +34,29 @@ export default async function HrAllDuties({
   if (sp.occasion) q = q.eq('occasion', sp.occasion);
   if (sp.st === 'done' || sp.st === 'missed') q = q.eq('status', sp.st);
   if (sp.st === 'pending') q = q.is('status', null);
-  const { data } = await q.returns<DutyRow[]>();
+  const [{ data }, { count: pool }] = await Promise.all([
+    q.returns<DutyRow[]>(),
+    supabase.from('member_programs').select('member_id', { count: 'exact', head: true }).eq('program', 'duty').eq('status', 'active'),
+  ]);
+  const base = `/staff/${dept}/all-duties`;
   const needle = sp.q?.trim();
   const rows = (data ?? []).filter((r) => !needle || r.members?.full_name.includes(needle));
 
   return (
     <>
-      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+      <div className="page-bar">
         <h2 className="section" style={{ margin: 0 }}>{dept === 'hr' ? 'ሁሉም የስራ ምደባዎች' : 'የአባላት ስራ ምደባ'}</h2>
+        <div className="seg no-print">
+          <Link className={!teach && sp.src !== 'chosen' ? 'on' : ''} href={base}>ሁሉም</Link>
+          <Link className={!teach && sp.src === 'chosen' ? 'on' : ''} href={`${base}?src=chosen`}>✋ በራሳቸው የመረጡ</Link>
+          <Link className={teach ? 'on' : ''} href={`${base}?k=teach`}>🧑‍🏫 መምህርነት</Link>
+        </div>
+        <span className="spacer" />
+        <span className="small muted">“በተለያዩ አገልግሎቶች” የመረጡ አባላት፦ <b>{pool ?? 0}</b></span>
         <PrintButton />
       </div>
-      <form className="toolbar no-print" action={`/staff/${dept}/all-duties`}>
+      <form className="toolbar no-print" action={base}>
+        {teach && <input type="hidden" name="k" value="teach" />}
         <div className="field">
           <label htmlFor="q">ስም</label>
           <input id="q" name="q" defaultValue={needle} />

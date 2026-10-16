@@ -29,14 +29,16 @@ export default async function DeptDutyPage({
   if (view === 'confirm') q = q.lte('duty_date', today).is('status', null).not('accepted_at', 'is', null);
   const [{ data: rows }, { data: members }, { count: waiting }, { count: awaiting }] = await Promise.all([
     q.returns<DutyRow[]>(),
-    supabase.from('members').select('id, full_name').eq('is_active', true).order('full_name'),
+    // only members who chose “በተለያዩ አገልግሎቶች” can be given a job
+    supabase.from('members').select('id, full_name, member_programs!inner(program, status)').eq('is_active', true)
+      .eq('member_programs.program', 'duty').eq('member_programs.status', 'active').order('full_name'),
     supabase.from('duty_assignments').select('id', { count: 'exact', head: true }).eq('dept', dept).lte('duty_date', today).is('status', null).not('accepted_at', 'is', null),
     supabase.from('duty_assignments').select('id', { count: 'exact', head: true }).eq('dept', dept).gte('duty_date', today).is('accepted_at', null),
   ]);
   const base = `/staff/${dept}/duty`;
   const needle = sp.q?.trim();
   const shown = (rows ?? []).filter((r) => !needle || r.members?.full_name.includes(needle));
-  const list = members ?? [];
+  const list = (members ?? []).map((m) => ({ id: m.id, full_name: m.full_name }));
 
   return (
     <>

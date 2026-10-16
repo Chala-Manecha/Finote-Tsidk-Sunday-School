@@ -1,3 +1,4 @@
+import { fmtTimeRange } from '@/lib/ethiopian-calendar';
 import { createClient } from '@/lib/supabase/server';
 import { fmtTime } from '@/lib/ethiopian-calendar';
 import { requireMember } from '@/lib/member-auth';
@@ -80,7 +81,7 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
   const schedule: Item[] = [
     ...(weekEvents ?? []).filter((e) => !e.kind || e.kind === 'meeting' || (e.kind === 'wereb' ? takes('mezmur') : takes(e.kind)))
       .map((e) => ({ key: e.id, title: `${e.kind ? `${EVENT_KINDS[e.kind]}፦ ` : ''}${e.title}`, when: `${formatEc(e.event_date, { weekday: true })} · ${fmtTime(e.event_time)}`, d: e as Partial<Delivery>, place: e.place })),
-    ...(myCourses ?? []).map((c) => ({ key: c.id, title: `ኮርስ፦ ${c.name}`, when: [c.days?.length ? dayNames(c.days) : '', c.time_text].filter(Boolean).join(' · ') || 'ቋሚ', d: c as Partial<Delivery> })),
+    ...(myCourses ?? []).map((c) => ({ key: c.id, title: `ኮርስ፦ ${c.name}`, when: [c.days?.length ? dayNames(c.days) : '', fmtTimeRange(c.time_text)].filter(Boolean).join(' · ') || 'ቋሚ', d: c as Partial<Delivery> })),
     ...(abnet ?? []).map((a) => ({ key: a.id, title: `አብነት፦ ${a.subject ?? ''}`, when: [a.day_text, a.time_text].filter(Boolean).join(' · '), d: a as Partial<Delivery> })),
     ...fixed.map((f) => ({ key: f.id, title: f.title, when: [f.day_text, f.time_text].filter(Boolean).join(' · '), d: f, place: f.place })),
   ];
@@ -217,9 +218,11 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
             <div className="card-head">
               <b>የእኔ ምደባ</b>
               <span style={{ flex: 1 }} />
-              <Modal label="+ አገልግሎት ልምረጥ" title="አገልግሎት ልምረጥ" sub="መምህርነት ወይም ሌላ አገልግሎት — ከተላከ በኋላ መቀየር አይቻልም" size="sm" btnClass="btn xs green">
-                <ChooseDutyForm today={today} classes={teachClasses} />
-              </Modal>
+              {takes('duty') && (
+                <Modal label="+ አገልግሎት ልምረጥ" title="አገልግሎት ልምረጥ" sub="መምህርነት ወይም ሌላ አገልግሎት — ከተላከ በኋላ መቀየር አይቻልም" size="sm" btnClass="btn xs green">
+                  <ChooseDutyForm today={today} classes={teachClasses} />
+                </Modal>
+              )}
             </div>
             {toAccept.length > 0 && (
               <div className="duty-accept">

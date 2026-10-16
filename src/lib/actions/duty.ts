@@ -33,6 +33,10 @@ export async function saveDuty(_: FormState, fd: FormData): Promise<FormState> {
 
   const row = { member_id: memberId, dept, duty, occasion, duty_date: dutyDate };
   const supabase = await createClient();
+  if (!id) {
+    const { data: pool } = await supabase.rpc('in_program', { p_member: memberId, p_program: 'duty' });
+    if (!pool) return { error: 'አባሉ “በተለያዩ አገልግሎቶች” አልመረጡም — ሥራ መመደብ አይቻልም።' };
+  }
   const { error, count } = id
     ? await supabase.from('duty_assignments').update(row, { count: 'exact' }).eq('id', id)
     : await supabase.from('duty_assignments').insert(row, { count: 'exact' });
@@ -101,7 +105,10 @@ export async function chooseDuty(_: FormState, fd: FormData): Promise<FormState>
   if (!occasion) return { error: 'በአል ይምረጡ።' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: 'ቀን ይምረጡ።' };
   const { error } = await supabase.rpc('choose_duty', { p_duty: duty, p_occasion: occasion, p_date: date });
-  if (error) return { error: error.message.includes('duty_date') ? 'ያለፈ ቀን መምረጥ አይቻልም።' : 'መላክ አልተቻለም።' };
+  if (error) {
+    if (error.message.includes('duty_not_chosen')) return { error: 'አገልግሎት ለመምረጥ በምዝገባዎ “በተለያዩ አገልግሎቶች”ን መምረጥ አለብዎ — ሰው ሃብትን ያነጋግሩ።' };
+    return { error: error.message.includes('duty_date') ? 'ያለፈ ቀን መምረጥ አይቻልም።' : 'መላክ አልተቻለም።' };
+  }
   revalidatePath('/student');
   refresh();
   return { ok: 'ተመዝግቧል። እግዚአብሔር ይስጥልን።' };

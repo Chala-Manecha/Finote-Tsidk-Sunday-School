@@ -1,3 +1,4 @@
+import { fmtTimeRange } from '@/lib/ethiopian-calendar';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
@@ -74,7 +75,7 @@ export default async function CoursePage() {
                       <li key={r.course}>
                         <b>📘 {r.course}</b>
                         <span className="small">👤 {r.teachers ?? 'መምህር ገና አልተመደበም'}</span>
-                        <span className="small muted">🗓 {days(r.days)}{r.time_text ? ` · ${r.time_text}` : ''}</span>
+                        <span className="small muted">🗓 {days(r.days)}{r.time_text ? ` · ${fmtTimeRange(r.time_text)}` : ''}</span>
                       </li>
                     ))}
                   </ul>

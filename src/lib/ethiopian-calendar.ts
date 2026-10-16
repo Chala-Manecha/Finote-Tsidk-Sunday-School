@@ -124,3 +124,11 @@ export function fmtTime(t: string | null | undefined): string {
   const [h, m] = t.split(':').map(Number);
   return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
+
+/** "08:00–09:30" (stored course time) → "8:00 AM – 9:30 AM"; free text is shown as it is. */
+export function fmtTimeRange(t: string | null | undefined): string {
+  if (!t) return '';
+  const m = /^(\d{1,2}:\d{2})(?:\s*[–-]\s*(\d{1,2}:\d{2}))?$/.exec(t.trim());
+  if (!m) return t;
+  return m[2] ? `${fmtTime(m[1])} – ${fmtTime(m[2])}` : fmtTime(m[1]);
+}

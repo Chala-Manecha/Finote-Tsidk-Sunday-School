@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { formatEc } from '@/lib/ethiopian-calendar';
 import { SESSION_TYPES, sessionTypesForDept, type SessionType } from '@/lib/constants';
 import { NewSessionForm } from './new-session-form';
+import { AbnetTabs } from '@/components/abnet-tabs';
 
 type SessionRow = {
   id: string;
@@ -40,9 +41,9 @@ export default async function AttendanceList({ params, searchParams }: { params:
   return (
     <>
       <div className="page-bar">
-        <h2 className="section" style={{ margin: 0 }}>ክትትል መያዝ</h2>
+        <h2 className="section" style={{ margin: 0 }}>{dept === 'education' ? 'አብነት' : 'ክትትል መያዝ'}</h2>
         {dept === 'education' && (
-          <div className="seg no-print"><Link href="/staff/education/abnet">📖 የአብነት ትምህርቶች</Link><Link className="on" href="/staff/education/attendance">🧾 ክትትል መያዝ</Link></div>
+          <AbnetTabs current="att" />
         )}
       </div>
       <div className="side-form">

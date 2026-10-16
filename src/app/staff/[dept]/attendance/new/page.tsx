@@ -4,8 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import { fmtTime, formatEc } from '@/lib/ethiopian-calendar';
 import { SESSION_TYPES, sessionTypesForDept, type SessionType } from '@/lib/constants';
 import { NewSessionRoster } from './roster';
-import { DeliveryBadge } from '@/components/delivery-badge';
-import type { Delivery } from '@/lib/constants';
 
 export default async function NewSession({
   params,
@@ -40,9 +38,9 @@ export default async function NewSession({
         {title ? `${title} · ` : ''}{SESSION_TYPES[type as SessionType].label} — {formatEc(date, { weekday: true })}
         {time ? ` · ${fmtTime(time)}` : ''}
       </h2>
-      <DeliveryBadge d={delivery as Partial<Delivery>} />
       <p className="muted small">
-        {program ? <>የክፍሉ ተሳታፊዎች ብቻ ተዘርዝረዋል (<Link className="link" href={`/staff/${dept}/participants${program === 'abnet' ? '?p=abnet' : ''}`}>ተሳታፊዎች</Link>)፤</> : 'ሁሉም ንቁ አባላት ተዘርዝረዋል፤'} ያልተመረጠ ሁሉ &quot;ቀሪ&quot; ሆኖ ይቀመጣል።
+        {program === 'abnet' ? <>“አብነት”ን የመረጡ ዲያቆናት ብቻ ተዘርዝረዋል (<Link className="link" href="/staff/education/abnet?v=students">ዲያቆናት</Link>)፤</>
+          : program ? <>“መዝሙርና ወረብ”ን የመረጡ ብቻ ተዘርዝረዋል (<Link className="link" href={`/staff/${dept}/participants`}>ተማሪዎች</Link>)፤</> : 'ሁሉም ንቁ አባላት ተዘርዝረዋል፤'} ያልተመረጠ ሁሉ &quot;ቀሪ&quot; ሆኖ ይቀመጣል።
       </p>
       <NewSessionRoster
         members={(members ?? []).map((m) => ({ id: m.id, full_name: m.full_name }))}
