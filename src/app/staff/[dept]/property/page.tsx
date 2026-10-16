@@ -6,6 +6,7 @@ import { PROPERTY_COLS, PropertyFields, PropertyTable, type PropertyRow } from '
 import { PROPERTY_REQUEST_COLS, PropertyRequestTable, type PropertyRequest } from '@/components/property-requests';
 import { PrintButton } from '@/components/print-button';
 import { saveProperty, requestProperty } from '@/lib/actions/property';
+import { Modal } from '@/components/modal';
 
 /** የክፍሉ ንብረት: ሒሳብና ንብረት registers its own; every other department sends what it bought for approval. */
 export default async function DeptProperty({ params }: { params: Promise<{ dept: string }> }) {
@@ -21,20 +22,23 @@ export default async function DeptProperty({ params }: { params: Promise<{ dept:
   const requests = (reqs ?? []) as PropertyRequest[];
   return (
     <>
-      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+      <div className="page-bar">
         <h2 className="section" style={{ margin: 0 }}>የክፍሉ ንብረት</h2>
+        <span className="count-badge">{(data ?? []).length}</span>
+        <span className="spacer" />
         <PrintButton />
+        {isFinance ? (
+          <Modal label="+ ንብረት መዝግብ" title="ንብረት መዝግብ" size="lg">
+            <MediaForm action={saveProperty} submitLabel="+ ንብረት መዝግብ" card={false}><PropertyFields fixedDept="finance" source="inherited" /></MediaForm>
+          </Modal>
+        ) : (
+          <Modal label="+ አዲስ የተገዛ ንብረት" title="አዲስ የተገዛ ንብረት ለማጸደቅ" sub="ሒሳብና ንብረት ሲያጸድቀው በክፍሉ ንብረት ውስጥ ይመዘገባል" size="lg">
+            <MediaForm action={requestProperty} submitLabel="ለማጸደቅ ላክ" card={false}>
+              <PropertyFields fixedDept={dept} defaultSource="አዲስ በክፍሉ የገዛ" />
+            </MediaForm>
+          </Modal>
+        )}
       </div>
-      {isFinance ? (
-        <MediaForm action={saveProperty} submitLabel="+ ንብረት መዝግብ"><PropertyFields fixedDept="finance" source="inherited" /></MediaForm>
-      ) : (
-        <details className="card no-print" style={{ marginBottom: 12 }}>
-          <summary><b>+ አዲስ የተገዛ ንብረት ለማጸደቅ</b> <span className="small muted">— ሒሳብና ንብረት ሲያጸድቀው በክፍሉ ንብረት ውስጥ ይመዘገባል</span></summary>
-          <MediaForm action={requestProperty} submitLabel="ለማጸደቅ ላክ" card={false}>
-            <PropertyFields fixedDept={dept} defaultSource="አዲስ በክፍሉ የገዛ" />
-          </MediaForm>
-        </details>
-      )}
       {requests.length > 0 && (
         <>
           <h3 className="section no-print">ለማጸደቅ የተላኩ</h3>

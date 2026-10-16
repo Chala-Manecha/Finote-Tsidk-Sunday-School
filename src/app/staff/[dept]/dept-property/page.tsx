@@ -5,6 +5,8 @@ import { MediaForm } from '@/components/media-form';
 import { PROPERTY_COLS, PropertyFields, PropertyTable, type PropertyRow } from '@/components/property-table';
 import { PrintButton } from '@/components/print-button';
 import { saveProperty } from '@/lib/actions/property';
+import { Modal } from '@/components/modal';
+import { AutoSubmit } from '@/components/auto-submit';
 
 /** ሒሳብና ንብረት manages every department's property; ጽሕፈት ቤት only views it. */
 export default async function DeptProperty({
@@ -23,24 +25,27 @@ export default async function DeptProperty({
   const { data } = await q;
   return (
     <>
-      <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+      <div className="page-bar">
         <h2 className="section" style={{ margin: 0 }}>የክፍላት ንብረት አስተዳደር</h2>
-        <PrintButton />
-      </div>
-      {canEdit
-        ? <MediaForm action={saveProperty} submitLabel="+ ንብረት መዝግብ"><PropertyFields source="inherited" /></MediaForm>
-        : <p className="muted small">የክፍላት ንብረትን የሚመዘግበውና የሚያስተካክለው ሒሳብና ንብረት አስተዳደር ነው።</p>}
-      {canEdit && <p className="small muted no-print">እዚህ የሚመዘገበው ንብረት ምንጩ “ካለፈው የተረከበ” ነው። ክፍላት አዲስ የገዙትን “አዲስ የተገዛ ንብረት ለማጸደቅ” ትር ላይ ያጸድቁ።</p>}
-      <form className="toolbar no-print" action={`/staff/${dept}/dept-property`}>
-        <div className="field">
-          <label htmlFor="d">ክፍል</label>
-          <select id="d" name="d" defaultValue={d ?? ''}>
-            <option value="">ሁሉም</option>
+        <span className="count-badge">{(data ?? []).length}</span>
+        <span className="spacer" />
+        <form className="toolbar slim no-print" action={`/staff/${dept}/dept-property`}>
+          <select name="d" defaultValue={d ?? ''} aria-label="ክፍል">
+            <option value="">ሁሉም ክፍሎች</option>
             {DEPARTMENTS.map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}
           </select>
-        </div>
-        <button className="btn sm">አጣራ</button>
-      </form>
+          <AutoSubmit />
+        </form>
+        <PrintButton />
+        {canEdit && (
+          <Modal label="+ ንብረት መዝግብ" title="ንብረት መዝግብ" sub="ካለፈው የተረከበ ንብረት" size="lg">
+            <MediaForm action={saveProperty} submitLabel="+ ንብረት መዝግብ" card={false}><PropertyFields source="inherited" /></MediaForm>
+          </Modal>
+        )}
+      </div>
+      <p className="small muted no-print">{canEdit
+        ? 'እዚህ የሚመዘገበው ንብረት ምንጩ “ካለፈው የተረከበ” ነው። ክፍላት አዲስ የገዙትን “አዲስ የተገዛ ንብረት ለማጸደቅ” ትር ላይ ያጸድቁ።'
+        : 'የክፍላት ንብረትን የሚመዘግበውና የሚያስተካክለው ሒሳብና ንብረት አስተዳደር ነው።'}</p>
       <PropertyTable rows={(data ?? []) as PropertyRow[]} editable={canEdit} showDept />
     </>
   );

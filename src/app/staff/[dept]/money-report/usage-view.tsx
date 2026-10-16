@@ -9,7 +9,7 @@ import { loadWallet, signed } from '@/lib/ledger';
 
 /** Per-department use of money (the opening balance is set from the report header). */
 export async function UsageView({ dept, d }: { dept: string; d?: string }) {
-  const base = `/staff/${dept}/money-report?view=usage`;
+  const base = `/staff/${dept}/money-usage`;
   const supabase = await createClient();
   const [{ rows, requests }, wallet] = await Promise.all([fetchDeptSummaries(supabase), loadWallet(supabase)]);
   const after = wallet.movements.filter((m) => !wallet.asOf || m.date >= wallet.asOf);
@@ -31,7 +31,7 @@ export async function UsageView({ dept, d }: { dept: string; d?: string }) {
         {dept !== 'audit' && <div className="stat-card"><b>{formatBirr(selfTotal)}</b>ጠቅላላ ከራስ ወጪ</div>}
         <div className="stat-card"><b>{formatBirr(refundTotal)}</b>ጠቅላላ ተመላሽ</div>
       </div>
-      <DeptMoneySummaryTable rows={rows} detailHref={(x) => `${base}&d=${x}`} showSelf={dept !== 'audit'} />
+      <DeptMoneySummaryTable rows={rows} detailHref={(x) => `${base}?d=${x}`} showSelf={dept !== 'audit'} />
 
       {d && (
         <>

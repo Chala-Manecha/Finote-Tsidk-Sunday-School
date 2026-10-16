@@ -1,16 +1,19 @@
 import { createClient } from '@/lib/supabase/server';
 import { DEPARTMENTS, DEPT_NAME, GENERAL_DONATIONS, formatBirr } from '@/lib/constants';
-import { formatEc } from '@/lib/ethiopian-calendar';
-import { isPeriod, resolveRange } from '@/lib/periods';
+import Link from 'next/link';
+import { EC_MONTHS, formatEc, isoToEc } from '@/lib/ethiopian-calendar';
+import { AutoSubmit } from '@/components/auto-submit';
+import { PERIODS, isPeriod, resolveRange, type Period } from '@/lib/periods';
 import { loadWallet, signed } from '@/lib/ledger';
-import { StatementHeader, StatementSignatures, PeriodTabs } from '@/components/statement';
+import { StatementHeader, StatementSignatures } from '@/components/statement';
 import { RequestsTable } from '@/components/requests-table';
 import { BalanceCard } from '@/components/balance-card';
 
 const KIND = { income: 'ገቢ', paid: 'ወጪ (ተከፈለ)', refund: 'ተመላሽ' } as const;
 
 /** ገቢ፣ ወጪ እና ቀሪ ሂሳብ statement (ሒሳብና ንብረት and ኦዲት). */
-export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string; d?: string } }) {
+export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string; d?: string; k?: string } }) {
+  const kind = sp.k === 'in' || sp.k === 'out' || sp.k === 'bal' ? sp.k : 'all';
   const period = isPeriod(sp.p) ? sp.p : 'month';
   const filterDept = sp.d && (sp.d in DEPT_NAME || sp.d === 'general') ? sp.d : undefined;
   const supabase = await createClient();
@@ -41,43 +44,81 @@ export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string;
 
   const balances = inside.reduce<number[]>((acc, m) => { acc.push((acc.at(-1) ?? openingForPeriod) + signed(m)); return acc; }, []);
   const rows = inside.map((m, i) => ({ ...m, balance: balances[i] }))
-    .filter((m) => !filterDept || m.dept === filterDept);
+    .filter((m) => !filterDept || m.dept === filterDept)
+    .filter((m) => kind === 'in' ? m.kind !== 'paid' : kind === 'out' ? m.kind === 'paid' : true);
+  // ቀሪ ሂሳብ: month by month (Ethiopian months)
+  const months: { key: string; label: string; inn: number; out: number; end: number }[] = [];
+  inside.forEach((m, i) => {
+    const e = isoToEc(m.date);
+    const key = `${e.year}-${String(e.month).padStart(2, '0')}`;
+    let row = months.find((x) => x.key === key);
+    if (!row) { row = { key, label: `${EC_MONTHS[e.month - 1]} ${e.year}`, inn: 0, out: 0, end: 0 }; months.push(row); }
+    if (m.kind === 'paid') row.out += m.amount; else row.inn += m.amount;
+    row.end = balances[i];
+  });
 
   const base = `/staff/${dept}/money-report`;
+  const keep = `${filterDept ? `&d=${filterDept}` : ''}${kind === 'all' ? '' : `&k=${kind}`}`;
   return (
     <div className="statement">
+      <div className="money-tabs no-print">
+        {([['all', 'ሁሉም'], ['in', 'ገቢ'], ['out', 'ወጪ'], ['bal', 'ቀሪ ሂሳብ']] as const).map(([k, l]) => (
+          <Link key={k} scroll={false} href={`${base}?p=${period}${filterDept ? `&d=${filterDept}` : ''}${k === 'all' ? '' : `&k=${k}`}`} className={kind === k ? 'on' : ''}>{l}</Link>
+        ))}
+      </div>
       <div className="ctl-row no-print">
-      <PeriodTabs base={base} active={period} extra={filterDept ? `&d=${filterDept}` : ''} />
-      <form className="toolbar no-print" action={base}>
-        <input type="hidden" name="p" value={period} />
-        <div className="field">
-          <label htmlFor="d">ክፍል</label>
-          <select id="d" name="d" defaultValue={filterDept ?? ''}>
+        <div className="subtabs">
+          {(Object.keys(PERIODS) as Period[]).map((k) => (
+            <Link scroll={false} key={k} href={`${base}?p=${k}${keep}`} className={`btn sm ${k === period ? 'green' : 'secondary'}`}>{PERIODS[k].label}</Link>
+          ))}
+        </div>
+        <form className="toolbar slim" action={base}>
+          <input type="hidden" name="p" value={period} />
+          {kind !== 'all' && <input type="hidden" name="k" value={kind} />}
+          <select name="d" defaultValue={filterDept ?? ''} aria-label="ክፍል">
             <option value="">ሁሉም ክፍሎች</option>
             {DEPARTMENTS.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
             <option value="general">{GENERAL_DONATIONS}</option>
           </select>
-        </div>
-        <button className="btn sm">አጣራ</button>
-      </form>
+          <AutoSubmit />
+        </form>
       </div>
 
       <StatementHeader title="የገንዘብ እንቅስቃሴ መግለጫ" subtitle={`${range.label}${filterDept ? ` · ${DEPT_NAME[filterDept] ?? GENERAL_DONATIONS}` : ''}`} />
 
-      <div className="summary-grid">
-        <div><span>የጊዜው መነሻ ቀሪ ሂሳብ</span><b>{formatBirr(openingForPeriod)}</b></div>
-        <div><span>ጠቅላላ ገቢ (ገቢ + ተመላሽ)</span><b className="pos">{formatBirr(totalIn)}</b></div>
-        <div><span>ጠቅላላ ወጪ</span><b className="neg">{formatBirr(totalOut)}</b></div>
-        <div><span>የጊዜው መዝጊያ ቀሪ ሂሳብ</span><b>{formatBirr(closing)}</b></div>
+      <div className="money-tiles">
+        <div className="mt-open"><span>መነሻ ቀሪ ሂሳብ</span><b>{formatBirr(openingForPeriod)}</b></div>
+        <div className="mt-in"><span>＋ ገቢ (ገቢ + ተመላሽ)</span><b>{formatBirr(totalIn)}</b></div>
+        <div className="mt-out"><span>− ወጪ</span><b>{formatBirr(totalOut)}</b></div>
+        <div className="mt-bal"><span>= ቀሪ ሂሳብ</span><b>{formatBirr(closing)}</b></div>
       </div>
       {!wallet.asOf && (
-        <p className="alert error no-print">የመነሻ ቀሪ ሂሳብ ገና አልተመዘገበም — ሒሳብና ንብረት ከላይ ባለው “+ መነሻ ሂሳብ አስገባ” ያስገቡ።</p>
+        <p className="alert error no-print">የመነሻ ቀሪ ሂሳብ ገና አልተመዘገበም — ሒሳብና ንብረት ከላይ በቀኝ ባለው “+ መነሻ ሂሳብ አስገባ” ያስገቡ።</p>
       )}
 
+      {kind === 'bal' ? (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>ወር</th><th className="num">ገቢ</th><th className="num">ወጪ</th><th className="num">ልዩነት</th><th className="num">የወሩ መዝጊያ ቀሪ ሂሳብ</th></tr></thead>
+            <tbody>
+              {months.map((x) => (
+                <tr key={x.key}>
+                  <td>{x.label}</td>
+                  <td className="num pos">{formatBirr(x.inn)}</td>
+                  <td className="num neg">{formatBirr(x.out)}</td>
+                  <td className={`num ${x.inn - x.out < 0 ? 'neg' : 'pos'}`}>{formatBirr(x.inn - x.out)}</td>
+                  <td className="num"><b>{formatBirr(x.end)}</b></td>
+                </tr>
+              ))}
+              {months.length === 0 && <tr><td colSpan={5} className="muted">በዚህ ጊዜ ምንም እንቅስቃሴ የለም።</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      ) : (
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>ቀን</th><th>ክፍል</th><th>ዝርዝር</th><th>አይነት</th><th className="num">ገቢ</th><th className="num">ወጪ</th><th className="num">ቀሪ ሂሳብ</th></tr>
+            <tr><th>ቀን</th><th>ክፍል</th><th>ዝርዝር</th><th>አይነት</th>{kind !== 'out' && <th className="num">ገቢ</th>}{kind !== 'in' && <th className="num">ወጪ</th>}{kind === 'all' && <th className="num">ቀሪ ሂሳብ</th>}</tr>
           </thead>
           <tbody>
             {rows.map((m, i) => (
@@ -86,9 +127,9 @@ export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string;
                 <td>{DEPT_NAME[m.dept] ?? GENERAL_DONATIONS}</td>
                 <td>{m.description}</td>
                 <td className="small">{KIND[m.kind]}</td>
-                <td className="num pos">{m.kind !== 'paid' ? formatBirr(m.amount) : ''}</td>
-                <td className="num neg">{m.kind === 'paid' ? formatBirr(m.amount) : ''}</td>
-                <td className="num">{formatBirr(m.balance)}</td>
+                {kind !== 'out' && <td className="num pos">{m.kind !== 'paid' ? formatBirr(m.amount) : ''}</td>}
+                {kind !== 'in' && <td className="num neg">{m.kind === 'paid' ? formatBirr(m.amount) : ''}</td>}
+                {kind === 'all' && <td className="num">{formatBirr(m.balance)}</td>}
               </tr>
             ))}
             {rows.length === 0 && <tr><td colSpan={7} className="muted">በዚህ ጊዜ ምንም እንቅስቃሴ የለም።</td></tr>}
@@ -96,13 +137,14 @@ export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string;
           <tfoot>
             <tr>
               <td colSpan={4}>ድምር</td>
-              <td className="num">{formatBirr(rows.filter((m) => m.kind !== 'paid').reduce((s, m) => s + m.amount, 0))}</td>
-              <td className="num">{formatBirr(rows.filter((m) => m.kind === 'paid').reduce((s, m) => s + m.amount, 0))}</td>
-              <td className="num">{formatBirr(closing)}</td>
+              {kind !== 'out' && <td className="num">{formatBirr(rows.filter((m) => m.kind !== 'paid').reduce((s, m) => s + m.amount, 0))}</td>}
+              {kind !== 'in' && <td className="num">{formatBirr(rows.filter((m) => m.kind === 'paid').reduce((s, m) => s + m.amount, 0))}</td>}
+              {kind === 'all' && <td className="num">{formatBirr(closing)}</td>}
             </tr>
           </tfoot>
         </table>
       </div>
+      )}
       <p className="small muted">
         ቀሪ ሂሳብ = መነሻ ቀሪ + የጸደቀ ገቢ − የተከፈለ ገንዘብ + የተመለሰ ተመላሽ።{dept !== 'audit' && ' ከራስ ወጪ ከሰንበት ትምህርት ቤቱ ካዝና ስላልወጣ እዚህ አይቆጠርም።'}
       </p>

@@ -11,7 +11,7 @@ const ICON: Record<string, string> = {
   classes: '👥', contributions: '📊', 'course-attendance': '🧾', courses: '🧑‍🏫', departures: '🚪', 'dept-docs': '📄',
   'dept-property': '🏛', donations: '🎁', duty: '🧭', earnings: '💰', events: '📅', exams: '🗝', feedback: '💬',
   'feedback-tracker': '📨', 'fixed-schedule': '🔁', history: '📖', 'home-page': '🏠', leadership: '⭐', 'lost-members': '🔎',
-  mahiberat: '🤝', members: '👤', money: '💵', 'money-report': '📈', overview: '📊', participants: '✅',
+  mahiberat: '🤝', members: '👤', money: '💵', 'money-report': '📈', 'money-usage': '📊', overview: '📊', participants: '✅',
   photos: '🖼', prayer: '🙏', property: '📦', 'property-requests': '🛒', purchases: '🧾', receipts: '🧾', reports: '📑',
   'request-event': '📮', requests: '✍', results: '🏅', roster: '📇', 'sale-items': '🏷', social: '🔗', songs: '🎵',
   'staff-access': '🔐', 'student-accounts': '🔑', terms: '🏛', wereb: '🥁', 'wereb-admin': '🥁',

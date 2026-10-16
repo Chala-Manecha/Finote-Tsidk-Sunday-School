@@ -49,6 +49,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'donations', label: 'እርዳታዎች', ready: true },
     { slug: 'receipts', label: 'ደረሰኞች', ready: true },
     { slug: 'money-report', label: 'የገንዘብ ሪፖርት', ready: true },
+    { slug: 'money-usage', label: 'የክፍላት ገንዘብ አጠቃቀም', ready: true },
     { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: true },
     { slug: 'property-requests', label: 'አዲስ የተገዛ ንብረት ለማጸደቅ', ready: true },
   ],
@@ -60,12 +61,10 @@ const specific: Record<DeptCode, Tab[]> = {
   audit: [
     { slug: 'contributions', label: 'የክፍላት ገቢ ወጪ', ready: true },
     { slug: 'money-report', label: 'የገንዘብ ሪፖርት', ready: true },
+    { slug: 'money-usage', label: 'የክፍላት ገንዘብ አጠቃቀም', ready: true },
     { slug: 'receipts', label: 'ደረሰኞች', ready: true },
     { slug: 'donations', label: 'የእርዳታ መዝገብ', ready: true },
-    { slug: 'lost-members', label: 'የጠፉ አባላት', ready: true },
-    { slug: 'departures', label: 'መልቀቂያዎች', ready: true },
     { slug: 'results', label: 'የትምህርት ውጤቶች እና ማጠቃለያ', ready: true },
-    { slug: 'course-attendance', label: 'የኮርስ ክትትል', ready: true },
     { slug: 'reports', label: 'ሪፖርቶች', ready: true },
   ],
   education: [
@@ -107,15 +106,14 @@ const EDUCATION_GROUPS: [string, string[]][] = [
   ['የክፍሉ', ['members', 'duty', 'property', 'money', 'request-event', 'feedback']],
 ];
 const AUDIT_GROUPS: [string, string[]][] = [
-  ['ገንዘብ', ['money-report', 'contributions', 'receipts', 'donations']],
-  ['አባላት', ['lost-members', 'departures']],
-  ['ትምህርት', ['results', 'course-attendance']],
+  ['ገንዘብ', ['money-report', 'money-usage', 'contributions', 'receipts', 'donations']],
+  ['ትምህርት', ['results']],
   ['ሪፖርቶች', ['reports']],
   ['የክፍሉ', ['members', 'property', 'money', 'request-event', 'feedback']],
 ];
 const FINANCE_GROUPS: [string, string[]][] = [
   ['ለማጽደቅ', ['requests', 'earnings', 'donations']],
-  ['ሪፖርትና መዛግብት', ['money-report', 'receipts']],
+  ['ሪፖርትና መዛግብት', ['money-report', 'money-usage', 'receipts']],
   ['ንብረት', ['property-requests', 'dept-property']],
   ['የክፍሉ', ['members', 'property', 'request-event', 'feedback']],
 ];

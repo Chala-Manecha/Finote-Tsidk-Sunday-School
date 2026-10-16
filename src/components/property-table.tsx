@@ -1,5 +1,6 @@
 import { DEPARTMENTS, DEPT_NAME, ITEM_CONDITION, PROPERTY_SOURCE_INHERITED, formatBirr, type ItemCondition } from '@/lib/constants';
 import { formatEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
+import { Modal } from './modal';
 import { MediaForm } from './media-form';
 import { ActionButton } from './action-button';
 import { EcDatePicker } from './ec-date-picker';
@@ -93,14 +94,11 @@ export function PropertyTable({
               {editable && (
                 <td className="no-print">
                   <div className="btn-row">
-                    <details>
-                      <summary className="btn sm secondary">አርም</summary>
-                      <div style={{ marginTop: 8, minWidth: 320 }}>
-                        <MediaForm action={saveProperty} submitLabel="ለውጥ አስቀምጥ" resetOnSuccess={false}>
-                          <PropertyFields row={r} fixedDept={fixedDept} />
-                        </MediaForm>
-                      </div>
-                    </details>
+                    <Modal label="አርም" title="ንብረት አርም" sub={r.name} btnClass="btn sm secondary">
+                      <MediaForm action={saveProperty} submitLabel="ለውጥ አስቀምጥ" resetOnSuccess={false} card={false}>
+                        <PropertyFields row={r} fixedDept={fixedDept} />
+                      </MediaForm>
+                    </Modal>
                     <ActionButton action={deleteProperty.bind(null, r.id)} label="አጥፋ" className="btn sm danger" confirmText="ማጥፋት ይፈልጋሉ?" />
                   </div>
                 </td>
