@@ -352,20 +352,6 @@ export async function unlockCourse(_: FormState, fd: FormData): Promise<FormStat
 
 // ---------- conduct, transcripts, accounts ----------
 
-export async function saveConduct(_: FormState, fd: FormData): Promise<FormState> {
-  await requireDept('education');
-  const semester_id = text(fd, 'semester_id');
-  const member_id = text(fd, 'member_id');
-  const conduct = text(fd, 'conduct');
-  if (!['A', 'B', 'C', 'D', ''].includes(conduct)) return { error: 'ጠባይ ይምረጡ።' };
-  const supabase = await createClient();
-  const { error } = await supabase.from('semester_conduct')
-    .upsert({ semester_id, member_id, conduct: conduct || null, remark: text(fd, 'remark') || null }, { onConflict: 'semester_id,member_id' });
-  if (error) return { error: explain(error.message) };
-  refresh();
-  return { ok: '✓' };
-}
-
 export async function openTranscript(semesterId: string, memberId: string) {
   await requireDept('education');
   const supabase = await createClient();

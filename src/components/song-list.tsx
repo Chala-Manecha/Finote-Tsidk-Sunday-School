@@ -5,7 +5,7 @@ import { deleteSong, deleteWereb } from '@/lib/actions/songs';
 
 export type SongItem = {
   id: string; title: string; body: string | null; category?: string;
-  audio_path: string | null; audio_url: string | null;
+  audio_path: string | null; audio_url: string | null; created_at?: string;
 };
 
 /** Expandable list of መዝሙራት or ወረብ. `editable` adds edit/delete. */

@@ -4,7 +4,7 @@ import Link from 'next/link';
 export function AbnetTabs({ current }: { current: 'list' | 'students' | 'att' | 'clergy' }) {
   const items: [typeof current, string, string][] = [
     ['list', '📖 ትምህርቶች', '/staff/education/abnet'],
-    ['students', '🎓 ዲያቆናት', '/staff/education/abnet?v=students'],
+    ['students', '🎓 ተማሪዎች', '/staff/education/abnet?v=students'],
     ['att', '🧾 ክትትል መያዝ', '/staff/education/attendance'],
     ['clergy', '⛪ ካህናት', '/staff/education/abnet?v=clergy'],
   ];

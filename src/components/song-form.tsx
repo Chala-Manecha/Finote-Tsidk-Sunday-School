@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { saveSong, saveWereb, type FormState } from '@/lib/actions/songs';
 import { SONG_CATEGORIES } from '@/lib/constants';
 import { AudioInput } from './audio-input';
+import { useModalClose } from './modal';
 
 type Initial = { id: string; title: string; body: string | null; category?: string; audio_path: string | null };
 
@@ -27,9 +28,11 @@ export function SongForm({
   existingAudioUrl?: string | null;
   defaultCategory?: string;
 }) {
+  const closeModal = useModalClose();
   const [state, action, pending] = useActionState<FormState & { n?: number }, FormData>(
     async (prev, fd) => {
       const res = await (kind === 'song' ? saveSong : saveWereb)(prev, fd);
+      if (res.ok) closeModal?.();
       return { ...res, n: (prev.n ?? 0) + (res.ok ? 1 : 0) };
     },
     {},
@@ -68,7 +71,7 @@ export function SongForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className={initial ? '' : 'card'} key={initial ? undefined : state.n}>
+    <form onSubmit={onSubmit} className={initial || closeModal ? '' : 'card'} key={initial ? undefined : state.n}>
       {initial && <input type="hidden" name="id" value={initial.id} />}
       <div className="form-grid">
         <div className="field">

@@ -954,4 +954,20 @@ update public.member_programs set status = 'active' where member_id = '10000000-
 select pg_temp.must_equal((select count(*) from public.enrollments where member_id = '10000000-0000-0000-0000-000000000001' and year_id = '90000000-0000-0000-0000-000000000001' and class_level is null), 1, 'added to course → enrolled without a class');
 reset role;
 
+-- ---------- round 20: ጠባይ is the teachers' ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+select pg_temp.must_fail($q$insert into public.semester_conduct (semester_id, member_id, conduct) values ('91000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e1', 'A')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+insert into public.semester_conduct (semester_id, member_id, conduct) values ('91000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e1', 'B')
+  on conflict (semester_id, member_id) do update set conduct = excluded.conduct;
+select pg_temp.must_equal((select count(*)::int from public.semester_conduct where member_id = '10000000-0000-0000-0000-0000000000e1' and conduct = 'B'), 1, 'the class teacher gives ጠባይ');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_fail($q$insert into public.semester_conduct (semester_id, member_id, conduct) values ('91000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e2', 'A')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+update public.semester_conduct set conduct = 'D' where member_id = '10000000-0000-0000-0000-0000000000e1';
+select pg_temp.must_equal((select count(*)::int from public.semester_conduct where conduct = 'D'), 0, 'the department cannot change ጠባይ');
+reset role;
+
 \echo ALL RLS TESTS PASSED

@@ -2,11 +2,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { requireMember } from '@/lib/member-auth';
-import { OFFERING_STATUS, classLabel, semesterLabel, type ComponentKey, type OfferingStatus, type Semester } from '@/lib/education';
+import { CONDUCT, OFFERING_STATUS, classLabel, semesterLabel, type ComponentKey, type OfferingStatus, type Semester } from '@/lib/education';
 import { formatEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import { MarksGrid, ClassAttendanceForm } from '@/components/teach-forms';
 import { ActionButton } from '@/components/action-button';
-import { submitOffering } from '@/lib/actions/teaching';
+import { submitOffering, saveConduct } from '@/lib/actions/teaching';
+import { ConductSelect } from '@/components/conduct-select';
 
 type Offering = { id: string; name: string; class_level: string; status: OfferingStatus; book_path: string | null; book_name: string | null; semester_id: string };
 
@@ -14,7 +15,7 @@ type Offering = { id: string; name: string; class_level: string; status: Offerin
 export default async function TeachPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ d?: string; v?: string }> }) {
   const { id } = await params;
   const { d, v } = await searchParams;
-  const view = v === 'att' || d ? 'att' : 'marks';
+  const view = v === 'att' || d ? 'att' : v === 'conduct' ? 'conduct' : 'marks';
   const me = await requireMember();
   const supabase = await createClient();
   const { data: isTeacher } = await supabase.rpc('is_teacher_of', { p_offering: id });
@@ -57,6 +58,10 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
   ]);
   const initial = Object.fromEntries(((prior ?? []) as { member_id: string; status: string }[]).map((x) => [x.member_id, x.status]));
   const presentOf = (sid: string) => ((counts ?? []) as { session_id: string; status: string }[]).filter((x) => x.session_id === sid && x.status !== 'absent').length;
+  const { data: cd } = view === 'conduct' && ids.length
+    ? await supabase.from('semester_conduct').select('member_id, conduct').eq('semester_id', s.id).in('member_id', ids)
+    : { data: [] };
+  const conductOf = new Map(((cd ?? []) as { member_id: string; conduct: string | null }[]).map((x) => [x.member_id, x.conduct ?? '']));
   const T_STATUS: Record<string, string> = { present: 'ተገኝቷል', late: 'አርፍዷል', absent: 'ቀሪ', excused: 'በፈቃድ' };
   const book = offering.book_path ? (await supabase.storage.from('edu-books').createSignedUrl(offering.book_path, 3600)).data?.signedUrl : null;
   const weights: Record<ComponentKey, number> = { quiz: s.w_quiz, notebook: s.w_notebook, participation: s.w_participation, mid: s.w_mid, final: s.w_final };
@@ -75,6 +80,7 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
         <div className="seg">
           <Link className={view === 'marks' ? 'on' : ''} href={base}>📊 ውጤት</Link>
           <Link className={view === 'att' ? 'on' : ''} href={`${base}?v=att`}>🧾 የክፍል ክትትል</Link>
+          <Link className={view === 'conduct' ? 'on' : ''} href={`${base}?v=conduct`}>🙂 ጠባይ</Link>
           <Link href={`${base}/exams`}>🖊 ኦንላይን ፈተናዎች</Link>
         </div>
       </div>
@@ -96,6 +102,27 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
                 </div>
               )}
               {offering.status === 'submitted' && <p className="alert ok">ለትምህርት ክፍል ተልኳል፤ ማጽደቁን በመጠባበቅ ላይ።</p>}
+            </section>
+          ) : view === 'conduct' ? (
+            <section className="card">
+              <div className="card-head"><b>ጠባይ — {classLabel(offering.class_level)} · {semesterLabel(s.no)}</b><span className="count-badge">{students.length} ተማሪዎች</span></div>
+              <p className="small muted" style={{ marginTop: 0 }}>ለእያንዳንዱ ተማሪ ይምረጡ — ወዲያው ይቀመጣል። የክፍሉ መምህራን በሙሉ ያያሉ፤ የመጨረሻው ምርጫ በትራንስክሪፕቱ ላይ ይወጣል።</p>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>#</th><th>ተማሪ</th><th>ጠባይ</th></tr></thead>
+                  <tbody>
+                    {students.map((x, i) => (
+                      <tr key={x.id}>
+                        <td className="num">{i + 1}</td>
+                        <td>{x.full_name} <span className="small muted">{x.reg_no}</span></td>
+                        <td><ConductSelect action={saveConduct} semesterId={s.id} memberId={x.id} value={conductOf.get(x.id) ?? ''} options={Object.entries(CONDUCT)} /></td>
+                      </tr>
+                    ))}
+                    {students.length === 0 && <tr><td colSpan={3} className="muted">ተማሪ የለም።</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+              <p className="small muted">{Object.entries(CONDUCT).map(([k, l]) => `${k} · ${l}`).join('  ·  ')}</p>
             </section>
           ) : (
             <section className="card">

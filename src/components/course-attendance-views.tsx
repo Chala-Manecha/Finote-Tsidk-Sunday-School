@@ -125,7 +125,9 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
   ]);
   type O = { id: string; name: string; class_level: string; days: number[]; time_text: string | null; offering_teachers: { member_id: string; members: { full_name: string } | null }[] };
   const offerings = (offs ?? []) as unknown as O[];
-  const shown = all ? offerings : offerings.filter((o) => (o.days ?? []).includes(dow));
+  // every course with a teacher; the ones held on that weekday first
+  const onDay = (o: O) => (o.days ?? []).includes(dow);
+  const shown = [...offerings].filter((o) => all || o.offering_teachers.length > 0).sort((a, b) => Number(onDay(b)) - Number(onDay(a)));
   const mark = new Map((marks ?? []).map((m) => [`${m.offering_id}_${m.member_id}`, m]));
   const rows = shown.flatMap((o) => o.offering_teachers.map((t) => ({ o, t, key: `${o.id}_${t.member_id}` })));
 
@@ -145,19 +147,23 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
 
   return (
     <>
-      <form className="toolbar no-print" action={base}>
-        <input type="hidden" name="v" value={view} />
-        <input type="hidden" name="s" value={semester.id} />
-        <div className="field"><span className="label">ቀን (ዓ.ም)</span><EcDatePicker name="d" defaultIso={date} yearsBack={1} yearsForward={0} /></div>
-        <label className="check"><input type="checkbox" name="all" value="1" defaultChecked={all} /> ሁሉንም ኮርሶች አሳይ</label>
-        <button className="btn sm">አሳይ</button>
-      </form>
-      <p className="small muted">{formatEc(date, { weekday: true })} — {all ? 'ሁሉም ኮርሶች' : `በ${WEEKDAYS_AM[dow]} የሚሰጡ ኮርሶች`} ({shown.length})</p>
-
+      <section className="card">
+        <div className="card-head">
+          <b>✍ የመምህራን ክትትል መያዝ</b>
+          <span className="pill">{formatEc(date, { weekday: true })}</span>
+          <span className="spacer" />
+          <form className="toolbar slim no-print" action={base}>
+            <input type="hidden" name="v" value={view} />
+            <input type="hidden" name="s" value={semester.id} />
+            <EcDatePicker name="d" defaultIso={date} yearsBack={1} yearsForward={0} />
+            <button className="btn sm secondary">ቀን ቀይር</button>
+          </form>
+        </div>
+        <p className="small muted" style={{ marginTop: 0 }}>ለእያንዳንዱ መምህር ሁኔታውን ይምረጡና “አስቀምጥ” ይጫኑ። በ{WEEKDAYS_AM[dow]} የሚያስተምሩት ከላይ ናቸው (📌)። የተያዘውን ለማስተካከል ቀኑን ይምረጡ።</p>
       {rows.length === 0 ? (
-        <p className="muted">{all ? 'መምህር የተመደበለት ኮርስ የለም።' : `በ${WEEKDAYS_AM[dow]} የሚሰጥ ኮርስ የለም (የኮርሱ ቀናት በ“መምህራን” ይወሰናሉ)። “ሁሉንም ኮርሶች አሳይ”ን ይጠቀሙ።`}</p>
+        <p className="muted">መምህር የተመደበለት ኮርስ የለም — በ“📌 ምደባ” ይመድቡ።</p>
       ) : (
-        <MediaForm action={saveTeacherAttendance} submitLabel="የመምህራን ክትትል አስቀምጥ" resetOnSuccess={false} card={false}>
+        <MediaForm action={saveTeacherAttendance} submitLabel="✓ የመምህራን ክትትል አስቀምጥ" resetOnSuccess={false} card={false}>
           <input type="hidden" name="att_date" value={date} />
           <div className="table-wrap">
             <table>
@@ -172,9 +178,9 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
                 {rows.map(({ o, t, key }) => {
                   const cur = mark.get(key);
                   return (
-                    <tr key={key}>
-                      <td>{t.members?.full_name}<input type="hidden" name="key" value={key} /></td>
-                      <td>{o.name}<div className="small muted">{classLabel(o.class_level)}{o.time_text ? ` · ${fmtTimeRange(o.time_text)}` : ''}</div></td>
+                    <tr key={key} className={onDay(o) ? 'today-row' : ''}>
+                      <td>{onDay(o) && <span title={`በ${WEEKDAYS_AM[dow]} ያስተምራሉ`}>📌 </span>}<b>{t.members?.full_name}</b><input type="hidden" name="key" value={key} />{cur && <div className="small pos">✓ ተይዟል</div>}</td>
+                      <td>{o.name}<div className="small muted">{classLabel(o.class_level)}{o.days?.length ? ` · ${o.days.map((x) => WEEKDAYS_AM[x]).join('፣ ')}` : ''}{o.time_text ? ` · ${fmtTimeRange(o.time_text)}` : ''}</div></td>
                       {(Object.keys(T_STATUS) as TStatus[]).map((k) => (
                         <td key={k} className="num"><input type="radio" name={`s_${key}`} value={k} defaultChecked={cur?.status === k} disabled={!canEdit} aria-label={T_STATUS[k]} /></td>
                       ))}
@@ -188,8 +194,9 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
           </div>
         </MediaForm>
       )}
+      </section>
 
-      <h3 className="section">የሴሚስተሩ ማጠቃለያ</h3>
+      <h3 className="section">📊 የሴሚስተሩ ማጠቃለያ</h3>
       <div className="table-wrap">
         <table>
           <thead><tr><th>መምህር</th>{(Object.keys(T_STATUS) as TStatus[]).map((k) => <th key={k} className="num">{T_STATUS[k]}</th>)}<th className="num">የመገኘት %</th></tr></thead>

@@ -95,3 +95,20 @@ export async function submitOffering(id: string) {
   revalidatePath(`/student/teach/${id}`);
   revalidatePath('/student');
 }
+
+/** ጠባይ: the class's teachers give each student a conduct grade for the semester. */
+export async function saveConduct(_: FormState, fd: FormData): Promise<FormState> {
+  await requireMember();
+  const semester_id = text(fd, 'semester_id');
+  const member_id = text(fd, 'member_id');
+  const conduct = text(fd, 'conduct');
+  if (!UUID_RE.test(semester_id) || !UUID_RE.test(member_id)) return { error: 'ተማሪው አልተገኘም።' };
+  if (!['A', 'B', 'C', 'D', ''].includes(conduct)) return { error: 'ጠባይ ይምረጡ።' };
+  const supabase = await createClient();
+  const { error } = await supabase.from('semester_conduct')
+    .upsert({ semester_id, member_id, conduct: conduct || null }, { onConflict: 'semester_id,member_id' });
+  if (error) return { error: explain(error.message) };
+  revalidatePath('/student/teach', 'layout');
+  revalidatePath('/staff', 'layout');
+  return { ok: '✓' };
+}
