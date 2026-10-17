@@ -984,18 +984,20 @@ select public.set_member_clergy('10000000-0000-0000-0000-0000000000e1', null);
 select pg_temp.must_equal((select count(*)::int from public.clergy where member_id = '10000000-0000-0000-0000-0000000000e1'), 0, 'unticked → removed');
 reset role;
 
--- ---------- before real data: clear the samples ----------
+-- ---------- before real data: clear the samples (system admin only) ----------
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);
-select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
-select pg_temp.must_fail($q$select public.clear_sample_data(true, false)$q$);
-select pg_temp.must_fail($q$select public.clear_sample_data(false, true)$q$);
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
-select pg_temp.must_fail($q$select public.clear_sample_data(false, true)$q$);
-select public.clear_sample_data(true, false);
+select pg_temp.must_fail($q$select public.clear_sample_data(true, false, false)$q$);
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a4', false);
-select public.clear_sample_data(false, true);
+select pg_temp.must_fail($q$select public.clear_sample_data(false, true, false)$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+select pg_temp.must_fail($q$select public.clear_sample_data(false, false, true)$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', false);
+select public.clear_sample_data(false, false, true);
+select public.clear_sample_data(true, true, false);
 reset role;
+select pg_temp.must_equal((select count(*)::int from public.academic_years) + (select count(*)::int from public.course_offerings) + (select count(*)::int from public.marks), 0, 'education cleared');
 select pg_temp.must_equal((select count(*)::int from public.members), 0, 'members cleared');
 select pg_temp.must_equal((select count(*)::int from public.money_requests) + (select count(*)::int from public.receipts) + (select count(*)::int from public.earnings), 0, 'money cleared');
 

@@ -50,7 +50,7 @@ export default async function DeptLayout({
         </div>
       </div>
       <div className="dept-tabs">
-        <TabNav dept={dept} deptName={DEPT_NAME[dept]} tabs={tabsFor(dept)} />
+        <TabNav dept={dept} deptName={DEPT_NAME[dept]} tabs={tabsFor(dept).filter((t) => t.slug !== 'clear-data' || staff.isAdmin)} />
         <section className="dept-tab-content">{children}</section>
       </div>
     </>
