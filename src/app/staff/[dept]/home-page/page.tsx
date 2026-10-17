@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { HOME_SECTIONS, SITE_DEFAULTS, SITE_TEXT_COLUMNS, normaliseSections, type SiteSettings } from '@/lib/site';
+import { BDAY_DEFAULTS, HOME_SECTIONS, SITE_DEFAULTS, SITE_TEXT_COLUMNS, normaliseSections, type SiteSettings } from '@/lib/site';
 import { mediaUrl } from '@/lib/media';
 import { MediaForm } from '@/components/media-form';
 import { saveHomeSettings } from '@/lib/actions/site';
@@ -55,6 +55,16 @@ export default async function HomePageSettings({ params }: { params: Promise<{ d
         <div className="form-section">የማስታወቂያ መስመር (ከገጹ በላይ)</div>
         <div className="field"><label>ማስታወቂያ</label><input name="announcement" defaultValue={s?.announcement ?? ''} placeholder="ለምሳሌ፦ እሁድ ጠዋት 2:00 አጠቃላይ ጉባኤ አለ።" maxLength={200} /></div>
         <label className="check"><input type="checkbox" name="announcement_active" defaultChecked={s?.announcement_active ?? false} /> ማስታወቂያውን አሳይ</label>
+
+        <div className="form-section">🎂 የልደት መልዕክት (ከስሙ በታች፣ በልደት ቀን)</div>
+        <p className="small muted" style={{ marginTop: 0 }}>
+          የአባሉ የልደት ቀን (በኢትዮጵያ አቆጣጠር) ሲደርስ በመነሻ ገጹ ላይ ይታያል — ንቁ አባላት ብቻ፣ ዕድሜ አይጠቀስም። <b>{'{name}'}</b> በአባሉ ስምና የአባት ስም ይተካል።
+        </p>
+        <label className="check"><input type="checkbox" name="bday_active" defaultChecked={s?.bday_active ?? true} /> የልደት መልዕክቱን አሳይ</label>
+        <div className="form-grid">
+          <div className="field"><label htmlFor="bday_male_text">ለወንድ</label><textarea id="bday_male_text" name="bday_male_text" rows={3} maxLength={500} defaultValue={s?.bday_male_text ?? BDAY_DEFAULTS.male} /></div>
+          <div className="field"><label htmlFor="bday_female_text">ለሴት</label><textarea id="bday_female_text" name="bday_female_text" rows={3} maxLength={500} defaultValue={s?.bday_female_text ?? BDAY_DEFAULTS.female} /></div>
+        </div>
 
         <div className="form-section">እንኳን ደህና መጡ (የምዝገባ መረጃ)</div>
         <div className="field"><label>ርዕስ</label><input name="welcome_title" defaultValue={s?.welcome_title ?? ''} placeholder="እንኳን ወደ ፍኖተ ጽድቅ ሰንበት ትምህርት ቤት በሰላም መጡ።" /></div>

@@ -18,14 +18,21 @@ const DEFAULT_SECTIONS: SectionSetting[] = (Object.keys(HOME_SECTIONS) as HomeSe
 
 /** Editable texts and contacts of the public home page (site_settings columns). */
 export const SITE_TEXT_COLUMNS =
-  'welcome_title, welcome_text, announcement, announcement_active, marquee_seconds, sections, hero_path, hero_text, about_title, about_text, mission, vision, core_values, contact_phone, contact_email, contact_address, map_lat, map_lng';
+  'welcome_title, welcome_text, announcement, announcement_active, marquee_seconds, sections, hero_path, hero_text, about_title, about_text, mission, vision, core_values, contact_phone, contact_email, contact_address, map_lat, map_lng, bday_active, bday_male_text, bday_female_text';
 export type SiteSettings = {
   welcome_title: string | null; welcome_text: string | null; announcement: string | null; announcement_active: boolean;
   marquee_seconds: number; sections: unknown; hero_path: string | null; hero_text: string | null;
   about_title: string | null; about_text: string | null; mission: string | null; vision: string | null;
   core_values: string | null; contact_phone: string | null; contact_email: string | null; contact_address: string | null;
   map_lat: number | string | null; map_lng: number | string | null;
+  bday_active?: boolean; bday_male_text?: string | null; bday_female_text?: string | null;
 };
+
+/** Birthday greetings when የውስጥ ግንኙነት has not written their own ({name} = first and second name). */
+export const BDAY_DEFAULTS = {
+  male: 'ወንድማችን {name} እንኳን ተወለድህ!\nእግዚአብሔር ረጅም እድሜ እና ጤና ይስጥህ።',
+  female: 'እህታችን {name} እንኳን ተወለድሽ!\nእግዚአብሔር ረጅም እድሜ እና ጤና ይስጥሽ።',
+} as const;
 
 /** Fallbacks if the row is empty (same as the migration defaults). */
 export const SITE_DEFAULTS = {

@@ -6,6 +6,8 @@ import { PublicHeader } from '@/components/public-header';
 import { SocialButtons } from '@/components/social-buttons';
 import { ScrollReveal } from '@/components/scroll-reveal';
 import { HolidaysPanel } from '@/components/bahire-hasab-view';
+import { TodayGreeting } from '@/components/today-greeting';
+import { todaysGreetings } from '@/lib/greetings';
 import { anniversaryYear } from '@/components/brand';
 import { createClient } from '@/lib/supabase/server';
 import { EC_MONTHS, WEEKDAYS_AM, formatEc, isoToEc, todayIsoAddis, weekdayOf } from '@/lib/ethiopian-calendar';
@@ -38,6 +40,7 @@ export default async function Home() {
       .gt('event_date', addDays(today, 7)).order('event_date').order('event_time').limit(1),
     supabase.rpc('registration_is_open'),
   ]);
+  const greetings = await todaysGreetings(supabase, today).catch(() => []);
   // Online links: only for a signed-in member or staff (the public role cannot read them).
   const { data: claims } = await supabase.auth.getClaims();
   const onlineIds = (week ?? []).filter((e) => e.mode === 'online').map((e) => e.id);
@@ -212,6 +215,7 @@ export default async function Home() {
         <div className="hero-top">
           <h1>{SCHOOL_NAME}</h1>
           <p className="hero-en">{SCHOOL_NAME_EN}</p>
+          <TodayGreeting items={greetings} />
         </div>
         <div className="hero-grid hero-split">
           <aside className="week-panel glass-panel" aria-labelledby="week-title">

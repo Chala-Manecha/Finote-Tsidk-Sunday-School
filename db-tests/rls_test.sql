@@ -1056,6 +1056,40 @@ select pg_temp.must_equal((select count(*)::int from public.mahlet_audios), 2, '
 select pg_temp.must_equal((select count(*)::int from public.abnet_materials where folder is not null or kind = 'negs'), 2, 'the public sees ነግስ and folders');
 reset role;
 
+-- ---------- round 36: Ethiopian date, birthdays, greetings, the አብነት coordinator ----------
+select pg_temp.must_equal((select (public.ec_parts('2026-10-17'))[1] * 10000 + (public.ec_parts('2026-10-17'))[2] * 100 + (public.ec_parts('2026-10-17'))[3]), 20190207, 'ec_parts: ጥቅምት 7 2019');
+select pg_temp.must_equal((select (public.ec_parts('2027-09-11'))[1] * 10000 + (public.ec_parts('2027-09-11'))[2] * 100 + (public.ec_parts('2027-09-11'))[3]), 20191306, 'ec_parts: ጳጉሜ 6');
+select pg_temp.must_equal((select (public.ec_parts('2018-01-07'))[2] * 100 + (public.ec_parts('2018-01-07'))[3]), 429, 'ec_parts: ገና ታኅሣሥ 29');
+update public.members set dob = (now() at time zone 'Africa/Addis_Ababa')::date - 1461 * 5 where id = '10000000-0000-0000-0000-0000000000e1';
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_fail($q$insert into public.day_greetings (kind, ec_day, name) values ('monthly', 6, 'ቅድስት አርሴማ')$q$);
+select pg_temp.must_fail($q$insert into public.abnet_coordinator (member_id) values ('10000000-0000-0000-0000-0000000000e1')$q$);
+select pg_temp.must_equal((select public.is_abnet()::int), 0, 'a member is not አብነት before being chosen');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+insert into public.abnet_coordinator (member_id) values ('10000000-0000-0000-0000-0000000000e1');
+select pg_temp.must_fail($q$insert into public.abnet_coordinator (member_id) values ('10000000-0000-0000-0000-0000000000e1')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select public.is_abnet()::int), 1, 'the coordinator is አብነት');
+insert into public.day_greetings (kind, ec_day, name, message) values ('monthly', 6, 'ቅድስት አርሴማ', 'ዛሬ እኮ ቅድስት አርሴማ ናት');
+insert into public.day_greetings (kind, ec_month, ec_day, name) values ('yearly', 4, 29, 'በዓለ ልደት');
+insert into public.day_greetings (kind, feast_key, active) values ('feast', 'debrezeit', false);
+select pg_temp.must_fail($q$insert into public.day_greetings (kind, feast_key) values ('feast', 'debrezeit')$q$);
+select pg_temp.must_fail($q$insert into public.day_greetings (kind, ec_day) values ('yearly', 3)$q$);
+update public.abnet_settings set holiday_text = 'እንኳን ለ{name} በሰላም አደረሳችሁ' where true;
+insert into public.abnet_materials (kind, title, url) values ('video', 'ከአስተባባሪው', 'https://youtu.be/y');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select pg_temp.must_fail($q$insert into public.day_greetings (kind, ec_day, name) values ('monthly', 13, 'ቅዱስ ሩፋኤል')$q$);
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((select count(*)::int from public.todays_birthdays()), 1, 'today''s birthday is found by the Ethiopian date');
+select pg_temp.must_equal((select count(*)::int from public.day_greetings) + (select count(*)::int from public.abnet_settings where holiday_text is not null), 4, 'the public reads the greetings');
+select bday_male_text, bday_female_text, bday_active from public.site_settings;
+reset role;
+
 -- ---------- before real data: clear the samples (system admin only) ----------
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);

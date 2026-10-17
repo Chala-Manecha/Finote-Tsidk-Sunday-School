@@ -53,6 +53,9 @@ export async function saveHomeSettings(_: FormState, fd: FormData): Promise<Form
     announcement_active: fd.get('announcement_active') === 'on' && !!announcement,
     marquee_seconds: seconds,
     sections,
+    bday_active: fd.get('bday_active') === 'on',
+    bday_male_text: text(fd, 'bday_male_text').slice(0, 500) || null,
+    bday_female_text: text(fd, 'bday_female_text').slice(0, 500) || null,
     updated_at: new Date().toISOString(),
   }, { count: 'exact' }).eq('id', true);
   if (error) return { error: denied(error.message) };

@@ -22,6 +22,12 @@ export default async function StaffHub() {
             </div>
           ),
         )}
+        {staff.abnet && (
+          <Link href={canAccess(staff, 'education') ? '/staff/education/abnet' : '/staff/abnet'} className="dept-card">
+            <span>✍️ አብነት</span>
+            <span aria-hidden>‹</span>
+          </Link>
+        )}
       </div>
     </>
   );
