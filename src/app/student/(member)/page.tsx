@@ -168,8 +168,28 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
             {results.map(({ s, rows }) => (
               <div key={s.id}>
                 {rows.length > 0 && rows[0].ready && <div className="alert ok small"><b>{READY_MESSAGE}</b> — አማካይ {rows[0].average} · ደረጃ {rows[0].rank}/{rows[0].class_size}</div>}
+                {rows.length > 0 && (
+                  <ul className="my-results">
+                    {rows.map((r) => {
+                      const g = r.status === 'approved' ? gradeOf(Number(r.total), s.pass_mark) : null;
+                      return (
+                        <li key={r.offering_id}>
+                          <div className="mr-top">
+                            <b>{r.course}</b>
+                            {g ? <span className={`mr-total ${g.passed ? 'pos' : 'neg'}`}>{r.total}<small>/100</small></span> : <span className="pill half">ገና አልጸደቀም</span>}
+                          </div>
+                          {g && <div className="mr-parts">{COMPONENTS.map((c) => <span key={c.key}>{c.label} <b>{r[c.key] ?? '—'}</b></span>)}</div>}
+                          <div className="mr-foot small muted">
+                            {g && <span className={`pill ${g.passed ? 'present' : 'absent'}`}>{g.label}</span>}
+                            <span>ክትትል {r.sessions ? `${Math.round((r.attended / r.sessions) * 100)}%` : '—'}</span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
                 {rows.length === 0 ? <p className="muted small">ለዚህ ሴሚስተር ኮርሶች ገና አልተዘጋጁም።</p> : (
-                  <div className="table-wrap">
+                  <div className="table-wrap my-results-table">
                     <table>
                       <thead><tr><th>ኮርስ</th>{COMPONENTS.map((c) => <th key={c.key} className="num">{c.label}</th>)}<th className="num">ድምር</th><th>ደረጃ</th><th className="num">ክትትል</th></tr></thead>
                       <tbody>

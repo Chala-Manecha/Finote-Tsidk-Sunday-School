@@ -1937,3 +1937,19 @@ input, select, textarea { max-width: 100%; }
   .marks-grid input { width: 58px !important; min-width: 0; padding: 6px 6px; }
   .marks-grid td, .marks-grid th { padding: 6px 6px; }
 }
+/* grid / flex children may shrink (a wide table scrolls inside its own box instead of widening the page) */
+.dash-main > *, .dash-side > *, .exam-main > *, .split-main > *, .card { min-width: 0; }
+@media (max-width: 600px) { .card-head { flex-wrap: wrap; } }
+.my-results { display: none; list-style: none; margin: 0; padding: 0; gap: 8px; }
+.my-results li { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; background: #fff; }
+.my-results .mr-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.my-results .mr-total { font-size: 1.3rem; font-weight: 800; white-space: nowrap; }
+.my-results .mr-total small { font-size: .7rem; font-weight: 500; color: var(--muted); }
+.my-results .mr-parts { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+.my-results .mr-parts span { font-size: .72rem; background: var(--soft); border-radius: 99px; padding: 2px 8px; color: var(--muted); }
+.my-results .mr-parts b { color: var(--ink); }
+.my-results .mr-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+@media (max-width: 600px) {
+  .my-results { display: grid; }
+  .my-results-table { display: none; }
+}
