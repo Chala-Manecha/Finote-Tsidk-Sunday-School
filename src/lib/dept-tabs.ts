@@ -18,6 +18,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: true },
     { slug: 'assignees', label: 'ክፍል ኃላፊዎች', ready: true },
     { slug: 'staff-access', label: 'የሲስተሙ አስተዳዳሪዎች', ready: true },
+    { slug: 'clear-data', label: 'የሙከራ መረጃ ማጽዳት', ready: true },
     { slug: 'feedback-tracker', label: 'የአስተያየት ክትትል', ready: true },
     { slug: 'terms', label: 'የአመራር ቡድን', ready: true },
     { slug: 'departures', label: 'የመልቀቂያ ጥያቄዎች', ready: true },
@@ -52,6 +53,7 @@ const specific: Record<DeptCode, Tab[]> = {
     { slug: 'money-usage', label: 'የክፍላት ገንዘብ አጠቃቀም', ready: true },
     { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: true },
     { slug: 'property-requests', label: 'አዲስ የተገዛ ንብረት ለማጸደቅ', ready: true },
+    { slug: 'clear-data', label: 'የሙከራ መረጃ ማጽዳት', ready: true },
   ],
   development: [
     { slug: 'purchases', label: 'የተገዙ ዕቃዎች መዝገብ', ready: true },
@@ -96,7 +98,7 @@ const OFFICE_GROUPS: [string, string[]][] = [
   ['ገንዘብና ንብረት', ['money', 'dept-property', 'property']],
   ['ክፍል ኃላፊዎች', ['assignees']],
   ['መርሐ ግብሮች', ['request-event']],
-  ['አስተዳደር', ['terms', 'staff-access', 'feedback-tracker', 'feedback']],
+  ['አስተዳደር', ['terms', 'staff-access', 'clear-data', 'feedback-tracker', 'feedback']],
 ];
 
 const EDUCATION_GROUPS: [string, string[]][] = [
@@ -115,6 +117,7 @@ const FINANCE_GROUPS: [string, string[]][] = [
   ['ለማጽደቅ', ['requests', 'earnings', 'donations']],
   ['ሪፖርትና መዛግብት', ['money-report', 'money-usage', 'receipts']],
   ['ንብረት', ['property-requests', 'dept-property']],
+  ['አስተዳደር', ['clear-data']],
   ['የክፍሉ', ['members', 'property', 'request-event', 'feedback']],
 ];
 const HR_GROUPS: [string, string[]][] = [
