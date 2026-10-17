@@ -1,7 +1,7 @@
 'use client';
 import { useActionState, useState, startTransition } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { saveSong, saveWereb, type FormState } from '@/lib/actions/songs';
+import { saveSong, saveWereb, saveMahlet, type FormState } from '@/lib/actions/songs';
 import { SONG_CATEGORIES } from '@/lib/constants';
 import { AudioInput } from './audio-input';
 import { useModalClose } from './modal';
@@ -10,7 +10,7 @@ type Initial = { id: string; title: string; body: string | null; category?: stri
 
 const MAX = 50 * 1024 * 1024;
 
-async function uploadAudio(folder: 'songs' | 'wereb', blob: Blob): Promise<string> {
+async function uploadAudio(folder: 'songs' | 'wereb' | 'abnet', blob: Blob): Promise<string> {
   if (blob.size > MAX) throw new Error('ፋይሉ ከ50MB በላይ ነው።');
   const ext = (blob instanceof File && blob.name.includes('.')) ? blob.name.split('.').pop() : (blob.type.split('/')[1] || 'webm').split(';')[0];
   const path = `${folder}/${crypto.randomUUID()}.${ext}`;
@@ -23,7 +23,7 @@ async function uploadAudio(folder: 'songs' | 'wereb', blob: Blob): Promise<strin
 export function SongForm({
   kind, initial, existingAudioUrl, defaultCategory,
 }: {
-  kind: 'song' | 'wereb';
+  kind: 'song' | 'wereb' | 'mahlet';
   initial?: Initial;
   existingAudioUrl?: string | null;
   defaultCategory?: string;
@@ -31,7 +31,7 @@ export function SongForm({
   const closeModal = useModalClose();
   const [state, action, pending] = useActionState<FormState & { n?: number }, FormData>(
     async (prev, fd) => {
-      const res = await (kind === 'song' ? saveSong : saveWereb)(prev, fd);
+      const res = await (kind === 'song' ? saveSong : kind === 'mahlet' ? saveMahlet : saveWereb)(prev, fd);
       if (res.ok) closeModal?.();
       return { ...res, n: (prev.n ?? 0) + (res.ok ? 1 : 0) };
     },
@@ -51,7 +51,7 @@ export function SongForm({
     if (audio) {
       try {
         setUploading(true);
-        fd.set('audio_path', await uploadAudio(kind === 'song' ? 'songs' : 'wereb', audio));
+        fd.set('audio_path', await uploadAudio(kind === 'song' ? 'songs' : kind === 'mahlet' ? 'abnet' : 'wereb', audio));
       } catch (x) {
         setErr((x as Error).message);
         return;
@@ -95,7 +95,7 @@ export function SongForm({
       <AudioInput existingUrl={existingAudioUrl} onChange={(b, k) => { setAudio(b); setKeep(k); }} />
       <div className="btn-row">
         <button className="btn" disabled={pending || uploading}>
-          {uploading ? 'ድምፅ በመጫን ላይ…' : pending ? '…' : initial ? 'ለውጥ አስቀምጥ' : kind === 'song' ? '+ መዝሙር ጨምር' : '+ ወረብ ጨምር'}
+          {uploading ? 'ድምፅ በመጫን ላይ…' : pending ? '…' : initial ? 'ለውጥ አስቀምጥ' : kind === 'song' ? '+ መዝሙር ጨምር' : kind === 'mahlet' ? '+ ማሕሌት ጨምር' : '+ ወረብ ጨምር'}
         </button>
         {(err || state.error) && <span className="alert error" style={{ margin: 0 }}>{err || state.error}</span>}
         {state.ok && <span className="alert ok" style={{ margin: 0 }}>{state.ok}</span>}

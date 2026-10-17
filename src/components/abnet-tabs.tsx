@@ -1,11 +1,13 @@
 import Link from 'next/link';
 
 /** አብነት (ትምህርት ክፍል): one set of tabs across its pages. */
-export function AbnetTabs({ current }: { current: 'list' | 'students' | 'att' }) {
+export function AbnetTabs({ current }: { current: 'list' | 'students' | 'att' | 'materials' | 'mahlet' }) {
   const items: [typeof current, string, string][] = [
-    ['list', '📖 ትምህርቶች', '/staff/education/abnet'],
+    ['list', '🗓 መርሐ ግብር', '/staff/education/abnet'],
     ['students', '🎓 ተማሪዎች', '/staff/education/abnet?v=students'],
     ['att', '🧾 ክትትል መያዝ', '/staff/education/attendance'],
+    ['materials', '📚 መማሪያዎች', '/staff/education/abnet?v=materials'],
+    ['mahlet', '🎼 ማሕሌት', '/staff/education/abnet?v=mahlet'],
   ];
   return (
     <div className="seg no-print">

@@ -18,3 +18,8 @@ export async function fetchWereb(supabase: SupabaseClient): Promise<SongItem[]> 
   const { data } = await supabase.from('wereb_items').select('id, title, body, audio_path, created_at').order('title');
   return (data ?? []).map(withUrl(supabase));
 }
+
+export async function fetchMahlet(supabase: SupabaseClient): Promise<SongItem[]> {
+  const { data } = await supabase.from('mahlet_items').select('id, title, body, audio_path, created_at').order('title');
+  return (data ?? []).map(withUrl(supabase));
+}

@@ -1,6 +1,10 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { mediaUrl } from '@/lib/media';
+import { MaterialsView, MATERIAL_COLS, type Material } from '@/components/abnet-materials';
+import { SongForm } from '@/components/song-form';
+import { SongList } from '@/components/song-list';
+import { fetchMahlet } from '@/lib/songs-data';
 import Link from 'next/link';
 import { ageFromIso, formatEc } from '@/lib/ethiopian-calendar';
 import { GEEZ_LEVEL, SEX } from '@/lib/constants';
@@ -28,7 +32,7 @@ export default async function EducationAbnet({ params, searchParams }: {
   if (dept !== 'education') notFound();
   const sp = await searchParams;
   const supabase = await createClient();
-  const view = sp.v === 'students' ? sp.v : 'list';
+  const view = sp.v === 'students' || sp.v === 'materials' || sp.v === 'mahlet' ? sp.v : 'list';
   const bar = (title: string, extra?: React.ReactNode) => (
     <div className="page-bar">
       <h2 className="section" style={{ margin: 0 }}>{title}</h2>
@@ -44,11 +48,35 @@ export default async function EducationAbnet({ params, searchParams }: {
     return (
       <>
         {bar('አብነት', (
-          <Modal label="+ ትምህርት ጨምር" title="አዲስ የአብነት ትምህርት" size="lg">
-            <MediaForm action={saveAbnet} submitLabel="+ ጨምር" fileField={['audio', 'file']} folder="abnet" card={false}><AbnetFields /></MediaForm>
+          <Modal label="+ መርሐ ግብር ጨምር" title="አዲስ የአብነት መርሐ ግብር" size="lg">
+            <MediaForm action={saveAbnet} submitLabel="+ ጨምር" card={false}><AbnetFields /></MediaForm>
           </Modal>
         ))}
+        <p className="small muted">ቋሚ መርሐ ግብሮች — በድረ ገጹ “አብነት” ገጽ ላይ ለሁሉም ይታያሉ (ሊንኩ ለገቡ አባላት ብቻ)።</p>
         <AbnetTable rows={rows} editable />
+      </>
+    );
+  }
+
+  if (view === 'materials') {
+    const { data } = await supabase.from('abnet_materials').select(MATERIAL_COLS).order('created_at', { ascending: false });
+    const rows = ((data ?? []) as Material[]).map((m) => ({ ...m, file_url: mediaUrl(supabase, m.file_path) }));
+    return (
+      <>
+        {bar('አብነት')}
+        <p className="small muted">ድምፅ፣ ቪዲዮ እና ፋይሎች — በድረ ገጹ “አብነት” ገጽ ላይ ለሁሉም ይታያሉ።</p>
+        <MaterialsView rows={rows} editable />
+      </>
+    );
+  }
+
+  if (view === 'mahlet') {
+    const items = await fetchMahlet(supabase);
+    return (
+      <>
+        {bar('አብነት', <Modal label="+ ማሕሌት ጨምር" title="አዲስ ማሕሌት" size="lg"><SongForm kind="mahlet" /></Modal>)}
+        <p className="small muted">ማሕሌቶች (ርዕስና ጽሑፍ፣ ድምፅ አማራጭ) — በድረ ገጹ “አብነት” ገጽ ላይ ለሁሉም ይታያሉ።</p>
+        <SongList items={items} kind="mahlet" editable />
       </>
     );
   }

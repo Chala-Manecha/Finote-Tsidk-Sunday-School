@@ -1,7 +1,7 @@
 import { SONG_CATEGORY_LABEL } from '@/lib/constants';
 import { ActionButton } from './action-button';
 import { SongForm } from './song-form';
-import { deleteSong, deleteWereb } from '@/lib/actions/songs';
+import { deleteSong, deleteWereb, deleteMahlet } from '@/lib/actions/songs';
 
 export type SongItem = {
   id: string; title: string; body: string | null; category?: string;
@@ -13,7 +13,7 @@ export function SongList({
   items, kind, editable, showCategory,
 }: {
   items: SongItem[];
-  kind: 'song' | 'wereb';
+  kind: 'song' | 'wereb' | 'mahlet';
   editable?: boolean;
   showCategory?: boolean;
 }) {
@@ -39,7 +39,7 @@ export function SongList({
                   </div>
                 </details>
                 <ActionButton
-                  action={(kind === 'song' ? deleteSong : deleteWereb).bind(null, s.id)}
+                  action={(kind === 'song' ? deleteSong : kind === 'mahlet' ? deleteMahlet : deleteWereb).bind(null, s.id)}
                   label="አጥፋ" className="btn sm danger" confirmText={`"${s.title}" ማጥፋት ይፈልጋሉ?`}
                 />
               </div>

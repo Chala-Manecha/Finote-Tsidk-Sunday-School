@@ -11,7 +11,7 @@ import { MultiSelect } from './multi-select';
 import { ageFromIso, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
   DEPARTMENTS, EDUCATION_LEVELS, EMERGENCY_RELATIONS, GEEZ_LEVEL, LANGUAGES, MARITAL_STATUS, MEMBER_TYPE,
-  CLERGY_RANK, CLERGY_SERVICE, CLERGY_TITLE, REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
+  CLERGY_SERVICE, CLERGY_TITLE, REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
 } from '@/lib/constants';
 import { emptyEducation, emptyWork, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
@@ -152,10 +152,10 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   const [joined, setJoined] = useState<string>(initial.joined_year ? String(initial.joined_year) : '');
   const [hasPrior, setHasPrior] = useState(!!initial.prior_school);
   const [sex, setSex] = useState(initial.sex ?? '');
-  const [hasClergy, setHasClergy] = useState(!!initial.clergy);
-  const [clergyRank, setClergyRank] = useState(initial.clergy?.rank ?? 'deacon');
-  // ክህነት ያላቸው፦ the title follows the rank (ዲያቆን / ቄስ)
-  const rankTitle = sex === 'male' && hasClergy ? CLERGY_TITLE[clergyRank] ?? null : null;
+  // ማዕረግ and ክህነት are one choice: ዲያቆን / ቀሲስ (men) ask for the ክህነት details
+  const [title, setTitle] = useState<string>(initial.title ?? (initial.clergy ? CLERGY_TITLE[initial.clergy.rank ?? ''] ?? '' : ''));
+  const clergyRank = title === 'diakon' ? 'deacon' : title === 'qesis' ? 'priest' : null;
+  const hasClergy = sex === 'male' && !!clergyRank;
   const [isEthiopian, setIsEthiopian] = useState(initial.is_ethiopian ?? true);
   const [memberType, setMemberType] = useState(initial.member_type ?? 'regular');
   const [workStatus, setWorkStatus] = useState(initial.work_status ?? '');
@@ -325,17 +325,10 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
         <div className="form-grid">
           <div className="field">
             <label htmlFor="title">ማዕረግ</label>
-            {rankTitle ? (
-              <>
-                <input type="hidden" name="title" value={rankTitle} />
-                <output id="title" className="readonly" title="ከክህነት ማዕረጉ ይወሰዳል">{TITLES[rankTitle]} <span className="small muted">(ከክህነት)</span></output>
-              </>
-            ) : (
-              <select id="title" name="title" defaultValue={initial.title ?? ''}>
-                <option value="">—</option>
-                {Object.entries(TITLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            )}
+            <select id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)}>
+              <option value="">—</option>
+              {Object.entries(TITLES).filter(([k]) => sex === 'male' || k === 'doctor' || k === title).map(([k, v]) => <option key={k} value={k}>{v}{k !== 'doctor' ? ' (ክህነት)' : ''}</option>)}
+            </select>
           </div>
           <div className="field"><label htmlFor="first_name">ስም <span className="req">*</span></label><input id="first_name" name="first_name" required defaultValue={first} /></div>
           <div className="field"><label htmlFor="father_name">የአባት ስም <span className="req">*</span></label><input id="father_name" name="father_name" required defaultValue={father} /></div>
@@ -374,18 +367,11 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
         </div>
         {sex === 'male' && (
           <>
-            <label className="check">
-              <input type="checkbox" name="has_clergy" checked={hasClergy} onChange={(e) => setHasClergy(e.target.checked)} />
-              ⛪ ክህነት አለኝ
-            </label>
             {hasClergy && (
               <div className="form-grid clergy-box">
-                <div className="field">
-                  <label htmlFor="clergy_rank">የክህነት ማዕረግ <span className="req">*</span></label>
-                  <select id="clergy_rank" name="clergy_rank" required value={clergyRank} onChange={(e) => setClergyRank(e.target.value)}>
-                    {Object.entries(CLERGY_RANK).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </div>
+                <input type="hidden" name="has_clergy" value="on" />
+                <input type="hidden" name="clergy_rank" value={clergyRank!} />
+                <div className="field" style={{ gridColumn: '1 / -1' }}><b>⛪ የክህነት መረጃ — {TITLES[title as keyof typeof TITLES]}</b></div>
                 <div className="field">
                   <span className="label">ክህነት የተቀበሉበት ቀን (ዓ.ም)</span>
                   <EcDatePicker name="clergy_ordained_on" defaultIso={initial.clergy?.ordained_on ?? null} yearsBack={80} yearsForward={0} />

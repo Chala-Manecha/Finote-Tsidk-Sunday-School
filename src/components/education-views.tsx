@@ -1,4 +1,5 @@
 import { MediaForm } from './media-form';
+import { Modal } from './modal';
 import { MultiSelect } from './multi-select';
 import { ABNET_SUBJECTS } from '@/lib/constants';
 import { ActionButton } from './action-button';
@@ -15,20 +16,11 @@ const SUBJECT_OPTIONS = ABNET_SUBJECTS.map((x) => ({ value: x, label: x }));
 export type Abnet = {
   id: string; subjects: string[]; days: number[]; times: string[]; teacher: string;
   subject: string | null; day_text: string | null; time_text: string | null;
-  audio_path: string | null; file_path: string | null; audio_url?: string | null; file_url?: string | null;
+  audio_path: string | null; file_path: string | null; audio_url?: string | null; file_url?: string | null; place?: string | null;
 } & Partial<Delivery>;
-export const ABNET_COLS = 'id, subjects, days, times, teacher, subject, day_text, time_text, audio_path, file_path, mode, platform';
+export const ABNET_COLS = 'id, subjects, days, times, teacher, subject, day_text, time_text, audio_path, file_path, mode, platform, place';
 /** staff and signed-in members also read the meeting link */
 export const ABNET_COLS_LINK = `${ABNET_COLS}, link`;
-
-function Edit({ children }: { children: React.ReactNode }) {
-  return (
-    <details>
-      <summary className="btn sm secondary">አርም</summary>
-      <div style={{ marginTop: 8, minWidth: 320 }}>{children}</div>
-    </details>
-  );
-}
 
 // ---------- አብነት ----------
 
@@ -45,17 +37,8 @@ export function AbnetFields({ a }: { a?: Abnet }) {
         <div className="field"><label>ቀን</label><input name="day_text" required defaultValue={a?.day_text ?? (a?.days?.length ? dayNames(a.days) : '')} placeholder="ለምሳሌ፦ ቅዳሜና እሑድ" /></div>
         <div className="field"><label>ሰዐት</label><input name="time_text" required defaultValue={a?.time_text ?? ''} placeholder="ለምሳሌ፦ ከሰዓት 8:00–10:00" /></div>
         <div className="field"><label>መምህር</label><input name="teacher" required defaultValue={a?.teacher ?? ''} /></div>
+        <div className="field"><label>ቦታ / አካባቢ</label><input name="place" maxLength={160} defaultValue={a?.place ?? ''} placeholder="ለምሳሌ፦ የቤተ ክርስቲያኑ አዳራሽ" /></div>
         <DeliveryFields initial={a} idPrefix={`ab-${a?.id ?? 'new'}`} />
-        <div className="field">
-          <label>ድምፅ (አማራጭ) {a?.audio_path ? '(ለመቀየር ብቻ)' : ''}</label>
-          <input name="audio" type="file" accept="audio/*" />
-          {a?.audio_path && <label className="check" style={{ margin: 0 }}><input type="checkbox" name="remove_audio" /> ድምፁን አጥፋ</label>}
-        </div>
-        <div className="field">
-          <label>ፋይል (አማራጭ) {a?.file_path ? '(ለመቀየር ብቻ)' : ''}</label>
-          <input name="file" type="file" accept=".pdf,.doc,.docx,image/*" />
-          {a?.file_path && <label className="check" style={{ margin: 0 }}><input type="checkbox" name="remove_file" /> ፋይሉን አጥፋ</label>}
-        </div>
       </div>
     </>
   );
@@ -65,7 +48,7 @@ export function AbnetTable({ rows, editable }: { rows: Abnet[]; editable?: boole
   return (
     <div className="table-wrap">
       <table>
-        <thead><tr><th>የሚሰጡ ትምህርቶች</th><th>ቀን</th><th>ሰዐት</th><th>መምህር</th>{editable && <th />}</tr></thead>
+        <thead><tr><th>ትምህርት</th><th>ቀን</th><th>ሰዐት</th><th>ቦታ / ሊንክ</th><th>መምህር</th>{editable && <th />}</tr></thead>
         <tbody>
           {rows.map((a) => (
             <tr key={a.id}>
@@ -75,19 +58,20 @@ export function AbnetTable({ rows, editable }: { rows: Abnet[]; editable?: boole
                 {a.file_url && <div><a className="link small" href={a.file_url} target="_blank" rel="noopener noreferrer">📄 ፋይሉን ክፈት</a></div>}
               </td>
               <td>{a.day_text || dayNames(a.days)}</td>
-              <td>{a.time_text || a.times.join('፣ ')}<div><DeliveryBadge d={a} showLink={!!a.link} compact /></div></td>
+              <td>{a.time_text || a.times.join('፣ ')}</td>
+              <td>{a.place && <div className="small">📍 {a.place}</div>}<DeliveryBadge d={a} showLink={!!a.link} compact /></td>
               <td>{a.teacher}</td>
               {editable && (
                 <td>
                   <div className="btn-row">
-                    <Edit><MediaForm action={saveAbnet} submitLabel="ለውጥ አስቀምጥ" resetOnSuccess={false} fileField={['audio', 'file']} folder="abnet"><AbnetFields a={a} /></MediaForm></Edit>
+                    <Modal label="አርም" title="መርሐ ግብር አርም" btnClass="btn sm secondary" size="lg"><MediaForm action={saveAbnet} submitLabel="ለውጥ አስቀምጥ" resetOnSuccess={false} card={false}><AbnetFields a={a} /></MediaForm></Modal>
                     <ActionButton action={deleteAbnet.bind(null, a.id)} label="አጥፋ" className="btn sm danger" confirmText="ማጥፋት ይፈልጋሉ?" />
                   </div>
                 </td>
               )}
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={5} className="muted">ምንም የአብነት ትምህርት አልተመዘገበም።</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={6} className="muted">ምንም የአብነት መርሐ ግብር አልተመዘገበም።</td></tr>}
         </tbody>
       </table>
     </div>

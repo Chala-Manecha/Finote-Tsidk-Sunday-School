@@ -13,7 +13,7 @@ const refresh = () => {
 const text = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
 
 /** Audio is uploaded from the browser to Storage first; we only receive its path. */
-function audioPath(fd: FormData, folder: 'songs' | 'wereb') {
+function audioPath(fd: FormData, folder: 'songs' | 'wereb' | 'abnet') {
   const p = text(fd, 'audio_path');
   return p && p.startsWith(`${folder}/`) ? p : null;
 }
@@ -93,6 +93,40 @@ export async function deleteWereb(id: string) {
   const supabase = await createClient();
   const { data: old } = await supabase.from('wereb_items').select('audio_path').eq('id', id).maybeSingle();
   const { error, count } = await supabase.from('wereb_items').delete({ count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  await removeOldAudio(old?.audio_path, null);
+  refresh();
+}
+
+// ---------- ማሕሌት (ትምህርት ክፍል → አብነት) ----------
+export async function saveMahlet(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const id = text(fd, 'id') || null;
+  const title = text(fd, 'title');
+  if (!title) return { error: 'ርዕስ ያስገቡ።' };
+  const row = { title, body: text(fd, 'body') || null, audio_path: audioPath(fd, 'abnet') };
+  const supabase = await createClient();
+  if (id) {
+    const { data: old } = await supabase.from('mahlet_items').select('audio_path').eq('id', id).maybeSingle();
+    if (text(fd, 'keep_audio') === '1' && !row.audio_path) row.audio_path = old?.audio_path ?? null;
+    const { error, count } = await supabase.from('mahlet_items').update(row, { count: 'exact' }).eq('id', id);
+    if (error) return { error: error.message };
+    if (!count) return { error: 'ፈቃድ የለዎትም።' };
+    await removeOldAudio(old?.audio_path, row.audio_path);
+  } else {
+    const { error } = await supabase.from('mahlet_items').insert(row);
+    if (error) return { error: error.message };
+  }
+  refresh();
+  return { ok: id ? 'ተቀይሯል።' : 'ማሕሌቱ ተጨምሯል።' };
+}
+
+export async function deleteMahlet(id: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { data: old } = await supabase.from('mahlet_items').select('audio_path').eq('id', id).maybeSingle();
+  const { error, count } = await supabase.from('mahlet_items').delete({ count: 'exact' }).eq('id', id);
   if (error) return { error: error.message };
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
   await removeOldAudio(old?.audio_path, null);

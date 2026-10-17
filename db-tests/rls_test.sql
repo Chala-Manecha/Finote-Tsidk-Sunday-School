@@ -1009,6 +1009,24 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8
 select pg_temp.must_equal((select (total * 10)::int from public.semester_results('91000000-0000-0000-0000-000000000001', '3') where offering_id = '92000000-0000-0000-0000-000000000009' and member_id = '10000000-0000-0000-0000-0000000000e1'), 45, 'results include assignments');
 reset role;
 
+
+-- ---------- round 30: አብነት materials and ማሕሌት ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+insert into public.abnet_materials (kind, title, url) values ('video', 'የቅኔ ትምህርት 1', 'https://youtu.be/x');
+insert into public.mahlet_items (title, body) values ('ማሕሌተ ጽጌ', 'ጽሑፍ');
+select pg_temp.must_fail($q$insert into public.abnet_materials (kind, title) values ('file', 'ፋይል የሌለው')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select pg_temp.must_fail($q$insert into public.mahlet_items (title) values ('x')$q$);
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((select count(*)::int from public.abnet_materials) + (select count(*)::int from public.mahlet_items), 2, 'the public sees materials and ማሕሌት');
+select count(*) from (select place from public.abnet_sessions) x;
+reset role;
+
 -- ---------- before real data: clear the samples (system admin only) ----------
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);
