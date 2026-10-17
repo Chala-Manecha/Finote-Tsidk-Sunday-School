@@ -112,3 +112,69 @@ export async function saveConduct(_: FormState, fd: FormData): Promise<FormState
   revalidatePath('/staff', 'layout');
   return { ok: '✓' };
 }
+
+// ===================== አሳይመንት =====================
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Teacher: add or edit an assignment (instructions + points, usually 10). */
+export async function saveAssignment(_: FormState, fd: FormData): Promise<FormState> {
+  await requireMember();
+  const id = text(fd, 'id');
+  const offering_id = text(fd, 'offering_id');
+  const title = text(fd, 'title').slice(0, 160);
+  const instructions = text(fd, 'instructions').slice(0, 8000) || null;
+  const max = Number(text(fd, 'max_points') || 10);
+  const due = text(fd, 'due_on');
+  if (!UUID_RE.test(offering_id)) return { error: 'ኮርስ አልተገኘም።' };
+  if (title.length < 2) return { error: 'ርዕስ ያስገቡ።' };
+  if (!Number.isFinite(max) || max <= 0 || max > 100) return { error: 'ነጥቡ ከ0 በላይ እስከ 100 መሆን አለበት።' };
+  const row = { offering_id, title, instructions, max_points: Math.round(max * 100) / 100, due_on: DATE_ONLY.test(due) ? due : null };
+  const supabase = await createClient();
+  const { error } = UUID_RE.test(id)
+    ? await supabase.from('assignments').update(row).eq('id', id)
+    : await supabase.from('assignments').insert(row);
+  if (error) return { error: explain(error.message) };
+  revalidatePath('/student', 'layout');
+  return { ok: UUID_RE.test(id) ? 'ተቀይሯል።' : 'አሳይመንቱ ተጨምሯል — ተማሪዎች አሁኑኑ ያዩታል።' };
+}
+
+export async function deleteAssignment(id: string) {
+  await requireMember();
+  if (!UUID_RE.test(id)) return { error: 'አልተገኘም።' };
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('assignments').delete({ count: 'exact' }).eq('id', id);
+  if (error) return { error: explain(error.message) };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  revalidatePath('/student', 'layout');
+}
+
+/** Teacher: the scores of one assignment (empty = not marked). */
+export async function saveAssignmentScores(_: FormState, fd: FormData): Promise<FormState> {
+  await requireMember();
+  const assignment_id = text(fd, 'assignment_id');
+  if (!UUID_RE.test(assignment_id)) return { error: 'አሳይመንቱ አልተገኘም።' };
+  const max = Number(text(fd, 'max_points'));
+  const ids = fd.getAll('member_id').map(String).filter((x) => UUID_RE.test(x));
+  const up: { assignment_id: string; member_id: string; score: number; note: string | null }[] = [];
+  const clear: string[] = [];
+  for (const member_id of ids) {
+    const raw = text(fd, `score_${member_id}`);
+    const note = text(fd, `note_${member_id}`).slice(0, 300) || null;
+    if (raw === '') { clear.push(member_id); continue; }
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 0) return { error: `ትክክል ያልሆነ ቁጥር፦ ${raw}` };
+    if (n > max) return { error: `ከ${max} መብለጥ የለበትም (${raw})።` };
+    up.push({ assignment_id, member_id, score: Math.round(n * 100) / 100, note });
+  }
+  const supabase = await createClient();
+  if (up.length) {
+    const { error } = await supabase.from('assignment_scores').upsert(up, { onConflict: 'assignment_id,member_id' });
+    if (error) return { error: explain(error.message) };
+  }
+  if (clear.length) {
+    const { error } = await supabase.from('assignment_scores').delete().eq('assignment_id', assignment_id).in('member_id', clear);
+    if (error) return { error: explain(error.message) };
+  }
+  revalidatePath('/student', 'layout');
+  return { ok: `ተቀምጧል (${up.length} ተማሪዎች)። በውጤት ሉሁ ላይ “አሳይመንት” በራሱ ተሰልቷል።` };
+}

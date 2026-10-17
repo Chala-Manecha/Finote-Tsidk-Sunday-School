@@ -8,14 +8,15 @@ import { MarksGrid, ClassAttendanceForm } from '@/components/teach-forms';
 import { ActionButton } from '@/components/action-button';
 import { submitOffering, saveConduct } from '@/lib/actions/teaching';
 import { ConductSelect } from '@/components/conduct-select';
+import { AssignmentsView } from './assignments-view';
 
 type Offering = { id: string; name: string; class_level: string; status: OfferingStatus; book_path: string | null; book_name: string | null; semester_id: string };
 
 /** A teacher's own class: reference book, attendance, marks, submit for approval. */
-export default async function TeachPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ d?: string; v?: string }> }) {
+export default async function TeachPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ d?: string; v?: string; a?: string }> }) {
   const { id } = await params;
-  const { d, v } = await searchParams;
-  const view = v === 'att' || d ? 'att' : v === 'conduct' ? 'conduct' : 'marks';
+  const { d, v, a } = await searchParams;
+  const view = v === 'att' || d ? 'att' : v === 'conduct' ? 'conduct' : v === 'asg' ? 'asg' : 'marks';
   const me = await requireMember();
   const supabase = await createClient();
   const { data: isTeacher } = await supabase.rpc('is_teacher_of', { p_offering: id });
@@ -27,7 +28,7 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
 
   const [{ data: enr }, { data: mk }, { data: sessions }] = await Promise.all([
     supabase.from('enrollments').select('member_id').eq('year_id', s.year_id).eq('class_level', offering.class_level),
-    supabase.from('marks').select('member_id, quiz, notebook, participation, mid, final, absent, note').eq('offering_id', id),
+    supabase.from('marks').select('member_id, quiz, notebook, participation, mid, final, assignment, absent, note').eq('offering_id', id),
     supabase.from('class_sessions').select('id, session_date').eq('offering_id', id).order('session_date', { ascending: false }),
   ]);
   const ids = (enr ?? []).map((e) => e.member_id as string).filter((x) => x !== me.memberId);
@@ -80,6 +81,7 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
         <div className="seg">
           <Link className={view === 'marks' ? 'on' : ''} href={base}>📊 ውጤት</Link>
           <Link className={view === 'att' ? 'on' : ''} href={`${base}?v=att`}>🧾 የክፍል ክትትል</Link>
+          <Link className={view === 'asg' ? 'on' : ''} href={`${base}?v=asg`}>📝 አሳይመንት</Link>
           <Link className={view === 'conduct' ? 'on' : ''} href={`${base}?v=conduct`}>🙂 ጠባይ</Link>
           <Link href={`${base}/exams`}>🖊 ኦንላይን ፈተናዎች</Link>
         </div>
@@ -92,7 +94,7 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
               <div className="card-head"><b>ውጤት</b><span className="count-badge">{students.length} ተማሪዎች</span></div>
               <p className="small muted" style={{ marginTop: 0 }}>ነጥቦቹ የሚገቡት ከእያንዳንዱ ክፍል ከፍተኛ ነጥብ ውስጥ ነው። ማለፊያ፦ {s.pass_mark}/100።{s.min_attendance > 0 && ` ለዋና ፈተና ዝቅተኛ ክትትል፦ መደበኛ ${s.min_attendance}% · የርቀት ተማሪዎች ${s.min_attendance_distance}%።`}</p>
               <MarksGrid offeringId={id} students={students} marks={marks} weights={weights} locked={locked}
-                attendance={attendance} barred={barredIds} makeup={makeupIds} passMark={s.pass_mark} />
+                attendance={attendance} barred={barredIds} makeup={makeupIds} passMark={s.pass_mark} assignmentWeight={s.w_assignment ?? 0} />
               {offering.status === 'draft' && (
                 <div style={{ marginTop: 12 }}>
                   {finalsDone
@@ -103,6 +105,8 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
               )}
               {offering.status === 'submitted' && <p className="alert ok">ለትምህርት ክፍል ተልኳል፤ ማጽደቁን በመጠባበቅ ላይ።</p>}
             </section>
+          ) : view === 'asg' ? (
+            <AssignmentsView offeringId={id} base={base} students={students} locked={locked} weight={s.w_assignment ?? 0} picked={a} />
           ) : view === 'conduct' ? (
             <section className="card">
               <div className="card-head"><b>ጠባይ — {classLabel(offering.class_level)} · {semesterLabel(s.no)}</b><span className="count-badge">{students.length} ተማሪዎች</span></div>

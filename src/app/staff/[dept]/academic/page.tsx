@@ -98,6 +98,7 @@ export default async function Academic({ params, searchParams }: { params: Promi
                         <label>ፈተና (Quiz)<input name="w_quiz" type="number" min={0} max={100} defaultValue={sem.w_quiz} required /></label>
                         <label>ደብተር ማርክ<input name="w_notebook" type="number" min={0} max={100} defaultValue={sem.w_notebook} required /></label>
                         <label>ተሣትፎ<input name="w_participation" type="number" min={0} max={100} defaultValue={sem.w_participation} required /></label>
+                        <label>አሳይመንት<input name="w_assignment" type="number" min={0} max={100} defaultValue={sem.w_assignment ?? 0} required /></label>
                         <label>አጋማሽ ፈተና<input name="w_mid" type="number" min={0} max={100} defaultValue={sem.w_mid} required /></label>
                         <label>ዋና ፈተና<input name="w_final" type="number" min={0} max={100} defaultValue={sem.w_final} required /></label>
                         <label className="em">ማለፊያ (ከ100)<input name="pass_mark" type="number" min={0} max={100} defaultValue={sem.pass_mark} required /></label>

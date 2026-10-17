@@ -14,10 +14,19 @@ export const COMPONENTS = [
   { key: 'final', label: 'ዋና ፈተና', weight: 'w_final' },
 ] as const;
 export type ComponentKey = (typeof COMPONENTS)[number]['key'];
+/** Columns of a result sheet: the typed-in parts plus አሳይመንት (worked out from the assignments). */
+export const RESULT_PARTS = [
+  { key: 'quiz', label: 'ፈተና (Quiz)', weight: 'w_quiz' },
+  { key: 'notebook', label: 'ደብተር ማርክ', weight: 'w_notebook' },
+  { key: 'participation', label: 'ተሣትፎ', weight: 'w_participation' },
+  { key: 'assignment', label: 'አሳይመንት', weight: 'w_assignment' },
+  { key: 'mid', label: 'አጋማሽ ፈተና', weight: 'w_mid' },
+  { key: 'final', label: 'ዋና ፈተና', weight: 'w_final' },
+] as const;
 
 export type Semester = {
   id: string; year_id: string; no: number; starts_on: string | null; ends_on: string | null;
-  w_quiz: number; w_notebook: number; w_participation: number; w_mid: number; w_final: number;
+  w_quiz: number; w_notebook: number; w_participation: number; w_mid: number; w_final: number; w_assignment: number;
   pass_mark: number; is_active: boolean;
   mid_exam_on: string | null; final_exam_on: string | null; min_attendance: number; min_attendance_distance: number;
 };
@@ -49,7 +58,7 @@ export type OfferingStatus = keyof typeof OFFERING_STATUS;
 export type ResultRow = {
   member_id: string; full_name: string; reg_no: string; offering_id: string; course: string;
   quiz: number | null; notebook: number | null; participation: number | null; mid: number | null; final: number | null;
-  total: number; attended: number; sessions: number; status: OfferingStatus; makeup?: boolean;
+  assignment: number | null; total: number; attended: number; sessions: number; status: OfferingStatus; makeup?: boolean;
   average: number; rank: number; class_size: number; ready: boolean;
 };
 

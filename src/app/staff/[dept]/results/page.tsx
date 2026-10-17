@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ResultsSwitch } from '@/components/results-switch';
 import { createClient } from '@/lib/supabase/server';
-import { CLASS_LEVELS, COMPONENTS, CONDUCT, classLabel, gradeOf, isClassLevel, semesterLabel, type ResultRow } from '@/lib/education';
+import { CLASS_LEVELS, RESULT_PARTS, CONDUCT, classLabel, gradeOf, isClassLevel, semesterLabel, type ResultRow } from '@/lib/education';
 import { loadTerms } from '@/lib/edu-data';
 import { AutoSubmit } from '@/components/auto-submit';
 import { ActionButton } from '@/components/action-button';
@@ -113,14 +113,14 @@ async function ClassSheet({ dept, semester, cls, sp, conduct }: {
         </div>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>ኮርስ</th>{COMPONENTS.map((k) => <th key={k.key} className="num">{k.label}</th>)}<th className="num">ድምር</th><th>ውጤት</th><th className="num">ክትትል</th></tr></thead>
+            <thead><tr><th>ኮርስ</th>{RESULT_PARTS.map((k) => <th key={k.key} className="num">{k.label}</th>)}<th className="num">ድምር</th><th>ውጤት</th><th className="num">ክትትል</th></tr></thead>
             <tbody>
               {picked.map((x) => {
                 const g = gradeOf(Number(x.total), semester.pass_mark);
                 return (
                   <tr key={x.offering_id}>
                     <td>{x.course}</td>
-                    {COMPONENTS.map((k) => <td key={k.key} className="num">{x[k.key] ?? '—'}</td>)}
+                    {RESULT_PARTS.map((k) => <td key={k.key} className="num">{x[k.key] ?? '—'}</td>)}
                     <td className={`num ${g.passed ? '' : 'neg'}`}><b>{x.total}</b></td>
                     <td><span className={`pill ${g.passed ? 'present' : 'absent'}`}>{g.label}</span></td>
                     <td className="num">{x.attended}/{x.sessions}</td>

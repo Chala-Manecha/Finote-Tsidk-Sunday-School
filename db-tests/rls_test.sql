@@ -984,6 +984,31 @@ select public.set_member_clergy('10000000-0000-0000-0000-0000000000e1', null);
 select pg_temp.must_equal((select count(*)::int from public.clergy where member_id = '10000000-0000-0000-0000-0000000000e1'), 0, 'unticked → removed');
 reset role;
 
+
+-- ---------- round 29: አሳይመንት ----------
+reset role;
+insert into public.course_offerings (id, semester_id, class_level, name) values
+  ('92000000-0000-0000-0000-000000000009', '91000000-0000-0000-0000-000000000001', '3', 'አሳይመንት ኮርስ');
+insert into public.offering_teachers values ('92000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-0000000000e2');
+update public.semesters set w_quiz = 0, w_assignment = 10 where id = '91000000-0000-0000-0000-000000000001';
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+insert into public.assignments (id, offering_id, title, instructions, max_points)
+  values ('95000000-0000-0000-0000-000000000001', '92000000-0000-0000-0000-000000000009', 'ምዕራፍ 1', 'ጥያቄዎቹን መልሱ', 10);
+insert into public.assignment_scores (assignment_id, member_id, score) values ('95000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000000e1', 9);
+select pg_temp.must_fail($q$update public.assignment_scores set score = 11 where member_id = '10000000-0000-0000-0000-0000000000e1'$q$);
+select pg_temp.must_equal((select (assignment * 10)::int from public.marks where offering_id = '92000000-0000-0000-0000-000000000009' and member_id = '10000000-0000-0000-0000-0000000000e1'), 90, 'assignment counts in the mark sheet');
+insert into public.assignments (offering_id, title, max_points) values ('92000000-0000-0000-0000-000000000009', 'ምዕራፍ 2', 10);
+select pg_temp.must_equal((select (assignment * 10)::int from public.marks where offering_id = '92000000-0000-0000-0000-000000000009' and member_id = '10000000-0000-0000-0000-0000000000e1'), 45, 'a missing score counts 0');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*)::int from public.assignments where offering_id = '92000000-0000-0000-0000-000000000009'), 2, 'students see their class assignments');
+select pg_temp.must_equal((select (score)::int from public.assignment_scores), 9, 'students see their own score');
+select pg_temp.must_fail($q$insert into public.assignments (offering_id, title) values ('92000000-0000-0000-0000-000000000009', 'x y')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+select pg_temp.must_equal((select (total * 10)::int from public.semester_results('91000000-0000-0000-0000-000000000001', '3') where offering_id = '92000000-0000-0000-0000-000000000009' and member_id = '10000000-0000-0000-0000-0000000000e1'), 45, 'results include assignments');
+reset role;
+
 -- ---------- before real data: clear the samples (system admin only) ----------
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);

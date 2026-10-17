@@ -8,10 +8,10 @@ import type { FormState } from '@/components/media-form';
 type Student = { id: string; full_name: string; reg_no: string };
 type Marks = Partial<Record<ComponentKey, number | null>>;
 
-type MarkRow = Marks & { absent?: boolean; note?: string | null };
+type MarkRow = Marks & { absent?: boolean; note?: string | null; assignment?: number | null };
 
-export function MarksGrid({ offeringId, students, marks, weights, locked, attendance = {}, barred = [], makeup = [], passMark = 50 }: {
-  offeringId: string; students: Student[]; marks: Record<string, MarkRow>; passMark?: number;
+export function MarksGrid({ offeringId, students, marks, weights, locked, attendance = {}, barred = [], makeup = [], passMark = 50, assignmentWeight = 0 }: {
+  offeringId: string; students: Student[]; marks: Record<string, MarkRow>; passMark?: number; assignmentWeight?: number;
   weights: Record<ComponentKey, number>; locked: boolean;
   attendance?: Record<string, number | null>; barred?: string[]; makeup?: string[];
 }) {
@@ -23,7 +23,8 @@ export function MarksGrid({ offeringId, students, marks, weights, locked, attend
   const [absent, setAbsent] = useState<Record<string, boolean>>(() => Object.fromEntries(students.map((s) => [s.id, !!marks[s.id]?.absent])));
   const over = (k: ComponentKey, id: string) => { const v = vals[`${k}_${id}`]; return v !== '' && v != null && Number(v) > weights[k]; };
   const overCount = students.reduce((t, s) => t + COMPONENTS.filter((c) => over(c.key, s.id)).length, 0);
-  const totalOf = (id: string) => COMPONENTS.reduce((t, c) => t + (absent[id] && c.key === 'final' ? 0 : Number(vals[`${c.key}_${id}`] || 0)), 0);
+  const asg = (id: string) => marks[id]?.assignment ?? null;
+  const totalOf = (id: string) => COMPONENTS.reduce((t, c) => t + (absent[id] && c.key === 'final' ? 0 : Number(vals[`${c.key}_${id}`] || 0)), 0) + Number(asg(id) ?? 0);
   return (
     <form action={action}>
       <input type="hidden" name="offering_id" value={offeringId} />
@@ -34,6 +35,7 @@ export function MarksGrid({ offeringId, students, marks, weights, locked, attend
             <tr>
               <th>ተማሪ</th><th className="num">ክትትል</th>
               {COMPONENTS.map((c) => <th key={c.key} className="num">{c.label}<div className="small muted">/{weights[c.key]}</div></th>)}
+              {assignmentWeight > 0 && <th className="num" title="ከአሳይመንቶቹ በራሱ ይሰላል">አሳይመንት<div className="small muted">/{assignmentWeight} · በራሱ</div></th>}
               <th className="num">ቀሪ<div className="small muted">ዋና ፈተና</div></th>
               <th className="num">ድምር<div className="small muted">/100</div></th>
               <th>ማስታወሻ</th>
@@ -42,7 +44,7 @@ export function MarksGrid({ offeringId, students, marks, weights, locked, attend
           <tbody>
             {students.map((s) => {
               const total = totalOf(s.id);
-              const anyMark = COMPONENTS.some((c) => vals[`${c.key}_${s.id}`] !== '');
+              const anyMark = COMPONENTS.some((c) => vals[`${c.key}_${s.id}`] !== '') || asg(s.id) != null;
               return (
                 <tr key={s.id} className={absent[s.id] ? 'is-absent' : ''}>
                   <td>
@@ -65,6 +67,7 @@ export function MarksGrid({ offeringId, students, marks, weights, locked, attend
                       </td>
                     );
                   })}
+                  {assignmentWeight > 0 && <td className="num"><span className="auto-cell">{asg(s.id) ?? '—'}</span></td>}
                   <td className="num">
                     <input type="checkbox" name={`absent_${s.id}`} checked={!!absent[s.id]} disabled={locked}
                       onChange={(e) => setAbsent({ ...absent, [s.id]: e.target.checked })} aria-label={`${s.full_name} ዋና ፈተና ቀሪ`} />

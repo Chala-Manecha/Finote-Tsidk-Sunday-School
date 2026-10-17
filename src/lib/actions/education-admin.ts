@@ -53,7 +53,7 @@ export async function saveSemester(_: FormState, fd: FormData): Promise<FormStat
   const n = (k: string) => Number(text(fd, k));
   const row = {
     w_quiz: n('w_quiz'), w_notebook: n('w_notebook'), w_participation: n('w_participation'),
-    w_mid: n('w_mid'), w_final: n('w_final'), pass_mark: n('pass_mark'),
+    w_mid: n('w_mid'), w_final: n('w_final'), w_assignment: n('w_assignment'), pass_mark: n('pass_mark'),
     starts_on: DATE_RE.test(text(fd, 'starts_on')) ? text(fd, 'starts_on') : null,
     ends_on: DATE_RE.test(text(fd, 'ends_on')) ? text(fd, 'ends_on') : null,
     mid_exam_on: DATE_RE.test(text(fd, 'mid_exam_on')) ? text(fd, 'mid_exam_on') : null,
@@ -61,7 +61,7 @@ export async function saveSemester(_: FormState, fd: FormData): Promise<FormStat
     min_attendance: n('min_attendance'),
     min_attendance_distance: n('min_attendance_distance'),
   };
-  const sum = row.w_quiz + row.w_notebook + row.w_participation + row.w_mid + row.w_final;
+  const sum = row.w_quiz + row.w_notebook + row.w_participation + row.w_assignment + row.w_mid + row.w_final;
   if (Object.values(row).some((v) => typeof v === 'number' && (!Number.isInteger(v) || v < 0))) return { error: 'ሙሉ ቁጥሮች ያስገቡ።' };
   if (sum !== 100) return { error: `የነጥቦቹ ድምር 100 መሆን አለበት (አሁን ${sum})።` };
   if (row.pass_mark > 100 || row.min_attendance > 100 || row.min_attendance_distance > 100) return { error: 'ከ100 መብለጥ የለበትም።' };
@@ -315,7 +315,7 @@ export async function copySemesterRules(fromId: string, toId: string) {
   await requireDept('education');
   const supabase = await createClient();
   const { data: f } = await supabase.from('semesters')
-    .select('w_quiz, w_notebook, w_participation, w_mid, w_final, pass_mark, min_attendance, min_attendance_distance').eq('id', fromId).maybeSingle();
+    .select('w_quiz, w_notebook, w_participation, w_assignment, w_mid, w_final, pass_mark, min_attendance, min_attendance_distance').eq('id', fromId).maybeSingle();
   if (!f) return { error: 'ሴሚስተሩ አልተገኘም።' };
   const { error, count } = await supabase.from('semesters').update(f, { count: 'exact' }).eq('id', toId);
   if (error) return { error: explain(error.message) };

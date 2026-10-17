@@ -6,7 +6,7 @@ import { requireDept, canAccess } from '@/lib/auth';
 import { SEX } from '@/lib/constants';
 import { formatEc } from '@/lib/ethiopian-calendar';
 import {
-  COMPONENTS, CONDUCT, DECISION, THANKSGIVING, classLabel, gradeOf, semesterLabel,
+  RESULT_PARTS, CONDUCT, DECISION, THANKSGIVING, classLabel, gradeOf, semesterLabel,
   type Conduct, type Decision, type ResultRow, type Semester, type YearRow,
 } from '@/lib/education';
 import { DocHeader, DocRows, DocSigns, QrCode, verifyUrl } from '@/components/doc-sheet';
@@ -75,7 +75,7 @@ export default async function TranscriptPage({ params }: { params: Promise<{ id:
             <thead>
               <tr>
                 <th>ኮርስ</th><th>መምህር</th>
-                {COMPONENTS.map((c) => <th key={c.key} className="num">{c.label}<div className="small muted">/{s[c.weight]}</div></th>)}
+                {RESULT_PARTS.map((c) => <th key={c.key} className="num">{c.label}<div className="small muted">/{s[c.weight]}</div></th>)}
                 <th className="num">ድምር<div className="small muted">/100</div></th><th>ደረጃ</th><th className="num">ክትትል</th>
               </tr>
             </thead>
@@ -86,7 +86,7 @@ export default async function TranscriptPage({ params }: { params: Promise<{ id:
                   <tr key={r.offering_id}>
                     <td>{r.course}{makeup.has(r.offering_id) && <span className="small muted"> (ድጋሚ ፈተና)</span>}</td>
                     <td className="small">{teacherOf(r.offering_id)}</td>
-                    {COMPONENTS.map((c) => <td key={c.key} className="num">{r[c.key] ?? '—'}</td>)}
+                    {RESULT_PARTS.map((c) => <td key={c.key} className="num">{r[c.key] ?? '—'}</td>)}
                     <td className="num"><b>{r.total}</b></td>
                     <td className={g.passed ? '' : 'neg'}>{g.label}</td>
                     <td className="num">{r.sessions ? `${Math.round((r.attended / r.sessions) * 100)}%` : '—'}</td>
@@ -108,7 +108,7 @@ export default async function TranscriptPage({ params }: { params: Promise<{ id:
           {cond?.remark ? ` · ${cond.remark}` : ''}
         </p>
         <p className="small muted" style={{ margin: '4px 0 0' }}>
-          የውጤት አያያዝ፦ ፈተና {s.w_quiz} + ደብተር {s.w_notebook} + ተሣትፎ {s.w_participation} + አጋማሽ {s.w_mid} + ዋና {s.w_final} = 100 · ማለፊያ {s.pass_mark}
+          የውጤት አያያዝ፦ ፈተና {s.w_quiz} + ደብተር {s.w_notebook} + ተሣትፎ {s.w_participation} + አሳይመንት {s.w_assignment ?? 0} + አጋማሽ {s.w_mid} + ዋና {s.w_final} = 100 · ማለፊያ {s.pass_mark}
         </p>
 
         <div className="doc-foot">
@@ -183,14 +183,14 @@ async function YearTranscript({ t, canPrint }: { t: T; canPrint: boolean }) {
             <h3 className="serif" style={{ margin: '0 0 6px' }}>{semesterLabel(s.no)}</h3>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>ኮርስ</th>{COMPONENTS.map((c) => <th key={c.key} className="num">{c.label}<div className="small muted">/{s[c.weight]}</div></th>)}<th className="num">ድምር</th><th>ደረጃ</th><th className="num">ክትትል</th></tr></thead>
+                <thead><tr><th>ኮርስ</th>{RESULT_PARTS.map((c) => <th key={c.key} className="num">{c.label}<div className="small muted">/{s[c.weight]}</div></th>)}<th className="num">ድምር</th><th>ደረጃ</th><th className="num">ክትትል</th></tr></thead>
                 <tbody>
                   {rows.map((r) => {
                     const g = gradeOf(Number(r.total), s.pass_mark);
                     return (
                       <tr key={r.offering_id}>
                         <td>{r.course}</td>
-                        {COMPONENTS.map((c) => <td key={c.key} className="num">{r[c.key] ?? '—'}</td>)}
+                        {RESULT_PARTS.map((c) => <td key={c.key} className="num">{r[c.key] ?? '—'}</td>)}
                         <td className="num"><b>{r.total}</b></td>
                         <td className={g.passed ? '' : 'neg'}>{g.label}</td>
                         <td className="num">{r.sessions ? `${Math.round((r.attended / r.sessions) * 100)}%` : '—'}</td>

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fmtTime } from '@/lib/ethiopian-calendar';
 import { requireMember } from '@/lib/member-auth';
 import {
-  CLASS_LEVELS, COMPONENTS, DECISION, READY_MESSAGE, THANKSGIVING, classLabel, gradeOf, semesterLabel,
+  CLASS_LEVELS, RESULT_PARTS, DECISION, READY_MESSAGE, THANKSGIVING, classLabel, gradeOf, semesterLabel,
   type AcademicYear, type ResultRow, type Semester, type YearRow,
 } from '@/lib/education';
 import { ActionButton } from '@/components/action-button';
@@ -63,6 +63,16 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
   ]);
   const semesters = (semData ?? []) as Semester[];
   const classLevel = (enr as { class_level: string | null } | null)?.class_level ?? null;
+  // አሳይመንቶች of my class this year (no approval needed) and my scores
+  const [{ data: asgData }, { data: scoreData }] = classLevel && year ? await Promise.all([
+    supabase.from('assignments').select('id, title, max_points, due_on, created_at, course_offerings!inner(name, class_level, semesters!inner(year_id))')
+      .eq('course_offerings.class_level', classLevel).eq('course_offerings.semesters.year_id', year.id).order('created_at', { ascending: false }),
+    supabase.from('assignment_scores').select('assignment_id, score').eq('member_id', me.memberId),
+  ]) : [{ data: [] }, { data: [] }];
+  const assignments = ((asgData ?? []) as unknown as { id: string; title: string; max_points: number; due_on: string | null; course_offerings: { name: string } }[])
+    .map((x) => ({ id: x.id, title: x.title, max: Number(x.max_points), due_on: x.due_on, course: x.course_offerings.name }));
+  const myScores = new Map(((scoreData ?? []) as { assignment_id: string; score: number | null }[])
+    .filter((x) => x.score != null).map((x) => [x.assignment_id, Number(x.score)]));
 
   // This week's schedule for what the member takes part in (with the join link when online).
   const { data: myProgs } = await supabase.from('member_programs').select('program, status').eq('member_id', me.memberId);
@@ -178,7 +188,7 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
                             <b>{r.course}</b>
                             {g ? <span className={`mr-total ${g.passed ? 'pos' : 'neg'}`}>{r.total}<small>/100</small></span> : <span className="pill half">ገና አልጸደቀም</span>}
                           </div>
-                          {g && <div className="mr-parts">{COMPONENTS.map((c) => <span key={c.key}>{c.label} <b>{r[c.key] ?? '—'}</b></span>)}</div>}
+                          {g && <div className="mr-parts">{RESULT_PARTS.map((c) => <span key={c.key}>{c.label} <b>{r[c.key] ?? '—'}</b></span>)}</div>}
                           <div className="mr-foot small muted">
                             {g && <span className={`pill ${g.passed ? 'present' : 'absent'}`}>{g.label}</span>}
                             <span>ክትትል {r.sessions ? `${Math.round((r.attended / r.sessions) * 100)}%` : '—'}</span>
@@ -191,15 +201,15 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
                 {rows.length === 0 ? <p className="muted small">ለዚህ ሴሚስተር ኮርሶች ገና አልተዘጋጁም።</p> : (
                   <div className="table-wrap my-results-table">
                     <table>
-                      <thead><tr><th>ኮርስ</th>{COMPONENTS.map((c) => <th key={c.key} className="num">{c.label}</th>)}<th className="num">ድምር</th><th>ደረጃ</th><th className="num">ክትትል</th></tr></thead>
+                      <thead><tr><th>ኮርስ</th>{RESULT_PARTS.map((c) => <th key={c.key} className="num">{c.label}</th>)}<th className="num">ድምር</th><th>ደረጃ</th><th className="num">ክትትል</th></tr></thead>
                       <tbody>
                         {rows.map((r) => (
                           <tr key={r.offering_id}>
                             <td>{r.course}</td>
                             {r.status === 'approved'
-                              ? <>{COMPONENTS.map((c) => <td key={c.key} className="num">{r[c.key] ?? '—'}</td>)}
+                              ? <>{RESULT_PARTS.map((c) => <td key={c.key} className="num">{r[c.key] ?? '—'}</td>)}
                                   <td className="num"><b>{r.total}</b></td><td>{gradeOf(Number(r.total), s.pass_mark).label}</td></>
-                              : <td colSpan={COMPONENTS.length + 2} className="muted small">ውጤቱ ገና አልጸደቀም።</td>}
+                              : <td colSpan={RESULT_PARTS.length + 2} className="muted small">ውጤቱ ገና አልጸደቀም።</td>}
                             <td className="num">{r.sessions ? `${Math.round((r.attended / r.sessions) * 100)}%` : '—'}</td>
                           </tr>
                         ))}
@@ -207,10 +217,33 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
                     </table>
                   </div>
                 )}
-                <p className="small muted" style={{ margin: '6px 0 0' }}>ፈተና {s.w_quiz} · ደብተር {s.w_notebook} · ተሣትፎ {s.w_participation} · አጋማሽ {s.w_mid} · ዋና {s.w_final} · ማለፊያ {s.pass_mark}</p>
+                <p className="small muted" style={{ margin: '6px 0 0' }}>ፈተና {s.w_quiz} · ደብተር {s.w_notebook} · ተሣትፎ {s.w_participation} · አሳይመንት {s.w_assignment ?? 0} · አጋማሽ {s.w_mid} · ዋና {s.w_final} · ማለፊያ {s.pass_mark}</p>
               </div>
             ))}
           </section>
+
+          {assignments.length > 0 && (
+            <section className="card">
+              <div className="card-head"><b>📝 አሳይመንቶች</b><span className="count-badge">{assignments.length}</span></div>
+              <ul className="me-list asg-list">
+                {assignments.map((x) => {
+                  const my = myScores.get(x.id);
+                  return (
+                    <li key={x.id}>
+                      <span>
+                        <Link className="link" href={`/student/assignment/${x.id}`}><b>{x.title}</b></Link><br />
+                        <span className="small muted">{x.course}{x.due_on ? ` · ማስረከቢያ ${formatEc(x.due_on)}` : ''}</span>
+                      </span>
+                      <span className="asg-right">
+                        {my != null ? <b className="asg-score">{my}<small>/{x.max}</small></b> : <span className="pill half">ያልታረመ</span>}
+                        <Link className="btn xs secondary" href={`/student/assignment/${x.id}`}>📄 እይ</Link>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
 
           {(upcomingExams.length > 0 || doneExams.length > 0) && (
             <section className="card">
