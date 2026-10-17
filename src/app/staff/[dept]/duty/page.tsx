@@ -7,6 +7,7 @@ import { DutyForm } from '@/components/duty-form';
 import { DUTY_COLS, DutyTable, type DutyRow } from '@/components/duty-table';
 import { PrintButton } from '@/components/print-button';
 import { Modal } from '@/components/modal';
+import { DutyChoices } from '@/components/duty-choices';
 
 /** የአባላት ስራ ምደባ: give a member a job (they accept it before the day), then confirm it was done. */
 export default async function DeptDutyPage({
@@ -22,19 +23,19 @@ export default async function DeptDutyPage({
   const supabase = await createClient();
 
   // የሚመጡ = upcoming · ማረጋገጫ = accepted, the day has passed, not yet confirmed · ሁሉም = everything
-  const view = sp.v === 'confirm' || sp.v === 'all' ? sp.v : 'upcoming';
+  const view = sp.v === 'confirm' || sp.v === 'all' || sp.v === 'chosen' ? sp.v : 'upcoming';
   const today = todayIsoAddis();
   let q = supabase.from('duty_assignments').select(DUTY_COLS).eq('dept', dept).order('duty_date', { ascending: view !== 'all' });
   if (view === 'upcoming') q = q.gte('duty_date', today);
   if (view === 'confirm') q = q.lte('duty_date', today).is('status', null).not('accepted_at', 'is', null);
   const [{ data: rows }, { data: members }, { count: waiting }, { count: awaiting }] = await Promise.all([
     q.returns<DutyRow[]>(),
-    // only members who chose “በተለያዩ አገልግሎቶች” can be given a job
-    supabase.from('members').select('id, full_name, member_programs!inner(program, status)').eq('is_active', true)
-      .eq('member_programs.program', 'duty').eq('member_programs.status', 'active').order('full_name'),
+    // any active member can be given a job
+    supabase.from('members').select('id, full_name').eq('is_active', true).order('full_name'),
     supabase.from('duty_assignments').select('id', { count: 'exact', head: true }).eq('dept', dept).lte('duty_date', today).is('status', null).not('accepted_at', 'is', null),
     supabase.from('duty_assignments').select('id', { count: 'exact', head: true }).eq('dept', dept).gte('duty_date', today).is('accepted_at', null),
   ]);
+  const { count: chosenCount } = await supabase.from('duty_assignments').select('id', { count: 'exact', head: true }).eq('source', 'chosen').gte('duty_date', today);
   const base = `/staff/${dept}/duty`;
   const needle = sp.q?.trim();
   const shown = (rows ?? []).filter((r) => !needle || r.members?.full_name.includes(needle));
@@ -48,6 +49,7 @@ export default async function DeptDutyPage({
           <Link className={view === 'upcoming' ? 'on' : ''} href={base}>የሚመጡ{awaiting ? ` · ${awaiting} ያልተቀበሉ` : ''}</Link>
           <Link className={view === 'confirm' ? 'on' : ''} href={`${base}?v=confirm`}>ማረጋገጫ የሚጠብቁ{waiting ? ` (${waiting})` : ''}</Link>
           <Link className={view === 'all' ? 'on' : ''} href={`${base}?v=all`}>ሁሉም</Link>
+          <Link className={view === 'chosen' ? 'on' : ''} href={`${base}?v=chosen`}>🙋 የአባላት ምርጫ{chosenCount ? ` (${chosenCount})` : ''}</Link>
         </div>
         <span className="spacer" />
         <form className="toolbar slim no-print" action={base}>
@@ -59,12 +61,21 @@ export default async function DeptDutyPage({
           <DutyForm dept={dept} members={list} plain />
         </Modal>
       </div>
+      {view === 'chosen' ? (
+        <>
+          <p className="small muted no-print">አባላት በዳሽቦርዳቸው “የእኔ ምደባ” ላይ ራሳቸው የመረጡት አገልግሎት — ሁሉም ክፍሎች ያያሉ። “መድብ” ሲጫኑ የአባሉ ምርጫ ተሞልቶ ይከፈታል፤ አባሉ ተቀብሎ ያረጋግጣል።</p>
+          <DutyChoices dept={dept} members={list} />
+        </>
+      ) : (
+      <>
       <p className="small muted no-print">
         {view === 'confirm'
           ? 'ቀኑ ያለፈ፣ አባሉ የተቀበለው ምደባ — መፈጸሙን ያረጋግጡ፤ በአባሉ የተሳትፎ መቶኛ ይቆጠራል።'
           : 'የተመደበ አባል ከቀኑ በፊት መቀበል አለበት፤ ካልተቀበለ ጊዜው ያልፍበታል። ከተቀበለ በኋላ መቀየርም ማጥፋትም አይቻልም።'}
       </p>
       <DutyTable rows={shown} members={list} editableDept={dept} />
+      </>
+      )}
     </>
   );
 }

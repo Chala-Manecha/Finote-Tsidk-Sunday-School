@@ -1,5 +1,6 @@
 'use client';
 import { useActionState, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { saveMarks, saveClassAttendance } from '@/lib/actions/teaching';
 import { COMPONENTS, type ComponentKey } from '@/lib/education';
 import { EcDatePicker } from './ec-date-picker';
@@ -94,15 +95,24 @@ export function MarksGrid({ offeringId, students, marks, weights, locked, attend
   );
 }
 
-export function ClassAttendanceForm({ offeringId, students, today, initial = {} }: {
+export function ClassAttendanceForm({ offeringId, students, today, initial = {}, back, fixedDate = false }: {
   offeringId: string; students: Student[]; today: string; initial?: Record<string, string>;
+  /** where to go once saved (the list of days) */
+  back?: string; fixedDate?: boolean;
 }) {
+  const router = useRouter();
   const [state, action, pending] = useActionState<FormState & { n?: number }, FormData>(
-    async (prev, fd) => { const r = await saveClassAttendance(prev, fd); return { ...r, n: (prev.n ?? 0) + (r.ok ? 1 : 0) }; }, {});
+    async (prev, fd) => {
+      const r = await saveClassAttendance(prev, fd);
+      if (r.ok && back) router.push(back, { scroll: false });
+      return { ...r, n: (prev.n ?? 0) + (r.ok ? 1 : 0) };
+    }, {});
   return (
     <form action={action} key={state.n}>
       <input type="hidden" name="offering_id" value={offeringId} />
-      <div className="field"><span className="label">ቀን (ዓ.ም)</span><EcDatePicker name="session_date" defaultIso={today} yearsBack={1} yearsForward={0} required /></div>
+      {fixedDate
+        ? <input type="hidden" name="session_date" value={today} />
+        : <div className="field"><span className="label">ቀን (ዓ.ም)</span><EcDatePicker name="session_date" defaultIso={today} yearsBack={1} yearsForward={0} required /></div>}
       <div className="table-wrap">
         <table>
           <thead><tr><th>ተማሪ</th><th>ተገኝቷል</th><th>ግማሽ</th><th>ቀሪ</th></tr></thead>

@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { startExam, saveAnswers, finishExam, type Paper } from '@/lib/actions/online-exams';
 import { EXAM_COMPONENTS, LETTERS, QUESTION_KINDS } from '@/lib/exams';
 
@@ -23,7 +24,14 @@ const mmss = (ms: number) => {
  * Sitting an exam: one question at a time with the clock beside it, back / next, 🚩 to come back to,
  * a review page before handing in, answers saved as you go, and handed in automatically when time is up.
  */
-export function ExamRunner({ info, resume }: { info: Info; resume: boolean }) {
+export function ExamRunner({ info, resume, locked = false }: { info: Info; resume: boolean; locked?: boolean }) {
+  const router = useRouter();
+  // waiting for the teacher to open it: look again every 15 seconds
+  useEffect(() => {
+    if (!locked) return;
+    const t = setInterval(() => router.refresh(), 15000);
+    return () => clearInterval(t);
+  }, [locked, router]);
   const [paper, setPaper] = useState<Paper | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
   const [flags, setFlags] = useState<string[]>([]);
@@ -142,7 +150,8 @@ export function ExamRunner({ info, resume }: { info: Info; resume: boolean }) {
             <li><i aria-hidden>👁</i><span>ከፈተናው ገጽ <b>መውጣት ይቆጠራል</b> — መምህሩ ያየዋል።</span></li>
           </ul>
           {err && <div className="alert error">{err}</div>}
-          <button className="btn green big exam-start" disabled={busy} onClick={begin}>{busy ? '…' : '▶ ፈተናውን ጀምር'}</button>
+          {locked && <div className="alert">⏳ መምህሩ ፈተናውን ገና አልከፈተም — ሲከፍተው “ፈተና ጀምር” ይሠራል (ገጹ በራሱ ይታደሳል)።</div>}
+          <button className="btn green big exam-start" disabled={busy || locked} onClick={begin}>{busy ? '…' : locked ? '🔒 ፈተና ጀምር' : '▶ ፈተና ጀምር'}</button>
         </div>
       </section>
     );

@@ -14,6 +14,7 @@ const ERR: Record<string, string> = {
   own_marks: 'የራስዎን ውጤት መሙላት አይችሉም።',
   not_in_class: 'ተማሪው በዚህ ክፍል አልተመዘገበም።',
   finals_missing: 'ለሁሉም ተማሪዎች የዋና ፈተና ውጤት መሞላት አለበት።',
+  marks_missing: 'ለእያንዳንዱ ተማሪ ሁሉም የምዘና ነጥቦች (0 ወይም ከዚያ በላይ) መሞላት አለባቸው።',
   low_attendance: 'ክትትላቸው ዝቅተኛ የሆነ ተማሪ ያለ ትምህርት ክፍል ፈቃድ ዋና ፈተና አይመዘገብለትም።',
 };
 const explain = (m: string) => Object.entries(ERR).find(([k]) => m.includes(k))?.[1] ?? (m.includes('row-level') ? 'ፈቃድ የለዎትም።' : m);

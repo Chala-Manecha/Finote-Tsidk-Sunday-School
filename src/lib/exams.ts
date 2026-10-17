@@ -15,9 +15,9 @@ export const EXAM_STATUS_PILL: Record<ExamStatus, string> = { draft: 'pending', 
 export type Exam = {
   id: string; offering_id: string; component: ExamComponent; title: string; instructions: string | null;
   duration_min: number; opens_at: string; closes_at: string; status: ExamStatus; review_note: string | null;
-  pushed_at: string | null; submitted_at: string | null; approved_at: string | null;
+  pushed_at: string | null; submitted_at: string | null; approved_at: string | null; unlocked_at: string | null;
 };
-export const EXAM_COLS = 'id, offering_id, component, title, instructions, duration_min, opens_at, closes_at, status, review_note, pushed_at, submitted_at, approved_at';
+export const EXAM_COLS = 'id, offering_id, component, title, instructions, duration_min, opens_at, closes_at, status, review_note, pushed_at, submitted_at, approved_at, unlocked_at';
 
 export type Question = {
   id: string; exam_id: string; sort: number; kind: QuestionKind; prompt: string; points: number;
@@ -74,5 +74,5 @@ export function givenText(q: Pick<Question, 'kind' | 'options'>, given: unknown)
 export type MyExam = {
   id: string; title: string; component: ExamComponent; course: string; class_level: string; opens_at: string; closes_at: string;
   duration_min: number; questions: number; total_points: number; attempt_id: string | null; deadline: string | null;
-  submitted_at: string | null; score: number | null; released: boolean;
+  submitted_at: string | null; score: number | null; released: boolean; unlocked: boolean;
 };

@@ -23,13 +23,14 @@ import { Modal } from '@/components/modal';
 import { ChooseDutyForm } from '@/components/choose-duty-form';
 import { acceptDuty } from '@/lib/actions/duty';
 
-type Duty = { id: string; dept: string | null; duty: string; duty_date: string; occasion: string; status: DutyStatus; source: 'given' | 'chosen'; accepted_at: string | null };
+type Duty = { id: string; dept: string | null; duty: string; duty_date: string; occasion: string; status: DutyStatus; source: 'given' | 'chosen'; accepted_at: string | null; allocated_dept: string | null; from_choice: string | null };
 const addDaysIso = (iso: string, n: number) => { const d = new Date(`${iso}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 type Absence = { on_date: string; area: PartArea; label: string; status: 'absent' | 'half' };
 
 
-export default async function StudentHome({ searchParams }: { searchParams: Promise<{ sem?: string }> }) {
+export default async function StudentHome({ searchParams }: { searchParams: Promise<{ sem?: string; v?: string; pick?: string }> }) {
   const sp = await searchParams;
+  const tab = sp.v === 'duty' || sp.v === 'part' || sp.v === 'abs' ? sp.v : 'learn';
   const me = await requireMember();
   const supabase = await createClient();
   const ecYear = isoToEc(todayIsoAddis()).year;
@@ -39,7 +40,7 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
     memberParticipation(supabase, me.memberId, yearFrom),
     loadBands(supabase),
     supabase.rpc('my_duties'),
-    supabase.rpc('member_absences', { p_member: me.memberId, p_limit: 8 }),
+    supabase.rpc('member_absences', { p_member: me.memberId, p_limit: 100 }),
     ownPhoto(me.photoPath),
   ]);
   const p = ((prof ?? []) as { sex: 'male' | 'female' | null; joined_year: number | null }[])[0];
@@ -49,8 +50,10 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
   const today = todayIsoAddis();
   const toAccept = duties.filter((d) => d.source === 'given' && !d.accepted_at && d.duty_date >= today).reverse();
   const taken = duties.filter((d) => d.accepted_at);
-  const upcoming = taken.filter((d) => d.duty_date >= today).reverse();
-  const pastDuties = taken.filter((d) => d.duty_date < today);
+  const given = duties.filter((d) => d.source === 'given' && d.accepted_at);
+  const upcoming = given.filter((d) => d.duty_date >= today).reverse();
+  const pastDuties = given.filter((d) => d.duty_date < today);
+  const chosen = duties.filter((d) => d.source === 'chosen');
   const absences = (absData ?? []) as Absence[];
   const all = overall(part);
   const allBand = bandOf(all, bands);
@@ -98,8 +101,9 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
 
   const { data: examData } = await supabase.rpc('my_exams');
   const exams = (examData ?? []) as MyExam[];
-  const openExams = exams.filter((x) => !x.submitted_at && (examWindow(x) === 'open' || x.attempt_id));
-  const upcomingExams = exams.filter((x) => !x.attempt_id && examWindow(x) === 'upcoming');
+  // ፈተና ጀምር works once the teacher has opened the (approved) exam
+  const openExams = exams.filter((x) => !x.submitted_at && (x.attempt_id || (x.unlocked && examWindow(x) !== 'closed')));
+  const upcomingExams = exams.filter((x) => !x.attempt_id && !x.unlocked && examWindow(x) !== 'closed');
   const doneExams = exams.filter((x) => x.submitted_at);
 
   // one semester at a time (switch) — the open one first
@@ -113,8 +117,6 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
   // የእኔ ምደባ: jobs (given / chosen) and this week's programmes, by date
   type Line = { key: string; title: string; sub: string; right: React.ReactNode; date: string };
   const lines: Line[] = [
-    ...upcoming.map((d) => ({ key: d.id, date: d.duty_date, title: `${d.duty} · ${d.occasion}`,
-      sub: `${formatEc(d.duty_date, { weekday: true })} · ${d.source === 'chosen' ? 'የመረጥኩት' : d.dept ? DEPT_NAME[d.dept] : ''}`, right: <DutyPill {...d} /> })),
     ...schedule.map((x) => ({ key: x.key, date: '', title: x.title, sub: `${x.when}${x.place ? ` · 📍 ${x.place}` : ''}`, right: <DeliveryBadge d={x.d} compact /> })),
   ];
 
@@ -149,8 +151,16 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
         </Link>
       ))}
 
-      <div className="dash-grid">
-        <div className="dash-main">
+      <nav className="seg big dash-tabs no-print" aria-label="ዳሽቦርድ">
+        <Link className={tab === 'learn' ? 'on' : ''} href="/student" scroll={false}>📖 የእኔ ትምህርት{assignments.length ? ` · 📝 ${assignments.length}` : ''}</Link>
+        <Link className={tab === 'duty' ? 'on' : ''} href="/student?v=duty" scroll={false}>🧭 የእኔ ምደባ{toAccept.length ? ` (${toAccept.length})` : ''}</Link>
+        <Link className={tab === 'part' ? 'on' : ''} href="/student?v=part" scroll={false}>📊 የእኔ ተሳትፎ</Link>
+        <Link className={tab === 'abs' ? 'on' : ''} href="/student?v=abs" scroll={false}>📅 የቀረሁባቸው ቀናት{absences.length ? ` (${absences.length})` : ''}</Link>
+      </nav>
+
+      {tab === 'learn' && (
+        <div className="dash-grid">
+          <div className="dash-main">
           <section className="card">
             <div className="card-head">
               <b>የእኔ ትምህርት</b>
@@ -251,8 +261,8 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
               <ul className="me-list">
                 {upcomingExams.map((x) => (
                   <li key={x.id}>
-                    <span><b>{x.title}</b> <span className="small muted">({EXAM_COMPONENTS[x.component]})</span><br /><span className="small muted">{x.course} · ይከፈታል {fmtAddis(x.opens_at, { weekday: true })}</span></span>
-                    <span className="pill pending">የሚመጣ</span>
+                    <span><b>{x.title}</b> <span className="small muted">({EXAM_COMPONENTS[x.component]})</span><br /><span className="small muted">{x.course} · መምህሩ ሲከፍት ይጀመራል (እስከ {fmtAddis(x.closes_at, { weekday: true })})</span></span>
+                    <span className="btn xs secondary" aria-disabled="true" title="መምህሩ ፈተናውን ሲከፍት ይሠራል" style={{ opacity: .55, cursor: 'not-allowed' }}>🔒 ፈተና ጀምር</span>
                   </li>
                 ))}
                 {doneExams.map((x) => (
@@ -264,65 +274,100 @@ export default async function StudentHome({ searchParams }: { searchParams: Prom
               </ul>
             </section>
           )}
-        </div>
-
-        <aside className="dash-side">
-          <section className="card">
-            <div className="card-head">
-              <b>የእኔ ምደባ</b>
-              <span style={{ flex: 1 }} />
-              {takes('duty') && (
-                <Modal label="+ አገልግሎት ልምረጥ" title="አገልግሎት ልምረጥ" sub="መምህርነት ወይም ሌላ አገልግሎት — ከተላከ በኋላ መቀየር አይቻልም" size="sm" btnClass="btn xs green">
-                  <ChooseDutyForm today={today} classes={teachClasses} />
-                </Modal>
+          </div>
+          <aside className="dash-side">
+            <section className="card">
+              <div className="card-head"><b>🗓 የሳምንቱ መርሐ ግብሬ</b></div>
+              {lines.length === 0 ? <p className="muted small">በዚህ ሳምንት ምንም የለም።</p> : (
+                <ul className="me-list">
+                  {lines.map((l) => <li key={l.key}><span><b>{l.title}</b><br /><span className="small muted">{l.sub}</span></span>{l.right}</li>)}
+                </ul>
               )}
-            </div>
+            </section>
+          </aside>
+        </div>
+      )}
+
+      {tab === 'duty' && (
+        <div className="duty-tabs-grid">
+          <section className="card">
+            <div className="card-head"><b>1. በክፍል የተሰጠኝ ምደባ</b><span className="count-badge">{toAccept.length + upcoming.length}</span></div>
             {toAccept.length > 0 && (
               <div className="duty-accept">
                 <div className="small"><b>እንዲቀበሉ የተመደቡ</b> — ከቀኑ በፊት ይቀበሉ፤ ከተቀበሉ በኋላ መመለስ አይቻልም።</div>
                 {toAccept.map((d) => (
                   <div key={d.id} className="duty-accept-row">
-                    <span><b>{d.duty}</b> · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })}{d.dept ? ` · ${DEPT_NAME[d.dept]}` : ''}</span></span>
+                    <span><b>{d.duty}</b> · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })}{d.dept ? ` · ${DEPT_NAME[d.dept]}` : ''}{d.from_choice ? ' · ከምርጫዎ' : ''}</span></span>
                     <ActionButton action={acceptDuty.bind(null, d.id)} label="✓ እቀበላለሁ" className="btn xs green"
                       confirmText={`“${d.duty}” (${d.occasion}) ይቀበላሉ? ከተቀበሉ በኋላ መመለስ አይቻልም።`} />
                   </div>
                 ))}
               </div>
             )}
-            {lines.length === 0 && toAccept.length === 0 ? <p className="muted small">በቅርቡ ምንም የለም። “+ አገልግሎት ልምረጥ” ብለው መምረጥ ይችላሉ።</p> : (
+            {upcoming.length === 0 && toAccept.length === 0 ? <p className="muted small">በአሁኑ ጊዜ የተሰጠዎት ምደባ የለም።</p> : (
               <ul className="me-list">
-                {lines.map((l) => <li key={l.key}><span><b>{l.title}</b><br /><span className="small muted">{l.sub}</span></span>{l.right}</li>)}
+                {upcoming.map((d) => (
+                  <li key={d.id}><span><b>{d.duty} · {d.occasion}</b><br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })}{d.dept ? ` · ${DEPT_NAME[d.dept]}` : ''}</span></span><DutyPill {...d} /></li>
+                ))}
               </ul>
             )}
             {pastDuties.length > 0 && (
               <details className="fold-card" style={{ marginTop: 6 }}>
                 <summary className="small"><b>ያለፉ ምደባዎች ({pastDuties.length})</b></summary>
                 <ul className="me-list">
-                  {pastDuties.slice(0, 10).map((d) => <li key={d.id}><span>{d.duty} · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date)}</span></span><DutyPill {...d} /></li>)}
+                  {pastDuties.slice(0, 20).map((d) => <li key={d.id}><span>{d.duty} · {d.occasion}<br /><span className="small muted">{formatEc(d.duty_date)}{d.dept ? ` · ${DEPT_NAME[d.dept]}` : ''}</span></span><DutyPill {...d} /></li>)}
                 </ul>
               </details>
             )}
           </section>
 
-          <section className="card">
-            <div className="card-head"><b>የእኔ ተሳትፎ</b><span className="small muted">{ecYear} ዓ.ም</span></div>
-            <ParticipationView data={part} bands={bands} compact />
-            <details className="fold-card" style={{ marginTop: 8 }}>
-              <summary className="small"><b>የቀረሁባቸው ቀናት ({absences.length})</b></summary>
-              {absences.length === 0 ? <p className="muted small">የቀሩበት ቀን የለም። በርቱ!</p> : (
-                <ul className="me-list">
-                  {absences.map((a, i) => (
-                    <li key={i}>
-                      <span>{PART_AREAS[a.area] ?? a.area}{a.label ? ` — ${a.label}` : ''}<br /><span className="small muted">{formatEc(a.on_date, { weekday: true })}</span></span>
-                      <span className="pill absent">{a.status === 'half' ? (a.area === 'teaching' ? 'አርፍዷል' : 'ግማሽ') : 'ቀሪ'}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </details>
+          <section className="card" id="choose">
+            <div className="card-head">
+              <b>2. የመረጥኩት አገልግሎት</b><span className="count-badge">{chosen.length}</span>
+              <span style={{ flex: 1 }} />
+              <Modal label="+ አገልግሎት ልምረጥ" title="አገልግሎት ልምረጥ" sub="መምህርነት ወይም ሌላ አገልግሎት — ከተላከ በኋላ መቀየር አይቻልም" size="sm" btnClass="btn xs green" defaultOpen={!!sp.pick}>
+                <ChooseDutyForm today={today} classes={teachClasses} initialDuty={sp.pick} />
+              </Modal>
+            </div>
+            <p className="small muted" style={{ marginTop: 0 }}>የመረጡትን ሁሉም ክፍሎች ያያሉ፤ አንድ ክፍል ሲመድብዎ “በክፍል የተሰጠኝ” ላይ ይመጣል — እዚያ ይቀበላሉ።</p>
+            {chosen.length === 0 ? <p className="muted small">እስካሁን አልመረጡም። “+ አገልግሎት ልምረጥ” ይጫኑ።</p> : (
+              <ul className="me-list">
+                {chosen.map((d) => (
+                  <li key={d.id}>
+                    <span><b>{d.duty} · {d.occasion}</b><br /><span className="small muted">{formatEc(d.duty_date, { weekday: true })}</span></span>
+                    {d.allocated_dept
+                      ? <span className="pill present">{DEPT_NAME[d.allocated_dept as keyof typeof DEPT_NAME] ?? d.allocated_dept} መድቧል</span>
+                      : d.status ? <DutyPill {...d} /> : <span className="pill pending">ምደባ ይጠብቃል</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
-        </aside>
-      </div>
+        </div>
+      )}
+
+      {tab === 'part' && (
+        <section className="card">
+          <div className="card-head"><b>የእኔ ተሳትፎ</b><span className="small muted">{ecYear} ዓ.ም</span></div>
+          <ParticipationView data={part} bands={bands} />
+        </section>
+      )}
+
+      {tab === 'abs' && (
+        <section className="card">
+          <div className="card-head"><b>የቀረሁባቸው ቀናት</b><span className="count-badge">{absences.length}</span></div>
+          {absences.length === 0 ? <p className="muted small">የቀሩበት ቀን የለም። በርቱ!</p> : (
+            <ul className="me-list">
+              {absences.map((a, i) => (
+                <li key={i}>
+                  <span>{PART_AREAS[a.area] ?? a.area}{a.label ? ` — ${a.label}` : ''}<br /><span className="small muted">{formatEc(a.on_date, { weekday: true })}</span></span>
+                  <span className="pill absent">{a.status === 'half' ? (a.area === 'teaching' ? 'አርፍዷል' : 'ግማሽ') : 'ቀሪ'}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </>
   );
 }

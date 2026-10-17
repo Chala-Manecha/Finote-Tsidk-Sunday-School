@@ -243,8 +243,15 @@ export async function promoteAll(yearId: string, cls: string | null) {
     supabase.from('enrollments').select('member_id, class_level, study_mode').eq('year_id', yearId).not('class_level', 'is', null),
   ]);
   const at = (years ?? []).findIndex((y) => y.id === yearId);
-  const next = at >= 0 ? years![at + 1] : undefined;
-  if (!next) return { error: 'የሚቀጥለው የትምህርት ዘመን ገና አልተከፈተም — መጀመሪያ በ“የትምህርት ዘመን” ትር ይክፈቱት።' };
+  if (at < 0) return { error: 'የትምህርት ዘመኑ አልተገኘም።' };
+  let next = years![at + 1] as { id: string; ec_year: number } | undefined;
+  if (!next) {
+    // the next year is opened here (not active yet), with its two semesters
+    const { data: y, error: ye } = await supabase.from('academic_years').insert({ ec_year: years![at].ec_year + 1, is_active: false }).select('id, ec_year').single();
+    if (ye || !y) return { error: explain(ye?.message ?? 'የሚቀጥለውን ዓመት መክፈት አልተቻለም።') };
+    await supabase.from('semesters').insert([{ year_id: y.id, no: 1 }, { year_id: y.id, no: 2 }]);
+    next = y;
+  }
   const levels = cls ? [cls] : [...new Set((enr ?? []).map((e) => e.class_level as string))];
   const modeOf = new Map((enr ?? []).map((e) => [e.member_id as string, (e.study_mode as string) ?? 'regular']));
   const { data: placedRows } = await supabase.from('enrollments').select('member_id').eq('year_id', next.id).not('class_level', 'is', null);

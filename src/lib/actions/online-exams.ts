@@ -18,7 +18,8 @@ const ERR: Record<string, string> = {
   exam_started: 'ተማሪዎች ፈተናውን ጀምረዋል፤ መመለስ አይቻልም።',
   exam_status: 'ይህ እርምጃ አይፈቀድም።',
   exam_not_allowed: 'ይህን ፈተና መውሰድ አይችሉም።',
-  exam_not_open: 'ፈተናው ገና አልተከፈተም።',
+  exam_not_open: 'መምህሩ ፈተናውን ገና አልከፈተም።',
+  exam_unlock: 'ፈተናውን መክፈት የሚችለው የኮርሱ መምህር ብቻ ነው (ከጸደቀ በኋላ)።',
   exam_closed: 'የፈተናው ጊዜ አልፏል።',
   exam_submitted: 'ፈተናው ቀድሞ ገብቷል።',
   exam_time_up: 'ሰዓቱ አልቋል፤ ፈተናው በራሱ ገብቷል።',
@@ -76,6 +77,18 @@ export async function setExamStatus(id: string, offeringId: string, status: 'sub
   if (error) return { error: explain(error.message) };
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
   revalidatePath(teachPath(offeringId, id));
+}
+
+/** Teacher: let the class start the approved exam (“ፈተና ጀምር” becomes clickable), or stop new starts. */
+export async function setExamOpen(id: string, offeringId: string, open: boolean) {
+  await requireMember();
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('online_exams').update({ unlocked_at: open ? new Date().toISOString() : null }, { count: 'exact' })
+    .eq('id', id).eq('status', 'approved');
+  if (error) return { error: explain(error.message) };
+  if (!count) return { error: 'ፈተናው ገና አልጸደቀም።' };
+  revalidatePath(teachPath(offeringId, id));
+  revalidatePath('/student', 'layout');
 }
 
 // ===================== teacher: questions =====================

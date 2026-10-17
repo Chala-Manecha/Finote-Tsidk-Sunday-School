@@ -24,7 +24,7 @@ type O = {
 
 /** ትምህርት ክፍል → መምህራን: give each course its teacher(s), days and time; teachers' attendance; exam approvals. */
 export default async function Courses({ params, searchParams }: {
-  params: Promise<{ dept: string }>; searchParams: Promise<{ s?: string; o?: string; t?: string; v?: string; d?: string; all?: string; st?: string }>;
+  params: Promise<{ dept: string }>; searchParams: Promise<{ s?: string; o?: string; t?: string; v?: string; d?: string; all?: string; st?: string; e?: string }>;
 }) {
   const { dept } = await params;
   if (dept !== 'education') notFound();
@@ -50,7 +50,7 @@ export default async function Courses({ params, searchParams }: {
           <span className="small muted">{year.ec_year} ዓ.ም · {semesterLabel(semester.no)}</span>
         </div>
         {sp.v === 'teachers'
-          ? <TeacherAttendance supabase={supabase} base="/staff/education/courses" semester={semester} date={sp.d} all={sp.all === '1'} canEdit view="teachers" />
+          ? <TeacherAttendance supabase={supabase} base="/staff/education/courses" semester={semester} date={sp.d} all={sp.all === '1'} canEdit edit={sp.e === '1'} view="teachers" />
           : <ExamApprovals st={sp.st} here={tab('exams')} />}
       </>
     );

@@ -857,7 +857,6 @@ update public.hr_settings set good = 10 where id;
 select pg_temp.must_equal((select good::int from public.hr_settings), 70, 'only hr changes bands');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
 select pg_temp.must_equal((select count(*) from public.my_duties() where duty_date >= '2099-01-01'), 2, 'member sees own duties');
-select pg_temp.must_fail($q$select public.choose_duty('ነዳያን ጥየቃ', 'ትንሳኤ', '2099-04-20')$q$);
 reset role;
 insert into public.member_programs (member_id, program, status) values ('10000000-0000-0000-0000-0000000000e1', 'duty', 'active')
   on conflict (member_id, program) do update set status = 'active';
@@ -915,7 +914,14 @@ update public.online_exams set status = 'approved' where id = '93000000-0000-000
 select pg_temp.must_equal((select count(*) from public.online_exams where status = 'approved' and approved_by is not null), 1, 'education approves');
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
-select pg_temp.must_equal((select count(*) from public.my_exams()), 1, 'student sees the exam for their class');
+select pg_temp.must_equal((select count(*) from public.my_exams() where not unlocked), 1, 'student sees the exam for their class, not yet open');
+select pg_temp.must_fail($q$select public.start_exam('93000000-0000-0000-0000-000000000001')$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+select pg_temp.must_fail($q$update public.online_exams set unlocked_at = now() where id = '93000000-0000-0000-0000-000000000001'$q$);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c2', false);
+update public.online_exams set unlocked_at = now() where id = '93000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*) from public.my_exams() where unlocked), 1, 'the teacher opened it');
 select public.start_exam('93000000-0000-0000-0000-000000000001');
 select pg_temp.must_equal((select jsonb_array_length(public.exam_paper((select attempt_id from public.my_exams())) -> 'questions')), 4, 'paper has the questions');
 select pg_temp.must_equal((select count(*) from jsonb_array_elements(public.exam_paper((select attempt_id from public.my_exams())) -> 'questions') q where q ? 'answer'), 0, 'paper has no answers');
@@ -1090,6 +1096,20 @@ select pg_temp.must_equal((select count(*)::int from public.day_greetings) + (se
 select bday_male_text, bday_female_text, bday_active from public.site_settings;
 reset role;
 
+-- ---------- round 37: a department allocates a member's choice ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select public.choose_duty('ባዛር', 'መስቀል', '2099-09-27');
+select pg_temp.must_equal((select count(*)::int from public.member_programs where member_id = '10000000-0000-0000-0000-0000000000e1' and program = 'duty' and status = 'active'), 1, 'choosing a job signs up for duties');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_equal((select count(*)::int from public.duty_assignments where source = 'chosen' and duty = 'ባዛር'), 1, 'departments see the choices');
+insert into public.duty_assignments (member_id, dept, duty, duty_date, occasion, from_choice)
+  select member_id, 'mezmur', duty, duty_date, occasion, id from public.duty_assignments where source = 'chosen' and duty = 'ባዛር';
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+select pg_temp.must_equal((select count(*)::int from public.my_duties() where source = 'chosen' and allocated_dept = 'mezmur'), 1, 'the member sees who allocated the choice');
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
 -- ---------- before real data: clear the samples (system admin only) ----------
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);

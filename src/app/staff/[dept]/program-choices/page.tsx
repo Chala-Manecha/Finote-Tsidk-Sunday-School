@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { PROGRAMS, PROGRAM_CODES, type ProgramCode } from '@/lib/constants';
 import { PrintButton } from '@/components/print-button';
+import { DutyChoices } from '@/components/duty-choices';
 
 type Row = { id: string; full_name: string; reg_no: string; phone: string | null; sex: string; member_programs: { program: string; status: string }[] };
 const ICON: Record<ProgramCode, string> = { abnet: '📜', course: '📘', mezmur: '🎵', duty: '🧭' };
@@ -57,6 +58,12 @@ export default async function ProgramChoices({ params, searchParams }: {
         <b>{pick === null ? 'ሁሉም' : pick === 'none' ? 'ምንም ያልመረጡ' : `${ICON[pick]} ${PROGRAMS[pick].label}`}</b>
         <span className="count-badge">{rows.length}</span>
       </div>
+      {pick === 'duty' && (
+        <section className="card" style={{ marginBottom: 14 }}>
+          <div className="card-head"><b>🙋 አባላት የመረጡት አገልግሎት</b><span className="small muted">ከዳሽቦርዳቸው — ስም፣ ስልክና ምርጫ</span></div>
+          <DutyChoices />
+        </section>
+      )}
       <div className="table-wrap">
         <table>
           <thead><tr><th>#</th><th>አባል</th><th>ፆታ</th><th>ስልክ</th>{PROGRAM_CODES.map((p) => <th key={p} className="num" title={PROGRAMS[p].label}>{ICON[p]} {PROGRAMS[p].label}</th>)}</tr></thead>

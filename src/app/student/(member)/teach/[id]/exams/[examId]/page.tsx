@@ -7,7 +7,7 @@ import {
   COMPONENT_WEIGHT, EXAM_COLS, EXAM_COMPONENTS, EXAM_STATUS, LETTERS, QUESTION_COLS, QUESTION_KINDS,
   answerText, examWindow, fmtAddis, givenText, totalPoints, type Exam, type Question,
 } from '@/lib/exams';
-import { deleteExam, deleteQuestion, moveQuestion, pushResults, saveExam, saveManualPoints, setExamStatus } from '@/lib/actions/online-exams';
+import { deleteExam, deleteQuestion, moveQuestion, pushResults, saveExam, saveManualPoints, setExamOpen, setExamStatus } from '@/lib/actions/online-exams';
 import { ActionButton } from '@/components/action-button';
 import { MediaForm } from '@/components/media-form';
 import { ExamMetaFields } from '@/components/exam-meta-fields';
@@ -33,7 +33,7 @@ export default async function TeacherExam({ params, searchParams }: {
   const { data: ex } = await supabase.from('online_exams').select(EXAM_COLS).eq('id', examId).eq('offering_id', id).maybeSingle();
   if (!ex) notFound();
   const e = ex as Exam;
-  const view = sp.v === 'results' || (sp.v !== 'questions' && e.status === 'approved' && examWindow(e) !== 'upcoming') ? 'results' : 'questions';
+  const view = sp.v === 'results' || (sp.v !== 'questions' && e.status === 'approved' && !!e.unlocked_at) ? 'results' : 'questions';
   const editable = e.status === 'draft' || e.status === 'rejected';
   const [{ data: qd }, { data: o }] = await Promise.all([
     supabase.from('exam_questions').select(QUESTION_COLS).eq('exam_id', examId).order('sort').order('created_at'),
@@ -56,7 +56,7 @@ export default async function TeacherExam({ params, searchParams }: {
           {e.status === 'draft' && 'ጥያቄዎቹን ሲጨርሱ ለትምህርት ክፍል ይላኩ።'}
           {e.status === 'submitted' && 'ትምህርት ክፍል እስኪያጸድቅ ይጠብቁ።'}
           {e.status === 'rejected' && <>ተመልሷል፦ <i>{e.review_note}</i></>}
-          {e.status === 'approved' && (w === 'upcoming' ? 'በተወሰነው ሰዓት ይከፈታል።' : w === 'open' ? '● አሁን ክፍት ነው።' : 'ተዘግቷል።')}
+          {e.status === 'approved' && (w === 'closed' ? 'ተዘግቷል።' : e.unlocked_at ? '● ለተማሪዎች ክፍት ነው — “ፈተና ጀምር” ይሠራል።' : 'ጸድቋል — ሲዘጋጁ “▶ ለተማሪዎች ክፈት” ይጫኑ።')}
         </span>
       </div>
       <dl className="exam-facts-list">
@@ -72,6 +72,11 @@ export default async function TeacherExam({ params, searchParams }: {
         {editable && <ActionButton action={setExamStatus.bind(null, examId, id, 'submitted')} label="📤 ለትምህርት ክፍል ላክ" className="btn green"
           confirmText="ከተላከ በኋላ እስኪመለስ ድረስ መቀየር አይቻልም። ይላክ?" />}
         {e.status === 'submitted' && <ActionButton action={setExamStatus.bind(null, examId, id, 'draft')} label="↩ መልሰህ ውሰድ" className="btn secondary" />}
+        {e.status === 'approved' && w !== 'closed' && (e.unlocked_at
+          ? <ActionButton action={setExamOpen.bind(null, examId, id, false)} label="⏸ አዲስ መጀመርን ዝጋ" className="btn secondary"
+              confirmText="የጀመሩ ተማሪዎች ይቀጥላሉ፤ ያልጀመሩ ግን መጀመር አይችሉም። ይዘጋ?" />
+          : <ActionButton action={setExamOpen.bind(null, examId, id, true)} label="▶ ለተማሪዎች ክፈት" className="btn green"
+              confirmText={`ተማሪዎች አሁን “ፈተና ጀምር” መጫን ይችላሉ (እስከ ${fmtAddis(e.closes_at)})። ይከፈት?`} />)}
         {editable && (
           <Modal label="⚙ የፈተናውን መረጃ አርም" title="የፈተናው መረጃ" btnClass="btn secondary">
             <MediaForm action={saveExam} submitLabel="አስቀምጥ" card={false} resetOnSuccess={false}><ExamMetaFields offeringId={id} e={e} /></MediaForm>

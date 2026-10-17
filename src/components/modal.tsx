@@ -6,10 +6,12 @@ const ModalCtx = createContext<{ close: () => void } | null>(null);
 export const useModalClose = () => useContext(ModalCtx)?.close;
 
 /** A button that opens a centred dialog (title, body); Esc / outside click / × close it. */
-export function Modal({ label, title, sub, btnClass = 'btn sm green', size = 'md', children }: {
-  label: React.ReactNode; title: string; sub?: string; btnClass?: string; size?: 'sm' | 'md' | 'lg'; children: React.ReactNode;
+export function Modal({ label, title, sub, btnClass = 'btn sm green', size = 'md', defaultOpen = false, children }: {
+  label: React.ReactNode; title: string; sub?: string; btnClass?: string; size?: 'sm' | 'md' | 'lg';
+  /** open at once (e.g. arriving from a link that asked for this form) */
+  defaultOpen?: boolean; children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const close = useCallback(() => setOpen(false), []);
   useEffect(() => {
     if (!open) return;

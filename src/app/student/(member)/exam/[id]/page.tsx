@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { requireMember } from '@/lib/member-auth';
-import { EXAM_COMPONENTS, examWindow, fmtAddis, type MyExam } from '@/lib/exams';
+import { examWindow, fmtAddis, type MyExam } from '@/lib/exams';
 import { ExamRunner } from '@/components/exam-runner';
 
 
@@ -31,19 +31,10 @@ export default async function StudentExam({ params }: { params: Promise<{ id: st
           : <p className="muted">ውጤቱ መምህሩ ሲልከው እዚህ ይታያል።</p>}
       </section>
     );
-  } else if (!inProgress && w === 'upcoming') {
-    body = (
-      <section className="card exam-intro">
-        <span className="pill">{EXAM_COMPONENTS[x.component]}</span>
-        <h1 className="serif">{x.title}</h1>
-        <p>ፈተናው የሚከፈተው፦ <b>{fmtAddis(x.opens_at, { weekday: true })}</b></p>
-        <p className="muted small">{x.duration_min} ደቂቃ · {x.questions} ጥያቄ · እስከ {fmtAddis(x.closes_at)} ድረስ መጀመር ይቻላል።</p>
-      </section>
-    );
   } else if (!inProgress && w === 'closed') {
     body = <section className="card exam-intro"><h1 className="serif">{x.title}</h1><p>የፈተናው ጊዜ አልፏል ({fmtAddis(x.closes_at)})።</p></section>;
   } else {
-    body = <ExamRunner info={info} resume={inProgress} />;
+    body = <ExamRunner info={info} resume={inProgress} locked={!inProgress && !x.unlocked} />;
   }
 
   return (

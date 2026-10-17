@@ -6,9 +6,9 @@ import { EcDatePicker } from './ec-date-picker';
 import { useModalClose } from './modal';
 
 /** The member offers a job — or to teach a lower class / አብነት. Cannot be changed once sent. */
-export function ChooseDutyForm({ today, classes }: { today: string; classes: { value: string; label: string }[] }) {
+export function ChooseDutyForm({ today, classes, initialDuty }: { today: string; classes: { value: string; label: string }[]; initialDuty?: string }) {
   const close = useModalClose();
-  const [pick, setPick] = useState('');
+  const [pick, setPick] = useState(initialDuty && ((DUTIES as readonly string[]).includes(initialDuty) || initialDuty === 'teach_abnet' || (initialDuty === 'teach_course' && classes.length > 0)) ? initialDuty : '');
   const [state, run, pending] = useActionState(async (prev: FormState, fd: FormData) => {
     const r = await chooseDuty(prev, fd);
     if (r.ok) setTimeout(() => close?.(), 900);

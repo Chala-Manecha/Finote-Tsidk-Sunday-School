@@ -5,10 +5,10 @@ import { loadTerms } from '@/lib/edu-data';
 import { formatEc, todayIsoAddis, weekdayOf, WEEKDAYS_AM } from '@/lib/ethiopian-calendar';
 import { EduPicker } from './edu-picker';
 import { EcDatePicker } from './ec-date-picker';
-import { MediaForm } from './media-form';
 import { Modal } from './modal';
 import Link from 'next/link';
 import { saveTeacherAttendance } from '@/lib/actions/education-admin';
+import { BackMediaForm } from './back-media-form';
 import { classAbsences } from '@/lib/absences';
 import { AbsenceList } from './absence-list';
 
@@ -114,8 +114,8 @@ export async function StudentAttendance({ supabase, base, years, semesters, seme
   );
 }
 
-export async function TeacherAttendance({ supabase, base, semester, date: d, all, canEdit, view = 'teachers' }: {
-  supabase: Sb; base: string; semester: NonNullable<Terms['semester']>; date?: string; all: boolean; canEdit: boolean; view?: string;
+export async function TeacherAttendance({ supabase, base, semester, date: d, all, canEdit, edit = false, view = 'teachers' }: {
+  supabase: Sb; base: string; semester: NonNullable<Terms['semester']>; date?: string; all: boolean; canEdit: boolean; edit?: boolean; view?: string;
 }) {
   const picked = d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;   // null = the list of days taken
   const date = picked ?? todayIsoAddis();
@@ -168,15 +168,39 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
         <div className="card-head">
           <b>✍ የመምህራን ክትትል መያዝ</b>
           <span className="pill">{formatEc(date, { weekday: true })}</span>
-          {taken.has(date) && <span className="pill present">ተይዟል — ማስተካከል ይችላሉ</span>}
+          {taken.has(date) && <span className="pill present">ተይዟል</span>}
           <span className="spacer" />
+          {canEdit && taken.has(date) && !edit && <Link className="btn sm secondary no-print" href={`${listHref}&d=${date}&e=1`}>✎ አስተካክል</Link>}
           <Link className="btn sm secondary no-print" href={listHref}>← ወደ ዝርዝሩ</Link>
         </div>
+      {(!canEdit || (taken.has(date) && !edit)) ? (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>መምህር</th><th>ኮርስ</th><th>ሁኔታ</th><th>ማስታወሻ</th></tr></thead>
+            <tbody>
+              {rows.filter(({ key }) => mark.has(key)).map(({ o, t, key }) => {
+                const cur = mark.get(key)!;
+                const cls = cur.status === 'present' ? 'present' : cur.status === 'absent' ? 'absent' : 'half';
+                return (
+                  <tr key={key}>
+                    <td><b>{t.members?.full_name}</b></td>
+                    <td>{o.name}<div className="small muted">{classLabel(o.class_level)}</div></td>
+                    <td><span className={`pill ${cls}`}>{T_STATUS[cur.status as TStatus] ?? cur.status}</span></td>
+                    <td className="small">{cur.note ?? ''}</td>
+                  </tr>
+                );
+              })}
+              {!rows.some(({ key }) => mark.has(key)) && <tr><td colSpan={4} className="muted">በዚህ ቀን ክትትል አልተያዘም።</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <>
         <p className="small muted" style={{ marginTop: 0 }}>ለእያንዳንዱ መምህር ሁኔታውን ይምረጡና “አስቀምጥ” ይጫኑ። በ{WEEKDAYS_AM[dow]} የሚያስተምሩት ከላይ ናቸው (📌)።</p>
       {rows.length === 0 ? (
         <p className="muted">መምህር የተመደበለት ኮርስ የለም — በ“📌 ምደባ” ይመድቡ።</p>
       ) : (
-        <MediaForm action={saveTeacherAttendance} submitLabel="✓ የመምህራን ክትትል አስቀምጥ" resetOnSuccess={false} card={false}>
+        <BackMediaForm back={listHref} action={saveTeacherAttendance} submitLabel="✓ የመምህራን ክትትል አስቀምጥ" resetOnSuccess={false} card={false}>
           <input type="hidden" name="att_date" value={date} />
           <div className="table-wrap">
             <table>
@@ -205,7 +229,9 @@ export async function TeacherAttendance({ supabase, base, semester, date: d, all
               </tbody>
             </table>
           </div>
-        </MediaForm>
+        </BackMediaForm>
+      )}
+        </>
       )}
       </section>
 

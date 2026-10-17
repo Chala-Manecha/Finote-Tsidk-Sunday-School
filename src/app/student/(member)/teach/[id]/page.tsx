@@ -13,10 +13,10 @@ import { AssignmentsView } from './assignments-view';
 type Offering = { id: string; name: string; class_level: string; status: OfferingStatus; book_path: string | null; book_name: string | null; semester_id: string };
 
 /** A teacher's own class: reference book, attendance, marks, submit for approval. */
-export default async function TeachPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ d?: string; v?: string; a?: string }> }) {
+export default async function TeachPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ d?: string; v?: string; a?: string; e?: string; new?: string }> }) {
   const { id } = await params;
-  const { d, v, a } = await searchParams;
-  const view = v === 'att' || d ? 'att' : v === 'conduct' ? 'conduct' : v === 'asg' ? 'asg' : 'marks';
+  const { d, v, a, e: edit, new: fresh } = await searchParams;
+  const view = v === 'att' || d || fresh ? 'att' : v === 'asg' ? 'asg' : 'marks';
   const me = await requireMember();
   const supabase = await createClient();
   const { data: isTeacher } = await supabase.rpc('is_teacher_of', { p_offering: id });
@@ -59,7 +59,7 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
   ]);
   const initial = Object.fromEntries(((prior ?? []) as { member_id: string; status: string }[]).map((x) => [x.member_id, x.status]));
   const presentOf = (sid: string) => ((counts ?? []) as { session_id: string; status: string }[]).filter((x) => x.session_id === sid && x.status !== 'absent').length;
-  const { data: cd } = view === 'conduct' && ids.length
+  const { data: cd } = view === 'marks' && ids.length
     ? await supabase.from('semester_conduct').select('member_id, conduct').eq('semester_id', s.id).in('member_id', ids)
     : { data: [] };
   const conductOf = new Map(((cd ?? []) as { member_id: string; conduct: string | null }[]).map((x) => [x.member_id, x.conduct ?? '']));
@@ -67,7 +67,14 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
   const book = offering.book_path ? (await supabase.storage.from('edu-books').createSignedUrl(offering.book_path, 3600)).data?.signedUrl : null;
   const weights: Record<ComponentKey, number> = { quiz: s.w_quiz, notebook: s.w_notebook, participation: s.w_participation, mid: s.w_mid, final: s.w_final };
   const locked = offering.status !== 'draft';
-  const finalsDone = students.length > 0 && students.every((x) => marks[x.id]?.final != null || barredIds.includes(x.id) || makeupIds.includes(x.id));
+  // every student needs every mark (0 or more) before the results go to ትምህርት ክፍል
+  const PARTS: [ComponentKey, string][] = [['quiz', 'ፈተና'], ['notebook', 'ደብተር'], ['participation', 'ተሣትፎ'], ['mid', 'አጋማሽ'], ['final', 'ዋና']];
+  const missingOf = (sid: string) => PARTS.filter(([k]) => weights[k] > 0 && marks[sid]?.[k] == null
+    && !(k === 'final' && (barredIds.includes(sid) || makeupIds.includes(sid)))).map(([, l]) => l);
+  const missing = students.map((x) => ({ x, parts: missingOf(x.id) })).filter((m) => m.parts.length > 0);
+  const finalsDone = students.length > 0 && missing.length === 0;
+  // የክፍል ክትትል: the list of days → one day (read only) → edit / a new day
+  const attMode = fresh ? 'new' : d && editSession ? (edit ? 'edit' : 'show') : d ? 'new' : 'list';
 
   const base = `/student/teach/${id}`;
   return (
@@ -82,7 +89,6 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
           <Link className={view === 'marks' ? 'on' : ''} href={base}>📊 ውጤት</Link>
           <Link className={view === 'att' ? 'on' : ''} href={`${base}?v=att`}>🧾 የክፍል ክትትል</Link>
           <Link className={view === 'asg' ? 'on' : ''} href={`${base}?v=asg`}>📝 አሳይመንት</Link>
-          <Link className={view === 'conduct' ? 'on' : ''} href={`${base}?v=conduct`}>🙂 ጠባይ</Link>
           <Link href={`${base}/exams`}>🖊 ኦንላይን ፈተናዎች</Link>
         </div>
       </div>
@@ -90,6 +96,7 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
       <div className="exam-layout teach-layout">
         <div className="exam-main">
           {view === 'marks' ? (
+            <>
             <section className="card">
               <div className="card-head"><b>ውጤት</b><span className="count-badge">{students.length} ተማሪዎች</span></div>
               <p className="small muted" style={{ marginTop: 0 }}>ነጥቦቹ የሚገቡት ከእያንዳንዱ ክፍል ከፍተኛ ነጥብ ውስጥ ነው። ማለፊያ፦ {s.pass_mark}/100።{s.min_attendance > 0 && ` ለዋና ፈተና ዝቅተኛ ክትትል፦ መደበኛ ${s.min_attendance}% · የርቀት ተማሪዎች ${s.min_attendance_distance}%።`}</p>
@@ -100,16 +107,21 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
                   {finalsDone
                     ? <ActionButton action={submitOffering.bind(null, id)} label="🔒 ለትምህርት ክፍል ላክና ቆልፍ" className="btn green"
                         confirmText="ከላኩ በኋላ ውጤቱን መቀየር አይችሉም። ይላክ?" />
-                    : <p className="small muted">የሁሉም ተማሪዎች የዋና ፈተና ውጤት ሲገባ “ለማጽደቅ ላክ” ይታያል።</p>}
+                    : (
+                      <div className="alert">
+                        <b>ለትምህርት ክፍል ለመላክ</b> ለእያንዳንዱ ተማሪ ሁሉም ነጥቦች (0 ወይም ከዚያ በላይ) መሞላት አለባቸው። ያልተሞሉ፦
+                        <ul className="small" style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
+                          {missing.slice(0, 8).map((m) => <li key={m.x.id}>{m.x.full_name} — {m.parts.join('፣ ')}</li>)}
+                          {missing.length > 8 && <li>… እና ሌሎች {missing.length - 8}</li>}
+                        </ul>
+                      </div>
+                    )}
                 </div>
               )}
               {offering.status === 'submitted' && <p className="alert ok">ለትምህርት ክፍል ተልኳል፤ ማጽደቁን በመጠባበቅ ላይ።</p>}
             </section>
-          ) : view === 'asg' ? (
-            <AssignmentsView offeringId={id} base={base} students={students} locked={locked} weight={s.w_assignment ?? 0} picked={a} />
-          ) : view === 'conduct' ? (
             <section className="card">
-              <div className="card-head"><b>ጠባይ — {classLabel(offering.class_level)} · {semesterLabel(s.no)}</b><span className="count-badge">{students.length} ተማሪዎች</span></div>
+              <div className="card-head"><b>🙂 ጠባይ — {classLabel(offering.class_level)} · {semesterLabel(s.no)}</b><span className="count-badge">{students.length} ተማሪዎች</span></div>
               <p className="small muted" style={{ marginTop: 0 }}>ለእያንዳንዱ ተማሪ ይምረጡ — ወዲያው ይቀመጣል። የክፍሉ መምህራን በሙሉ ያያሉ፤ የመጨረሻው ምርጫ በትራንስክሪፕቱ ላይ ይወጣል።</p>
               <div className="table-wrap">
                 <table>
@@ -128,28 +140,69 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
               </div>
               <p className="small muted">{Object.entries(CONDUCT).map(([k, l]) => `${k} · ${l}`).join('  ·  ')}</p>
             </section>
+            </>
+          ) : view === 'asg' ? (
+            <AssignmentsView offeringId={id} base={base} students={students} locked={locked} weight={s.w_assignment ?? 0} picked={a} />
           ) : (
             <section className="card">
-              <div className="card-head"><b>የክፍል ክትትል</b>{editSession && <span className="pill present">የ{formatEc(editDate)} ተይዟል — ማስተካከል ይችላሉ</span>}</div>
-              <ClassAttendanceForm key={editDate} offeringId={id} students={students} today={editDate} initial={initial} />
-              {(sessions ?? []).length > 0 && (
-                <details className="fold-card" style={{ marginTop: 12 }}>
-                  <summary><b>የተያዙ ቀናት ({sessions!.length})</b></summary>
-                  <div className="table-wrap" style={{ marginTop: 8 }}>
+              {attMode === 'list' ? (
+                <>
+                  <div className="card-head">
+                    <b>የክፍል ክትትል</b><span className="count-badge">{(sessions ?? []).length} ቀናት</span>
+                    <span className="spacer" />
+                    <Link className="btn sm green" href={`${base}?v=att&new=1`} scroll={false}>+ ክትትል ለመጨመር</Link>
+                  </div>
+                  <div className="table-wrap">
                     <table>
                       <thead><tr><th>ቀን</th><th className="num">የተገኙ</th><th /></tr></thead>
                       <tbody>
-                        {sessions!.map((x) => (
+                        {(sessions ?? []).map((x) => (
                           <tr key={x.id}>
                             <td>{formatEc(x.session_date, { weekday: true })}</td>
                             <td className="num">{presentOf(x.id)}/{students.length}</td>
-                            <td><Link className="link small" href={`${base}?v=att&d=${x.session_date}`} scroll={false}>አስተካክል</Link></td>
+                            <td><Link className="btn xs secondary" href={`${base}?v=att&d=${x.session_date}`} scroll={false}>ክፈት</Link></td>
                           </tr>
                         ))}
+                        {(sessions ?? []).length === 0 && <tr><td colSpan={3} className="muted">እስካሁን ክትትል አልተያዘም — “+ ክትትል ለመጨመር” ይጫኑ።</td></tr>}
                       </tbody>
                     </table>
                   </div>
-                </details>
+                </>
+              ) : attMode === 'show' ? (
+                <>
+                  <div className="card-head">
+                    <Link className="back-pill" href={`${base}?v=att`} scroll={false}>← ቀናት</Link>
+                    <b>{formatEc(editDate, { weekday: true })}</b>
+                    <span className="pill present">{editSession ? presentOf(editSession.id) : 0}/{students.length} ተገኝተዋል</span>
+                    <span className="spacer" />
+                    <Link className="btn sm secondary" href={`${base}?v=att&d=${editDate}&e=1`} scroll={false}>✎ አስተካክል</Link>
+                  </div>
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>ተማሪ</th><th>ሁኔታ</th></tr></thead>
+                      <tbody>
+                        {students.map((x) => {
+                          const st = initial[x.id];
+                          return (
+                            <tr key={x.id}>
+                              <td>{x.full_name}</td>
+                              <td>{st ? <span className={`pill ${st}`}>{st === 'present' ? 'ተገኝቷል' : st === 'half' ? 'ግማሽ' : 'ቀሪ'}</span> : <span className="small muted">—</span>}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="card-head">
+                    <Link className="back-pill" href={attMode === 'edit' ? `${base}?v=att&d=${editDate}` : `${base}?v=att`} scroll={false}>← ተመለስ</Link>
+                    <b>{attMode === 'edit' ? `${formatEc(editDate, { weekday: true })} — ማስተካከያ` : 'አዲስ ክትትል'}</b>
+                  </div>
+                  <ClassAttendanceForm key={`${attMode}-${editDate}`} offeringId={id} students={students} today={editDate}
+                    initial={attMode === 'edit' ? initial : {}} back={`${base}?v=att`} fixedDate={attMode === 'edit'} />
+                </>
               )}
             </section>
           )}

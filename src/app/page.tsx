@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { fmtTime } from '@/lib/ethiopian-calendar';
-import { CHURCH_NAME, DEPARTMENTS, EVENT_KINDS, SCHOOL_NAME, SCHOOL_NAME_EN } from '@/lib/constants';
+import { CHURCH_NAME, DEPARTMENTS, DUTIES, EVENT_KINDS, SCHOOL_NAME, SCHOOL_NAME_EN } from '@/lib/constants';
 import { platformName } from '@/lib/delivery';
 import { PublicHeader } from '@/components/public-header';
 import { SocialButtons } from '@/components/social-buttons';
@@ -279,6 +279,18 @@ export default async function Home() {
           </div>
         </section>
       )}
+      <section className="serve-band reveal" aria-labelledby="serve-title">
+        <div className="serve-head">
+          <span className="eyebrow">አገልግሎት</span>
+          <h2 id="serve-title">በምን ማገልገል ይፈልጋሉ?</h2>
+          <p className="muted">አንዱን ይምረጡ — በአባል መግቢያዎ ገብተው “የእኔ ምደባ” ላይ ይልካሉ፤ ክፍሎቹ አይተው ይመድቡዎታል።</p>
+        </div>
+        <div className="serve-chips">
+          {[['teach_course', '📘 የኮርስ መምህር'], ['teach_abnet', '📜 የአብነት መምህር'], ...DUTIES.map((d) => [d, d])].map(([v, l]) => (
+            <Link key={v} href={`/login?next=${encodeURIComponent(`/student?v=duty&pick=${v}`)}`}>{l}</Link>
+          ))}
+        </div>
+      </section>
       <main className="bento">{tiles}</main>
       <ScrollReveal />
     </>

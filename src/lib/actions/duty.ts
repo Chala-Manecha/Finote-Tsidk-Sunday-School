@@ -31,12 +31,10 @@ export async function saveDuty(_: FormState, fd: FormData): Promise<FormState> {
   if (!occasion || occasion.length > 80) return { error: 'በአል ይምረጡ።' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dutyDate)) return { error: 'ቀን ይምረጡ።' };
 
-  const row = { member_id: memberId, dept, duty, occasion, duty_date: dutyDate };
+  // any active member can be given a job; a job made from a member's own choice keeps the link to it
+  const fromChoice = String(fd.get('from_choice') ?? '');
+  const row = { member_id: memberId, dept, duty, occasion, duty_date: dutyDate, ...(!id && /^[0-9a-f-]{36}$/i.test(fromChoice) ? { from_choice: fromChoice } : {}) };
   const supabase = await createClient();
-  if (!id) {
-    const { data: pool } = await supabase.rpc('in_program', { p_member: memberId, p_program: 'duty' });
-    if (!pool) return { error: 'አባሉ “በተለያዩ አገልግሎቶች” አልመረጡም — ሥራ መመደብ አይቻልም።' };
-  }
   const { error, count } = id
     ? await supabase.from('duty_assignments').update(row, { count: 'exact' }).eq('id', id)
     : await supabase.from('duty_assignments').insert(row, { count: 'exact' });
