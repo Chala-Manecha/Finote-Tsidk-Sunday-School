@@ -4,6 +4,7 @@ import { formatBirr } from '@/lib/constants';
 import { formatEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import { mediaUrl } from '@/lib/media';
 import { MediaForm } from '@/components/media-form';
+import { Modal } from '@/components/modal';
 import { ActionButton } from '@/components/action-button';
 import { EcDatePicker } from '@/components/ec-date-picker';
 import { saveSaleItem, deleteSaleItem } from '@/lib/actions/property';
@@ -46,9 +47,15 @@ export default async function Purchases({ params }: { params: Promise<{ dept: st
 
   return (
     <>
-      <h2 className="section" style={{ marginTop: 0 }}>የተገዙ ዕቃዎች መዝገብ</h2>
-      <p className="muted small">የተገዛውን ዕቃ ዝርዝር እዚህ ይመዝግቡ። ለሽያጭ የሚወጣው በ“የሽያጭ ዕቃዎች” ላይ የመሸጫ ዋጋ ሲሰጠው ነው።</p>
-      <MediaForm action={saveSaleItem} submitLabel="+ መዝግብ" fileField={['image', 'image2']} folder="shop" resize><Fields /></MediaForm>
+      <div className="page-bar">
+        <h2 className="section" style={{ margin: 0 }}>የተገዙ ዕቃዎች መዝገብ</h2>
+        <span className="count-badge">{rows.length}</span>
+        <span className="spacer" />
+        <Modal label="+ የተገዛ ዕቃ መዝግብ" title="የተገዛ ዕቃ መዝግብ" size="lg">
+          <MediaForm action={saveSaleItem} submitLabel="+ መዝግብ" card={false} fileField={['image', 'image2']} folder="shop" resize><Fields /></MediaForm>
+        </Modal>
+      </div>
+      <p className="muted small">ለሽያጭ የሚወጣው በ“የሽያጭ ዕቃዎች” ላይ የመሸጫ ዋጋ ሲሰጠው ነው።</p>
       <div className="table-wrap">
         <table>
           <thead><tr><th>ምስል</th><th>ዕቃ</th><th className="num">ብዛት</th><th className="num">የተገዛበት</th><th>ቀን</th><th>ሽያጭ</th><th /></tr></thead>
@@ -66,12 +73,9 @@ export default async function Purchases({ params }: { params: Promise<{ dept: st
                 <td>{p.published ? <span className="pill present">ለሽያጭ ወጥቷል</span> : <span className="pill">በመዝገብ ብቻ</span>}</td>
                 <td>
                   <div className="btn-row">
-                    <details>
-                      <summary className="btn sm secondary">አርም</summary>
-                      <div style={{ marginTop: 8, minWidth: 300 }}>
-                        <MediaForm action={saveSaleItem} submitLabel="ለውጥ አስቀምጥ" resetOnSuccess={false} fileField={['image', 'image2']} folder="shop" resize><Fields p={p} /></MediaForm>
-                      </div>
-                    </details>
+                    <Modal label="አርም" title="ዕቃ አርም" sub={p.name} btnClass="btn sm secondary" size="lg">
+                      <MediaForm action={saveSaleItem} submitLabel="ለውጥ አስቀምጥ" card={false} resetOnSuccess={false} fileField={['image', 'image2']} folder="shop" resize><Fields p={p} /></MediaForm>
+                    </Modal>
                     {p.sold_qty === 0 && <ActionButton action={deleteSaleItem.bind(null, p.id)} label="አጥፋ" className="btn sm danger" confirmText="ማጥፋት ይፈልጋሉ?" />}
                   </div>
                 </td>

@@ -1027,6 +1027,16 @@ select pg_temp.must_equal((select count(*)::int from public.abnet_materials) + (
 select count(*) from (select place from public.abnet_sessions) x;
 reset role;
 
+
+-- ---------- round 31: the teams' scorecard ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', false);
+select count(*) from public.term_scorecard();
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', false);
+select pg_temp.must_fail($q$select * from public.term_scorecard()$q$);
+reset role;
+
 -- ---------- before real data: clear the samples (system admin only) ----------
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);

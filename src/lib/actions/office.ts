@@ -236,3 +236,16 @@ export async function deleteTerm(id: string) {
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
   refresh();
 }
+
+/** ጽሕፈት ቤት: the team's own tags (e.g. “ጠንካራ ገቢ”, “አዲስ አባላት”). */
+export async function saveTermTags(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const id = text(fd, 'id');
+  const tags = [...new Set(text(fd, 'tags').split(/[,፣،;\n]/).map((x) => x.trim()).filter(Boolean))].slice(0, 12).map((x) => x.slice(0, 40));
+  const supabase = await createClient();
+  const { error, count } = await supabase.from('leadership_terms').update({ tags }, { count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  refresh();
+  return { ok: 'ተቀምጧል።' };
+}
