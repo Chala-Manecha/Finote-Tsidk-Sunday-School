@@ -1247,8 +1247,10 @@ a.stat-card.on b { color: #fff; }
 .member-stats .stat-card small { margin-inline-start: 3px; }
 
 /* Footer always at the bottom (short pages no longer leave it hanging mid-screen) */
-body { display: flex; flex-direction: column; min-height: 100vh; }
+body { display: flex; flex-direction: column; min-height: 100vh; overflow-x: clip; }
 body > main, body > .page-loading { flex: 1 0 auto; width: 100%; }
+/* a body child with margin: auto is not stretched — keep every one to the screen width (phones) */
+body > * { width: 100%; min-width: 0; }
 body > .site-footer { flex-shrink: 0; }
 main.page { min-height: 0; }
 .page-loading { min-height: 50vh; }
@@ -1717,9 +1719,6 @@ main.page { min-height: 0; }
 @media (max-width: 900px) {
   .banner { border-radius: 14px 14px 0 0; }
   .dept-tab-nav { width: 100%; min-width: 0; border-radius: 0 0 14px 14px; }
-  .dept-tab-nav .tab-sec { display: contents; }
-  .dept-tab-nav .tab-list { display: flex; overflow-x: auto; gap: 4px; margin-top: 4px; }
-  .dept-tab-nav .tab-list a, .dept-tab-nav .tab-list span.soon { white-space: nowrap; flex-shrink: 0; }
   .dept-tab-content { padding-top: 12px; }
 }
 .dept-tab-nav .tab-list a > span, .dept-tab-nav .tab-list span.soon > span { color: inherit; }
@@ -1886,3 +1885,46 @@ tr.today-row td { background: #FFF8E6; }
 .course-table td.class-cell { vertical-align: top; background: #F8F5EC; min-width: 150px; }
 .course-table td.class-cell > span:last-child { display: grid; gap: 2px; margin-top: 4px; }
 .course-table tr.class-first td { border-top: 2px solid #E3D6B4; }
+
+/* phones: nothing may push the page wider than the screen */
+.field { min-width: 0; }
+input, select, textarea { max-width: 100%; }
+.photo-field .field { flex: 1; }
+@media (max-width: 480px) { .photo-field { flex-wrap: wrap; } }
+@media (max-width: 900px) {
+  .dept-tabs { align-items: stretch; }
+  .dept-tab-content, .dept-tab-nav { width: 100%; max-width: 100%; }
+}
+
+/* phones: the department menu is one button; tap it to see every page */
+.dept-tab-nav .nav-toggle { display: none; }
+@media (max-width: 900px) {
+  .dept-tab-nav .nav-head { grid-template-columns: 1fr; gap: 6px; border-bottom: none; margin: 0; padding-bottom: 0; }
+  .dept-tab-nav .nav-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+    background: rgba(255, 255, 255, .1); color: #fff; border: 1px solid rgba(255, 255, 255, .18); border-radius: 10px; padding: 9px 12px; font-size: .92rem; font-weight: 600; text-align: start; }
+  .dept-tab-nav .nav-toggle i { font-style: normal; }
+  .dept-tab-nav .nav-toggle > b { font-size: 1.1rem; }
+  .dept-tab-nav .tab-sec { display: none; }
+  .dept-tab-nav.open .tab-sec { display: grid; }
+  .dept-tab-nav.open .tab-group { display: block; margin: 10px 4px 2px; }
+  .dept-tab-nav.open .tab-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .dept-tab-nav.open .tab-list a, .dept-tab-nav.open .tab-list span.soon { white-space: normal; font-size: .82rem; }
+}
+.dept-tab-nav .nav-toggle span { background: none; padding: 0; box-shadow: none; border: none; opacity: 1; color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 600px) {
+  .topbar .chip-user { display: none; }
+  .topbar nav a { font-size: .82rem; }
+}
+@media (max-width: 600px) {
+  .topbar:not(.site-header) { flex-wrap: wrap; row-gap: 4px; }
+  .topbar:not(.site-header) nav { order: 5; width: 100%; display: flex; gap: 6px 16px; flex-wrap: wrap; overflow: visible; padding-bottom: 2px; }
+  .topbar:not(.site-header) nav a { white-space: nowrap; }
+}
+@media (max-width: 600px) {
+  .me-strip-text { flex: 1 1 calc(100% - 70px); }
+  .me-strip-stats { width: 100%; }
+}
+@media (max-width: 600px) {
+  .topbar:not(.site-header) > .brand { flex: 1 1 0; min-width: 0; }
+  .topbar:not(.site-header) > .spacer { display: none; }
+}

@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import type { Tab } from '@/lib/dept-tabs';
 
 /** Pages without their own tab light up the tab they belong to. */
@@ -23,6 +24,9 @@ const ICON: Record<string, string> = {
  */
 export function TabNav({ dept, deptName, tabs }: { dept: string; deptName: string; tabs: Tab[] }) {
   const path = usePathname();
+  // phones: the menu folds under one button (closes again when a page is chosen)
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const open = openAt === path;
   const isOn = (t: Tab) => {
     const href = `/staff/${dept}/${t.slug}`;
     return path.startsWith(href) || ((ALIAS[t.slug] ?? []).some((x) => path.startsWith(`/staff/${dept}/${x}`)) && !(dept !== 'education' && t.slug === 'abnet'));
@@ -36,12 +40,16 @@ export function TabNav({ dept, deptName, tabs }: { dept: string; deptName: strin
     groups.at(-1)!.tabs.push(t);
   }
   return (
-    <nav className="dept-tab-nav no-print" aria-label={deptName}>
+    <nav className={`dept-tab-nav no-print ${open ? 'open' : ''}`} aria-label={deptName}>
       <div className="nav-head">
         {deeper
           ? <Link href={`/staff/${dept}/${current!.slug}`} className="nav-back" title="ተመለስ">← {current!.label}</Link>
           : <Link href="/staff" className="nav-back" title="ሁሉም ክፍሎች">← ሁሉም ክፍሎች</Link>}
         <b>{deptName}</b>
+        <button type="button" className="nav-toggle" aria-expanded={open} onClick={() => setOpenAt(open ? null : path)}>
+          <span>{current ? <><i aria-hidden>{ICON[current.slug] ?? '•'}</i> {current.label}</> : 'ገጾች'}</span>
+          <b aria-hidden>{open ? '✕' : '☰'}</b>
+        </button>
       </div>
       {groups.map((g) => (
         <div key={g.name || 'all'} className="tab-sec">
