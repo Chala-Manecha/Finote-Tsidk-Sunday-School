@@ -43,6 +43,10 @@ export const REGIONS = [
 export const EDUCATION_LEVELS = [
   'የመጀመሪያ ደረጃ (1-8)', 'ሁለተኛ ደረጃ (9-12)', 'ሰርተፊኬት', 'ዲፕሎማ / TVET', 'የመጀመሪያ ዲግሪ', 'ሁለተኛ ዲግሪ', 'ሦስተኛ ዲግሪ (PhD)', 'ሌላ',
 ] as const;
+/** መንፈሳዊ ትምህርት (spiritual education) */
+export const SPIRITUAL_LEVELS = [
+  'የሰንበት ት/ቤት ኮርስ', 'ዲቁና', 'ዜማ / ቅዳሴ', 'ቅኔ', 'አቋቋም', 'መጻሕፍት ትርጓሜ', 'የነገረ መለኮት ኮሌጅ / ሴሚናሪ', 'ሌላ',
+] as const;
 export const WORK_SECTORS = ['መንግሥታዊ', 'የግል ድርጅት', 'የግል ሥራ / ንግድ', 'መንግሥታዊ ያልሆነ ድርጅት', 'ቤተ ክርስቲያን', 'ሌላ'] as const;
 export const EMERGENCY_RELATIONS = ['አባት', 'እናት', 'ወንድም', 'እህት', 'ባለቤት', 'ልጅ', 'ዘመድ', 'ጓደኛ', 'ሌላ'] as const;
 

@@ -11,7 +11,7 @@ import { MultiSelect } from './multi-select';
 import { ageFromIso, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
   DEPARTMENTS, EDUCATION_LEVELS, EMERGENCY_RELATIONS, GEEZ_LEVEL, LANGUAGES, MARITAL_STATUS, MEMBER_TYPE,
-  CLERGY_SERVICE, CLERGY_TITLE, REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
+  CLERGY_SERVICE, CLERGY_TITLE, PROGRAM_CODES, SPIRITUAL_LEVELS, REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
 } from '@/lib/constants';
 import { emptyEducation, emptyWork, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
@@ -111,12 +111,24 @@ async function upload(mode: FormMode, file: File | Blob, name = 'file'): Promise
 
 
 
-function Section({ n, id, title, children }: { n: number; id: string; title: string; children: React.ReactNode }) {
+/**
+ * One part of the form. A new registration shows only part 1 open; the others open with “+ ጨምር”
+ * (a required field left in a closed part opens it when the form is sent).
+ */
+function Section({ n, id, title, children, fold = false }: { n: number; id: string; title: string; children: React.ReactNode; fold?: boolean }) {
+  if (!fold) {
+    return (
+      <fieldset className="form-block" id={id}>
+        <legend><span className="step-no">{n}</span>{title}</legend>
+        {children}
+      </fieldset>
+    );
+  }
   return (
-    <fieldset className="form-block" id={id}>
-      <legend><span className="step-no">{n}</span>{title}</legend>
-      {children}
-    </fieldset>
+    <details className="form-block fold-block" id={id}>
+      <summary><span className="step-no">{n}</span><span className="fold-title">{title}</span><span className="fold-btn" aria-hidden /></summary>
+      <div className="fold-body">{children}</div>
+    </details>
   );
 }
 
@@ -155,7 +167,9 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   // ማዕረግ and ክህነት are one choice: ዲያቆን / ቀሲስ (men) ask for the ክህነት details
   const [title, setTitle] = useState<string>(initial.title ?? (initial.clergy ? CLERGY_TITLE[initial.clergy.rank ?? ''] ?? '' : ''));
   const clergyRank = title === 'diakon' ? 'deacon' : title === 'qesis' ? 'priest' : null;
-  const hasClergy = sex === 'male' && !!clergyRank;
+  const hasClergy = !!clergyRank;   // ዲያቆን / ቀሲስ → male, and the ክህነት details open
+  const pickTitle = (t: string) => { setTitle(t); if (t === 'diakon' || t === 'qesis') setSex('male'); };
+  const pickSex = (x: string) => { setSex(x); if (x === 'female' && (title === 'diakon' || title === 'qesis')) setTitle(''); };
   const [isEthiopian, setIsEthiopian] = useState(initial.is_ethiopian ?? true);
   const [memberType, setMemberType] = useState(initial.member_type ?? 'regular');
   const [workStatus, setWorkStatus] = useState(initial.work_status ?? '');
@@ -165,7 +179,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   const [photoPreview, setPhotoPreview] = useState<string | null>(initial.photo_url ?? null);
   const [education, setEducation] = useState<EducationEntry[]>(() => {
     // Deterministic keys for the first render (server and browser must match).
-    const rows = initial.education?.length ? initial.education.map((e, i) => ({ ...e, _k: `init${i}` })) : [{ ...emptyEducation(), _k: 'init0' }];
+    const rows = initial.education?.length ? initial.education.map((e, i) => ({ ...e, kind: e.kind ?? 'secular', _k: `init${i}` })) : [{ ...emptyEducation(), _k: 'init0' }];
     // Older records kept one evidence file for all education; show it on the first row.
     const legacy = initial.secular_school?.evidence_path;
     if (legacy && !rows.some((e) => e.evidence_path)) rows[0] = { ...rows[0], evidence_path: legacy };
@@ -175,6 +189,8 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   const [pinShown, setPinShown] = useState('');
   const [first, father, grand] = nameParts(initial);
   const isNew = !initial.id;
+  // a new registration opens part 1 only; editing / approving shows everything
+  const fold = isNew && mode !== 'approve';
 
   const age = ageFromIso(dob);
   const thisYear = isoToEc(todayIsoAddis()).year;
@@ -277,11 +293,12 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   const req = isNew ? <span className="req">*</span> : null;
 
   return (
-    <form ref={formEl} onSubmit={onSubmit} className="member-form">
+    <form ref={formEl} onSubmit={onSubmit} className="member-form"
+      onInvalidCapture={(e) => { const d = (e.target as HTMLElement).closest('details'); if (d && !d.open) d.open = true; }}>
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
       {applicationId && <input type="hidden" name="application_id" value={applicationId} />}
       <nav className="form-steps" aria-label="የቅጹ ክፍሎች">
-        {[...SECTIONS, ...(mode === 'public' ? [['sec-code', 'መግቢያ ኮድ'] as const] : [])].map(([id, title], i) => <a key={id} href={`#${id}`}><span>{i + 1}</span>{title}</a>)}
+        {[...SECTIONS, ...(mode === 'public' ? [['sec-code', 'መግቢያ ኮድ'] as const] : [])].map(([id, title], i) => <a key={id} href={`#${id}`} onClick={() => { const d = document.getElementById(id); if (d instanceof HTMLDetailsElement) d.open = true; }}><span>{i + 1}</span>{title}</a>)}
       </nav>
 
       <Section n={1} id="sec-membership" title="የአባልነት መረጃ">
@@ -321,13 +338,13 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
         {isNew && mode !== 'public' && <p className="hint muted small" style={{ margin: 0 }}>የምዝገባ ቀኑ “አባል መዝግብ” ሲጫን በራሱ ይመዘገባል።</p>}
       </Section>
 
-      <Section n={2} id="sec-personal" title="የግል መረጃ ዝርዝር">
+      <Section n={2} id="sec-personal" title="የግል መረጃ ዝርዝር" fold={fold}>
         <div className="form-grid">
           <div className="field">
             <label htmlFor="title">ማዕረግ</label>
-            <select id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)}>
+            <select id="title" name="title" value={title} onChange={(e) => pickTitle(e.target.value)}>
               <option value="">—</option>
-              {Object.entries(TITLES).filter(([k]) => sex === 'male' || k === 'doctor' || k === title).map(([k, v]) => <option key={k} value={k}>{v}{k !== 'doctor' ? ' (ክህነት)' : ''}</option>)}
+              {Object.entries(TITLES).map(([k, v]) => <option key={k} value={k}>{v}{k !== 'doctor' ? ' (ክህነት)' : ''}</option>)}
             </select>
           </div>
           <div className="field"><label htmlFor="first_name">ስም <span className="req">*</span></label><input id="first_name" name="first_name" required defaultValue={first} /></div>
@@ -346,7 +363,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
           </div>
           <div className="field">
             <label htmlFor="sex">ፆታ <span className="req">*</span></label>
-            <select id="sex" name="sex" required value={sex} onChange={(e) => setSex(e.target.value)}>
+            <select id="sex" name="sex" required value={sex} onChange={(e) => pickSex(e.target.value)}>
               <option value="" disabled>ይምረጡ</option>
               {Object.entries(SEX).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
@@ -419,7 +436,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
         </div>
       </Section>
 
-      <Section n={3} id="sec-address" title="የአባሉ አድራሻ">
+      <Section n={3} id="sec-address" title="የአባሉ አድራሻ" fold={fold}>
         <div className="form-grid">
           <div className="field">
             <label htmlFor="region">ክልል</label>
@@ -447,7 +464,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
         </div>
       </Section>
 
-      <Section n={4} id="sec-contacts" title="ንሰሐ አባት እና የአደጋ ጊዜ ተጠሪ">
+      <Section n={4} id="sec-contacts" title="ንሰሐ አባት እና የአደጋ ጊዜ ተጠሪ" fold={fold}>
         <div className="sub-head">የንሰሐ አባት</div>
         <div className="form-grid">
           <div className="field"><label htmlFor="confessor_name">ስም</label><input id="confessor_name" name="confessor_name" defaultValue={initial.confessor_name ?? ''} /></div>
@@ -465,52 +482,69 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
         </div>
       </Section>
 
-      <Section n={5} id="sec-education" title="የትምህርት መረጃ">
-        <div className="sub-head">አለማዊ ትምህርት</div>
-        {education.map((e, i) => (
-          <div key={e._k ?? i} className="repeat-row">
-            <div className="repeat-head">
-              <b>{i + 1}.</b>
-              <button type="button" className="btn sm danger" onClick={() => setEducation(education.length > 1 ? education.filter((_, j) => j !== i) : [emptyEducation()])}>🗑 አጥፋ</button>
-            </div>
-            <div className="form-grid">
-              <div className="field"><label>የትምህርት ደረጃ</label>
-                <select value={e.level} onChange={(x) => patchEdu(i, { level: x.target.value })}>
-                  <option value="">ይምረጡ</option>
-                  {EDUCATION_LEVELS.map((l) => <option key={l}>{l}</option>)}
-                </select></div>
-              <div className="field"><label>የትምህርት ዘርፍ</label><input value={e.field} onChange={(x) => patchEdu(i, { field: x.target.value })} placeholder="ለምሳሌ ሒሳብ አያያዝ" /></div>
-              <div className="field"><label>የትምህርት ተቋም</label><input value={e.institution} onChange={(x) => patchEdu(i, { institution: x.target.value })} /></div>
-              <YearsFields e={e} set={(p) => patchEdu(i, p)} nowLabel="እስከ አሁን በትምህርት ላይ" />
-              <div className="field">
-                <label>የትምህርት ማስረጃ ፋይል (ካለ)</label>
-                <input name={`edu_file_${e._k}`} type="file" accept="image/*,.pdf" />
-                {e.evidence_path && <span className="hint">ማስረጃ ተያይዟል — አዲስ ፋይል ከመረጡ ይተካል</span>}
+      <Section n={5} id="sec-education" title="የትምህርት መረጃ" fold={fold}>
+        {(['secular', 'spiritual'] as const).map((kind) => {
+          const rows = education.map((e, i) => ({ e, i })).filter(({ e }) => (e.kind ?? 'secular') === kind);
+          return (
+            <div key={kind} className="sub-card">
+              <div className="sub-card-head">
+                <b>{kind === 'secular' ? '📘 አለማዊ ትምህርት' : '⛪ መንፈሳዊ ትምህርት'}</b>
+                <span className="small muted">{kind === 'secular' ? 'ት/ቤት፣ ኮሌጅ፣ ዩኒቨርሲቲ' : 'ሰንበት ት/ቤት፣ ዲቁና፣ ቅኔ፣ ዜማ…'}</span>
               </div>
+              {rows.map(({ e, i }, k) => (
+                <div key={e._k ?? i} className="repeat-row">
+                  <div className="repeat-head">
+                    <b>{k + 1}.</b>
+                    <button type="button" className="btn sm danger" onClick={() => setEducation(education.filter((_, j) => j !== i))}>🗑 አጥፋ</button>
+                  </div>
+                  <div className="form-grid">
+                    <div className="field"><label>{kind === 'secular' ? 'የትምህርት ደረጃ' : 'የትምህርት አይነት'}</label>
+                      <select value={e.level} onChange={(x) => patchEdu(i, { level: x.target.value })}>
+                        <option value="">ይምረጡ</option>
+                        {(kind === 'secular' ? EDUCATION_LEVELS : SPIRITUAL_LEVELS).map((l) => <option key={l}>{l}</option>)}
+                      </select></div>
+                    <div className="field"><label>{kind === 'secular' ? 'የትምህርት ዘርፍ' : 'ዝርዝር'}</label><input value={e.field} onChange={(x) => patchEdu(i, { field: x.target.value })} placeholder={kind === 'secular' ? 'ለምሳሌ ሒሳብ አያያዝ' : 'ለምሳሌ ውዳሴ ማርያም'} /></div>
+                    <div className="field"><label>{kind === 'secular' ? 'የትምህርት ተቋም' : 'የተማሩበት ቦታ / መምህር'}</label><input value={e.institution} onChange={(x) => patchEdu(i, { institution: x.target.value })} /></div>
+                    <YearsFields e={e} set={(p) => patchEdu(i, p)} nowLabel="እስከ አሁን በትምህርት ላይ" />
+                    <div className="field">
+                      <label>ማስረጃ ፋይል (ካለ)</label>
+                      <input name={`edu_file_${e._k}`} type="file" accept="image/*,.pdf" />
+                      {e.evidence_path && <span className="hint">ማስረጃ ተያይዟል — አዲስ ፋይል ከመረጡ ይተካል</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button type="button" className="btn sm secondary" onClick={() => setEducation([...education, emptyEducation(kind)])}>
+                + {kind === 'secular' ? 'አለማዊ' : 'መንፈሳዊ'} ትምህርት ጨምር
+              </button>
+              {kind === 'spiritual' && (
+                <div className="yesno">
+                  <span>ከዚህ በፊት ሌላ ሰንበት ትምህርት ቤት አገልግለዋል?</span>
+                  <div className="seg">
+                    <button type="button" className={hasPrior ? 'on' : ''} onClick={() => setHasPrior(true)}>አዎ</button>
+                    <button type="button" className={!hasPrior ? 'on' : ''} onClick={() => setHasPrior(false)}>አይ</button>
+                  </div>
+                  {hasPrior && <input type="hidden" name="has_prior_school" value="on" />}
+                </div>
+              )}
+              {kind === 'spiritual' && hasPrior && (
+                <div className="form-grid">
+                  <div className="field"><label htmlFor="prior_school_name">የሰ/ት/ቤቱ ስም <span className="req">*</span></label><input id="prior_school_name" name="prior_school_name" required defaultValue={initial.prior_school?.name ?? ''} /></div>
+                  <div className="field"><label htmlFor="prior_school_years">የአገልግሎት ዓመታት <span className="req">*</span></label><input id="prior_school_years" name="prior_school_years" type="number" min={1} max={80} required defaultValue={initial.prior_school?.years ?? ''} /></div>
+                  <div className="field">
+                    <label htmlFor="prior_school_file">ማስረጃ <span className="req">*</span></label>
+                    <input id="prior_school_file" name="prior_school_file" type="file" accept="image/*,.pdf" required={!initial.prior_school?.evidence_path} />
+                    <input type="hidden" name="prior_school_evidence" defaultValue={initial.prior_school?.evidence_path ?? ''} />
+                    {initial.prior_school?.evidence_path && <span className="hint">ማስረጃ ተያይዟል — አዲስ ፋይል ከመረጡ ይተካል</span>}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
-        <button type="button" className="btn sm secondary" onClick={() => setEducation([...education, emptyEducation()])}>+ ተጨማሪ የትምህርት መረጃ</button>
-
-        <label className="check">
-          <input type="checkbox" name="has_prior_school" checked={hasPrior} onChange={(e) => setHasPrior(e.target.checked)} />
-          ከዚህ በፊት ሌላ ሰ/ት/ቤት አገልግለዋል
-        </label>
-        {hasPrior && (
-          <div className="form-grid">
-            <div className="field"><label htmlFor="prior_school_name">የሰ/ት/ቤቱ ስም <span className="req">*</span></label><input id="prior_school_name" name="prior_school_name" required defaultValue={initial.prior_school?.name ?? ''} /></div>
-            <div className="field"><label htmlFor="prior_school_years">የአገልግሎት ዓመታት <span className="req">*</span></label><input id="prior_school_years" name="prior_school_years" type="number" min={1} max={80} required defaultValue={initial.prior_school?.years ?? ''} /></div>
-            <div className="field">
-              <label htmlFor="prior_school_file">ማስረጃ <span className="req">*</span></label>
-              <input id="prior_school_file" name="prior_school_file" type="file" accept="image/*,.pdf" required={!initial.prior_school?.evidence_path} />
-              <input type="hidden" name="prior_school_evidence" defaultValue={initial.prior_school?.evidence_path ?? ''} />
-              {initial.prior_school?.evidence_path && <span className="hint">ማስረጃ ተያይዟል — አዲስ ፋይል ከመረጡ ይተካል</span>}
-            </div>
-          </div>
-        )}
+          );
+        })}
       </Section>
 
-      <Section n={6} id="sec-work" title="የሥራ መረጃ">
+      <Section n={6} id="sec-work" title="የሥራ መረጃ" fold={fold}>
         <div className="field" style={{ maxWidth: 320 }}>
           <label htmlFor="work_status">አሁን ያሉበት ሁኔታ <span className="req">*</span></label>
           <select id="work_status" name="work_status" required value={workStatus} onChange={(e) => setWorkStatus(e.target.value)}>
@@ -542,22 +576,24 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
         )}
       </Section>
 
-      <Section n={7} id="sec-depts" title="ዝንባሌ">
-        <div className="field" style={{ maxWidth: 520 }}>
-          <label htmlFor="depts">በየትኛው ክፍል ቀርበው ማገልገል ይፈልጋሉ? (ቢበዛ 2)</label>
-          <MultiSelect id="depts" name="depts" options={DEPT_OPTIONS} defaultValue={initial.depts ?? []} max={2} placeholder="ክፍል ይምረጡ" />
+      <Section n={7} id="sec-depts" title="ዝንባሌ" fold={fold}>
+        <div className="sub-card">
+          <div className="sub-card-head"><b>7.1 ቀርበው ማገልገል የሚፈልጉት ክፍል?</b><span className="small muted">ቢበዛ 2 ክፍሎች</span></div>
+          <div className="field" style={{ maxWidth: 520, margin: 0 }}>
+            <MultiSelect id="depts" name="depts" options={DEPT_OPTIONS} defaultValue={initial.depts ?? []} max={2} placeholder="ክፍል ይምረጡ" />
+          </div>
         </div>
-        <fieldset className="program-pick">
-          <legend>መሳተፍ የሚፈልጉባቸው</legend>
-          {initial.programs === null
+        <div className="sub-card">
+          <div className="sub-card-head"><b>7.2 መማር የሚፈልጉት</b><span className="small muted">ያልተመረጡት “አልመረጡም” ተብለው ይመዘገባሉ</span></div>
+          {initial.programs === null && !isNew
             ? <label className="check small"><input type="checkbox" name="programs_asked" value="1" /> ምርጫው ገና አልተመዘገበም — አሁን መዝግብ (ይህ ካልተመረጠ አይቀየርም)</label>
             : <input type="hidden" name="programs_asked" value="1" />}
-          <ProgramPick initial={initial.programs ?? null} />
-        </fieldset>
+          <ProgramPick initial={initial.programs ?? (isNew ? [...PROGRAM_CODES] : null)} />
+        </div>
       </Section>
 
       {mode === 'public' && (
-        <Section n={8} id="sec-code" title="መግቢያ ኮድ">
+        <Section n={8} id="sec-code" title="መግቢያ ኮድ" fold={fold}>
           <p className="muted small" style={{ marginTop: 0 }}>ባለ 6 አሃዝ መግቢያ ኮድ ይፍጠሩ። ምዝገባዎ ሲጸድቅ በምዝገባ ቁጥርዎ እና በዚህ ኮድ ይገባሉ። ለማንም አያጋሩ።</p>
           <div className="form-grid">
             <div className="field"><label htmlFor="pin">መግቢያ ኮድ (6 አሃዝ) <span className="req">*</span></label>

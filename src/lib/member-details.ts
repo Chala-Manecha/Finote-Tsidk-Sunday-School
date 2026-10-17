@@ -1,5 +1,7 @@
 // Repeatable rows on the member form (stored as jsonb arrays on members).
 export type EducationEntry = {
+  /** አለማዊ (secular) or መንፈሳዊ (spiritual); older rows are secular */
+  kind?: 'secular' | 'spiritual';
   level: string; field: string; institution: string;
   start_year: number | null; end_year: number | null; current: boolean;
   evidence_path?: string | null;   // certificate / transcript file for this entry
@@ -12,7 +14,7 @@ export type WorkEntry = {
 
 let seq = 0;
 const rowKey = () => `r${Date.now().toString(36)}${(seq++).toString(36)}`;
-export const emptyEducation = (): EducationEntry => ({ level: '', field: '', institution: '', start_year: null, end_year: null, current: false, evidence_path: null, _k: rowKey() });
+export const emptyEducation = (kind: 'secular' | 'spiritual' = 'secular'): EducationEntry => ({ kind, level: '', field: '', institution: '', start_year: null, end_year: null, current: false, evidence_path: null, _k: rowKey() });
 export const emptyWork = (): WorkEntry => ({ field: '', workplace: '', start_year: null, end_year: null, current: false });
 
 const txt = (v: unknown) => (typeof v === 'string' ? v.trim().slice(0, 120) : '');
@@ -32,6 +34,7 @@ const parse = (raw: string | null): Record<string, unknown>[] => {
 /** Server-side clean-up of the hidden JSON field; empty rows are dropped. */
 export function cleanEducation(raw: string | null): EducationEntry[] {
   return parse(raw).map((e) => ({
+    kind: e.kind === 'spiritual' ? 'spiritual' as const : 'secular' as const,
     level: txt(e.level), field: txt(e.field), institution: txt(e.institution),
     start_year: year(e.start_year), current: e.current === true,
     end_year: e.current === true ? null : year(e.end_year),

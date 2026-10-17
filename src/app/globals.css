@@ -2000,3 +2000,21 @@ form:has(> span[data-pending]), form:has(span[data-pending]) { opacity: .6; tran
 .term-compare .tg-row td { background: #F4F7FA; font-weight: 700; font-size: .82rem; }
 .term-compare td.tc-best { background: #E2F1E8; color: #1E6B3E; font-weight: 700; }
 .term-compare td.tc-worst { background: #FBE4E2; color: #8E1D17; }
+
+/* registration form: parts that open with “+ ጨምር” */
+.fold-block { padding: 0; }
+.fold-block > summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 14px 18px; cursor: pointer; font-weight: 700; font-size: 1rem; border-radius: var(--radius); }
+.fold-block > summary::-webkit-details-marker { display: none; }
+.fold-block > summary:hover { background: #F7FAFD; }
+.fold-block .fold-title { flex: 1; }
+.fold-block .fold-btn::after { content: '+ ጨምር'; display: inline-block; font-size: .82rem; font-weight: 700; color: #fff; background: #2F7D4F; border-radius: 99px; padding: 5px 14px; }
+.fold-block[open] .fold-btn::after { content: '− ዝጋ'; background: #EEF2F6; color: var(--muted); }
+.fold-block[open] > summary { border-bottom: 1px solid var(--line); border-radius: var(--radius) var(--radius) 0 0; }
+.fold-block .fold-body { padding: 14px 20px 12px; }
+.sub-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; background: #FCFDFE; }
+.sub-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 10px; }
+.sub-card-head b { font-size: .95rem; }
+.yesno { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 14px 0 6px; padding: 10px 12px; border-radius: 10px; background: #FFF8E6; border: 1px solid #F0DDA8; font-weight: 600; font-size: .9rem; }
+.yesno .seg button { border: none; background: none; padding: 5px 14px; border-radius: 8px; font: inherit; font-size: .85rem; }
+.yesno .seg button.on { background: #1C2638; color: #fff; }
+@media (max-width: 640px) { .fold-block > summary { padding: 12px; } .fold-block .fold-body { padding: 12px; } }

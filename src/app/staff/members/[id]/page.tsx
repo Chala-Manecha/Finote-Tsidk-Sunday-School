@@ -94,7 +94,7 @@ export default async function MemberDetail({
         ['የአደጋ ጊዜ ተጠሪ', [m.emergency_name, m.emergency_relation && `(${m.emergency_relation})`, m.emergency_phone].filter(Boolean).join(' ')],
       ] },
       { title: 'ትምህርት', rows: [
-        ...education.map((e, i): [string, string] => [`ትምህርት ${i + 1}`, `${[e.level, e.field, e.institution].filter(Boolean).join(' · ')} ${yearsLabel(e)}`]),
+        ...education.map((e, i): [string, string] => [`${e.kind === 'spiritual' ? 'መንፈሳዊ' : 'አለማዊ'} ትምህርት ${i + 1}`, `${[e.level, e.field, e.institution].filter(Boolean).join(' · ')} ${yearsLabel(e)}`]),
         ['ቀድሞ ሰ/ት/ቤት', m.prior_school ? `${m.prior_school.name} · ${m.prior_school.years ?? '—'} ዓመት` : ''],
       ] },
       { title: 'ሥራ', rows: [
