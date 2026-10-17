@@ -2077,3 +2077,10 @@ tr.row-past td { opacity: .6; }
 .fp-track { height: 8px; border-radius: 99px; background: #E6EEF5; overflow: hidden; }
 .fp-track span { display: block; height: 100%; background: linear-gradient(90deg, #1F639C, #3580BF); border-radius: 99px; transition: width .25s; }
 .fp-track span.full { background: var(--green, #2E9E5B); }
+/* Round 35: the photo shows through (80% clear); compact name; panels right under it */
+.hero.has-photo::before { background: rgba(10, 35, 60, .2); }
+.hero-top { margin-bottom: 18px; gap: 4px; }
+.hero-top h1, .hero-top .hero-en { text-shadow: 0 2px 12px rgba(0, 0, 0, .55); }
+.hero-top .hero-en { display: block; }
+.hero.has-photo .glass-panel { background: rgba(10, 35, 60, .42); border-color: rgba(255, 255, 255, .28); }
+.hero-contacts { position: relative; z-index: 1; justify-content: center; margin: 20px auto 0; max-width: 1320px; }

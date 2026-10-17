@@ -210,21 +210,8 @@ export default async function Home() {
       )}
       <section className={`hero ${hero ? 'has-photo' : ''}`} style={hero ? { backgroundImage: `url("${hero}")` } : undefined}>
         <div className="hero-top">
-          <span className="hero-chip">ሰንበት ትምህርት ቤት <i aria-hidden>•</i> {years}ኛ ምሥረታ</span>
           <h1>{SCHOOL_NAME}</h1>
           <p className="hero-en">{SCHOOL_NAME_EN}</p>
-          <span className="hero-pill">⛪ {CHURCH_NAME}</span>
-          {s?.hero_text && <p className="hero-text">{s.hero_text}</p>}
-          {regOpen === true && (
-            <Link href="/register" className="register-cta">
-              <span aria-hidden>📝</span> ለመመዝገብ ይጫኑ <small>የአባልነት ምዝገባ ክፍት ነው</small>
-            </Link>
-          )}
-          <div className="hero-buttons">
-            <a className="glass" href={`tel:${phone.replace(/\s/g, '')}`} dir="ltr">📞 {phone}</a>
-            <a className="glass solid" href="#about">ስለ እኛ</a>
-            <a className="glass" href="#departments">አገልግሎቶች</a>
-          </div>
         </div>
         <div className="hero-grid hero-split">
           <aside className="week-panel glass-panel" aria-labelledby="week-title">
@@ -264,6 +251,11 @@ export default async function Home() {
             {weekList.length > 6 && <p className="small" style={{ margin: '8px 0 0', opacity: .8 }}>+{weekList.length - 6} ሌሎች</p>}
           </aside>
           <HolidaysPanel />
+        </div>
+        <div className="hero-buttons hero-contacts">
+          <a className="glass" href={`tel:${phone.replace(/\s/g, '')}`} dir="ltr">📞 {phone}</a>
+          <a className="glass solid" href="#about">ስለ እኛ</a>
+          <a className="glass" href="#departments">አገልግሎቶች</a>
         </div>
       </section>
 
