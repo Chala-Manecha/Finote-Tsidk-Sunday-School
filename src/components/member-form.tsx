@@ -593,7 +593,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
       </Section>
 
       {mode === 'public' && (
-        <Section n={8} id="sec-code" title="መግቢያ ኮድ" fold={fold}>
+        <Section n={8} id="sec-code" title="መግቢያ ኮድ (የተማሪ መግቢያ)">
           <p className="muted small" style={{ marginTop: 0 }}>ባለ 6 አሃዝ መግቢያ ኮድ ይፍጠሩ። ምዝገባዎ ሲጸድቅ በምዝገባ ቁጥርዎ እና በዚህ ኮድ ይገባሉ። ለማንም አያጋሩ።</p>
           <div className="form-grid">
             <div className="field"><label htmlFor="pin">መግቢያ ኮድ (6 አሃዝ) <span className="req">*</span></label>

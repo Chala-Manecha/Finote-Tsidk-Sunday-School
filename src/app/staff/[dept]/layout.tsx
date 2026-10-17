@@ -5,6 +5,7 @@ import { tabsFor } from '@/lib/dept-tabs';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { TabNav } from './tab-nav';
+import { EC_MONTHS, WEEKDAYS_AM, isoToEc, todayIsoAddis, weekdayOf } from '@/lib/ethiopian-calendar';
 
 export default async function DeptLayout({
   children,
@@ -35,6 +36,8 @@ export default async function DeptLayout({
     if (m?.photo_path) photo = (await admin.storage.from('member-docs').createSignedUrl(m.photo_path, 3600)).data?.signedUrl ?? null;
   }
 
+  const today = todayIsoAddis();
+  const ec = isoToEc(today);
   return (
     <>
       <div className="banner no-print">
@@ -47,6 +50,10 @@ export default async function DeptLayout({
           <div className="verse">
             ዮሐ(21:16) የዮና ልጅ ስምዖን ሆይ ትወደኛለህን? እንኪያስ ጠቦቶቼን ጠብቅ።
           </div>
+        </div>
+        <div className="banner-date" title="የዛሬ ቀን">
+          <b>{WEEKDAYS_AM[weekdayOf(today)]}</b>
+          <span>{EC_MONTHS[ec.month - 1]} {ec.day}፣ {ec.year} ዓ.ም</span>
         </div>
       </div>
       <div className="dept-tabs">

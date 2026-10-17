@@ -11,7 +11,7 @@ const ICON: Record<string, string> = {
   abnet: '📜', academic: '🗓', 'age-groups': '👪', 'all-duties': '📋', applications: '📝', assignees: '🧑‍💼', attendance: '🧾',
   classes: '👥', contributions: '📊', 'course-attendance': '🧾', courses: '🧑‍🏫', departures: '🚪', 'dept-docs': '📄',
   'dept-property': '🏛', donations: '🎁', duty: '🧭', earnings: '💰', events: '📅', exams: '🗝', feedback: '💬',
-  'feedback-tracker': '📨', 'clear-data': '🧹', 'fixed-schedule': '🔁', history: '📖', 'home-page': '🏠', leadership: '⭐', 'lost-members': '🔎',
+  'feedback-tracker': '📨', 'program-choices': '🗳', 'clear-data': '🧹', 'fixed-schedule': '🔁', history: '📖', 'home-page': '🏠', leadership: '⭐', 'lost-members': '🔎',
   mahiberat: '🤝', members: '👤', money: '💵', 'money-report': '📈', 'money-usage': '📊', overview: '📊', participants: '✅',
   photos: '🖼', prayer: '🙏', property: '📦', 'property-requests': '🛒', purchases: '🧾', receipts: '🧾', reports: '📑',
   'request-event': '📮', requests: '✍', results: '🏅', roster: '📇', 'sale-items': '🏷', social: '🔗', songs: '🎵',

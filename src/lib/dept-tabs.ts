@@ -15,6 +15,7 @@ const shared = (dept: DeptCode): Tab[] => [
 const specific: Record<DeptCode, Tab[]> = {
   office: [
     { slug: 'roster', label: 'የአባላት ዝርዝር', ready: true },
+    { slug: 'program-choices', label: 'የተማሪዎች ምርጫ', ready: true },
     { slug: 'dept-property', label: 'የክፍላት ንብረት አስተዳደር', ready: true },
     { slug: 'assignees', label: 'ክፍል ኃላፊዎች', ready: true },
     { slug: 'staff-access', label: 'የሲስተሙ አስተዳዳሪዎች', ready: true },
@@ -33,6 +34,7 @@ const specific: Record<DeptCode, Tab[]> = {
   ],
   hr: [
     { slug: 'applications', label: 'ምዝገባና ተመዝጋቢዎች', ready: true },
+    { slug: 'program-choices', label: 'የተማሪዎች ምርጫ', ready: true },
     { slug: 'student-accounts', label: 'የመግቢያ ኮድ ድጋፍ', ready: true },
     { slug: 'age-groups', label: 'የዕድሜ ክፍሎች', ready: true },
     { slug: 'overview', label: 'አጠቃላይ አቴንዳንስ', ready: true },
@@ -95,7 +97,7 @@ const specific: Record<DeptCode, Tab[]> = {
 
 // ጽሕፈት ቤት has many tabs, so they are grouped (order of groups = order shown).
 const OFFICE_GROUPS: [string, string[]][] = [
-  ['አባላት', ['roster', 'departures', 'members']],
+  ['አባላት', ['roster', 'program-choices', 'departures', 'members']],
   ['ገንዘብና ንብረት', ['money', 'dept-property', 'property']],
   ['ክፍል ኃላፊዎች', ['assignees']],
   ['መርሐ ግብሮች', ['request-event']],
@@ -123,7 +125,7 @@ const FINANCE_GROUPS: [string, string[]][] = [
   ['የክፍሉ', ['members', 'property', 'request-event', 'feedback']],
 ];
 const HR_GROUPS: [string, string[]][] = [
-  ['ምዝገባ', ['applications', 'members', 'student-accounts', 'age-groups']],
+  ['ምዝገባ', ['applications', 'program-choices', 'members', 'student-accounts', 'age-groups']],
   ['ክትትል', ['overview', 'attendance', 'lost-members', 'departures']],
   ['ምደባና አመራር', ['duty', 'all-duties', 'leadership']],
   ['የክፍሉ', ['property', 'money', 'request-event', 'feedback']],

@@ -2018,3 +2018,19 @@ form:has(> span[data-pending]), form:has(span[data-pending]) { opacity: .6; tran
 .yesno .seg button { border: none; background: none; padding: 5px 14px; border-radius: 8px; font: inherit; font-size: .85rem; }
 .yesno .seg button.on { background: #1C2638; color: #fff; }
 @media (max-width: 640px) { .fold-block > summary { padding: 12px; } .fold-block .fold-body { padding: 12px; } }
+.banner { display: flex; align-items: center; gap: 12px; }
+.banner > div:not(.banner-date) { flex: 1; min-width: 0; }
+.banner-date { margin-inline-start: auto; text-align: end; display: grid; gap: 1px; padding: 6px 12px; border-radius: 10px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .12); white-space: nowrap; }
+.banner-date b { font-size: .78rem; color: #C9A44C; font-weight: 700; }
+.banner-date span { font-size: .9rem; color: #fff; font-family: 'Noto Serif Ethiopic', serif; }
+@media (max-width: 600px) { .banner { flex-wrap: wrap; } .banner-date { margin-inline-start: 0; text-align: start; display: flex; gap: 8px; align-items: baseline; padding: 4px 10px; } }
+.choice-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.choice-tile { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; color: inherit; text-decoration: none; position: relative; }
+.choice-tile b { font-size: 1.4rem; }
+.choice-tile span { font-size: .8rem; }
+.choice-tile small { position: absolute; top: 8px; right: 10px; font-size: .72rem; color: var(--muted); }
+.choice-tile:hover { border-color: #9CC6E8; }
+.choice-tile.on { background: #1C2638; border-color: #1C2638; color: #fff; }
+.choice-tile.on small { color: #CBD5E1; }
+.choice-tile.muted-tile:not(.on) { background: #F6F8FA; }
+.tick { color: #2F7D4F; font-weight: 800; }
