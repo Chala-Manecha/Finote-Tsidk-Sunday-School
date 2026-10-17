@@ -20,6 +20,14 @@ export async function fetchWereb(supabase: SupabaseClient): Promise<SongItem[]> 
 }
 
 export async function fetchMahlet(supabase: SupabaseClient): Promise<SongItem[]> {
-  const { data } = await supabase.from('mahlet_items').select('id, title, body, audio_path, created_at').order('title');
-  return (data ?? []).map(withUrl(supabase));
+  const [{ data }, { data: au }] = await Promise.all([
+    supabase.from('mahlet_items').select('id, title, body, audio_path, created_at').order('title'),
+    supabase.from('mahlet_audios').select('id, mahlet_id, title, audio_path').order('created_at'),
+  ]);
+  const audios = (au ?? []) as { id: string; mahlet_id: string; title: string; audio_path: string }[];
+  return (data ?? []).map(withUrl(supabase)).map((m) => ({
+    ...m,
+    audios: audios.filter((a) => a.mahlet_id === m.id)
+      .map((a) => ({ id: a.id, title: a.title, url: supabase.storage.from('media').getPublicUrl(a.audio_path).data.publicUrl })),
+  }));
 }

@@ -5,6 +5,7 @@ import { platformName } from '@/lib/delivery';
 import { PublicHeader } from '@/components/public-header';
 import { SocialButtons } from '@/components/social-buttons';
 import { ScrollReveal } from '@/components/scroll-reveal';
+import { HolidaysPanel } from '@/components/bahire-hasab-view';
 import { anniversaryYear } from '@/components/brand';
 import { createClient } from '@/lib/supabase/server';
 import { EC_MONTHS, WEEKDAYS_AM, formatEc, isoToEc, todayIsoAddis, weekdayOf } from '@/lib/ethiopian-calendar';
@@ -208,26 +209,25 @@ export default async function Home() {
         <div className="announce-bar" role="status">📢 {s.announcement}</div>
       )}
       <section className={`hero ${hero ? 'has-photo' : ''}`} style={hero ? { backgroundImage: `url("${hero}")` } : undefined}>
-        <div className="hero-grid">
-          <div className="hero-inner">
-            <span className="hero-chip">ሰንበት ትምህርት ቤት <i aria-hidden>•</i> {years}ኛ ምሥረታ</span>
-            <h1>{SCHOOL_NAME}</h1>
-            <p className="hero-en">{SCHOOL_NAME_EN}</p>
-            <span className="hero-pill">⛪ {CHURCH_NAME}</span>
-            {s?.hero_text && <p className="hero-text">{s.hero_text}</p>}
-            {regOpen === true && (
-              <Link href="/register" className="register-cta">
-                <span aria-hidden>📝</span> ለመመዝገብ ይጫኑ <small>የአባልነት ምዝገባ ክፍት ነው</small>
-              </Link>
-            )}
-            <div className="hero-buttons">
-              <a className="glass" href={`tel:${phone.replace(/\s/g, '')}`} dir="ltr">📞 {phone}</a>
-              <a className="glass solid" href="#about">ስለ እኛ</a>
-              <a className="glass" href="#departments">አገልግሎቶች</a>
-            </div>
+        <div className="hero-top">
+          <span className="hero-chip">ሰንበት ትምህርት ቤት <i aria-hidden>•</i> {years}ኛ ምሥረታ</span>
+          <h1>{SCHOOL_NAME}</h1>
+          <p className="hero-en">{SCHOOL_NAME_EN}</p>
+          <span className="hero-pill">⛪ {CHURCH_NAME}</span>
+          {s?.hero_text && <p className="hero-text">{s.hero_text}</p>}
+          {regOpen === true && (
+            <Link href="/register" className="register-cta">
+              <span aria-hidden>📝</span> ለመመዝገብ ይጫኑ <small>የአባልነት ምዝገባ ክፍት ነው</small>
+            </Link>
+          )}
+          <div className="hero-buttons">
+            <a className="glass" href={`tel:${phone.replace(/\s/g, '')}`} dir="ltr">📞 {phone}</a>
+            <a className="glass solid" href="#about">ስለ እኛ</a>
+            <a className="glass" href="#departments">አገልግሎቶች</a>
           </div>
-
-          <aside className="week-panel" aria-labelledby="week-title">
+        </div>
+        <div className="hero-grid hero-split">
+          <aside className="week-panel glass-panel" aria-labelledby="week-title">
             <div className="week-head">
               <span className="live-dot" aria-hidden />
               <h2 id="week-title">የሳምንቱ መርሓ ግብራት</h2>
@@ -263,6 +263,7 @@ export default async function Home() {
             )}
             {weekList.length > 6 && <p className="small" style={{ margin: '8px 0 0', opacity: .8 }}>+{weekList.length - 6} ሌሎች</p>}
           </aside>
+          <HolidaysPanel />
         </div>
       </section>
 

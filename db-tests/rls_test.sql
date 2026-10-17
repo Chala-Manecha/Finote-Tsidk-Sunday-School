@@ -1037,6 +1037,25 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2
 select pg_temp.must_fail($q$select * from public.term_scorecard()$q$);
 reset role;
 
+-- ---------- round 34: ነግስ, audio folders, several audios per ማሕሌት ----------
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', false);
+insert into public.abnet_materials (kind, title, file_path) values ('negs', 'ነግስ ዘልደት', 'abnet/n.pdf');
+insert into public.abnet_materials (kind, title, file_path, folder) values ('audio', 'ቅኔ 1', 'abnet/q.mp3', 'ቅኔ ቤት');
+select pg_temp.must_fail($q$insert into public.abnet_materials (kind, title, url) values ('poem', 'ሌላ', 'https://x.y')$q$);
+insert into public.mahlet_audios (mahlet_id, title, audio_path) select id, 'ክፍል 1', 'abnet/m1.mp3' from public.mahlet_items limit 1;
+insert into public.mahlet_audios (mahlet_id, title, audio_path) select id, 'ክፍል 2', 'abnet/m2.mp3' from public.mahlet_items limit 1;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+select pg_temp.must_fail($q$insert into public.mahlet_audios (mahlet_id, title, audio_path) select id, 'x', 'y' from public.mahlet_items limit 1$q$);
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.must_equal((select count(*)::int from public.mahlet_audios), 2, 'the public hears the ማሕሌት audios');
+select pg_temp.must_equal((select count(*)::int from public.abnet_materials where folder is not null or kind = 'negs'), 2, 'the public sees ነግስ and folders');
+reset role;
+
 -- ---------- before real data: clear the samples (system admin only) ----------
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);

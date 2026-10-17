@@ -12,6 +12,7 @@ import { MediaForm } from '@/components/media-form';
 import { Modal } from '@/components/modal';
 import { PrintButton } from '@/components/print-button';
 import { AbnetTabs } from '@/components/abnet-tabs';
+import { BahireHasabView } from '@/components/bahire-hasab-view';
 import { AbnetFields, AbnetTable, type Abnet, ABNET_COLS_LINK } from '@/components/education-views';
 import { saveAbnet } from '@/lib/actions/education';
 
@@ -26,13 +27,13 @@ type Clergy = {
 
 /** ትምህርት ክፍል → አብነት: lessons, ዲያቆናት (members who chose አብነት), ⛪ ካህናት register. ክትትል is on the attendance page. */
 export default async function EducationAbnet({ params, searchParams }: {
-  params: Promise<{ dept: string }>; searchParams: Promise<{ v?: string; q?: string; m?: string }>;
+  params: Promise<{ dept: string }>; searchParams: Promise<{ v?: string; q?: string; m?: string; y?: string }>;
 }) {
   const { dept } = await params;
   if (dept !== 'education') notFound();
   const sp = await searchParams;
   const supabase = await createClient();
-  const view = sp.v === 'students' || sp.v === 'materials' || sp.v === 'mahlet' ? sp.v : 'list';
+  const view = (['students', 'materials', 'mahlet', 'negs', 'bahire'] as const).find((v) => v === sp.v) ?? 'list';
   const bar = (title: string, extra?: React.ReactNode) => (
     <div className="page-bar">
       <h2 className="section" style={{ margin: 0 }}>{title}</h2>
@@ -58,14 +59,26 @@ export default async function EducationAbnet({ params, searchParams }: {
     );
   }
 
-  if (view === 'materials') {
-    const { data } = await supabase.from('abnet_materials').select(MATERIAL_COLS).order('created_at', { ascending: false });
+  if (view === 'materials' || view === 'negs') {
+    const { data } = await supabase.from('abnet_materials').select(MATERIAL_COLS)
+      .in('kind', view === 'negs' ? ['negs'] : ['file', 'audio', 'video']).order('created_at', { ascending: false });
     const rows = ((data ?? []) as Material[]).map((m) => ({ ...m, file_url: mediaUrl(supabase, m.file_path) }));
     return (
       <>
         {bar('አብነት')}
-        <p className="small muted">ድምፅ፣ ቪዲዮ እና ፋይሎች — በድረ ገጹ “አብነት” ገጽ ላይ ለሁሉም ይታያሉ።</p>
-        <MaterialsView rows={rows} editable />
+        <p className="small muted">{view === 'negs'
+          ? 'ነግስ — ስም፣ መግለጫ እና ፋይል (PDF ወይም ድምፅ)። በድረ ገጹ “አብነት → ነግስ” ላይ ለሁሉም ይታያል።'
+          : 'PDF ፋይሎች፣ ድምፆች (በዋና ማህደር ተመድበው) እና የYouTube ቪዲዮዎች (ሊንኩ ብቻ፣ ቪዲዮው አይጫንም) — በድረ ገጹ “አብነት → መማሪያዎች” ላይ ለሁሉም ይታያሉ።'}</p>
+        <MaterialsView rows={rows} editable kinds={view === 'negs' ? ['negs'] : undefined} />
+      </>
+    );
+  }
+
+  if (view === 'bahire') {
+    return (
+      <>
+        {bar('አብነት')}
+        <BahireHasabView year={Number(sp.y) || undefined} href={(y) => `/staff/education/abnet?v=bahire&y=${y}`} />
       </>
     );
   }
@@ -75,7 +88,7 @@ export default async function EducationAbnet({ params, searchParams }: {
     return (
       <>
         {bar('አብነት', <Modal label="+ ማሕሌት ጨምር" title="አዲስ ማሕሌት" size="lg"><SongForm kind="mahlet" /></Modal>)}
-        <p className="small muted">ማሕሌቶች (ርዕስና ጽሑፍ፣ ድምፅ አማራጭ) — በድረ ገጹ “አብነት” ገጽ ላይ ለሁሉም ይታያሉ።</p>
+        <p className="small muted">ማሕሌቶች — ርዕስና ጽሑፍ፤ በእያንዳንዱ ማሕሌት ውስጥ ብዙ ድምፆችን በየስማቸው ይጨምሩ (ማሕሌቱን ከፍተው “+ ድምፅ ጨምር”)። በድረ ገጹ ላይ ለሁሉም ይታያሉ።</p>
         <SongList items={items} kind="mahlet" editable />
       </>
     );

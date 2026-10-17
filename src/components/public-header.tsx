@@ -5,7 +5,6 @@ import { termLabel, type Term } from '@/lib/periods';
 
 // Public top nav, grouped like eotcssu.et (dropdowns on desktop, ≡ panel on phones).
 const NAV: NavEntry[] = [
-  { href: '/', label: 'ዋና ገጽ' },
   {
     label: 'ትምህርት',
     items: [

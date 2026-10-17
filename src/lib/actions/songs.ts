@@ -9,6 +9,7 @@ export type FormState = { error?: string; ok?: string };
 const refresh = () => {
   revalidatePath('/staff', 'layout');
   revalidatePath('/zema');
+  revalidatePath('/abnet');
 };
 const text = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
 
@@ -127,6 +128,36 @@ export async function deleteMahlet(id: string) {
   const supabase = await createClient();
   const { data: old } = await supabase.from('mahlet_items').select('audio_path').eq('id', id).maybeSingle();
   const { error, count } = await supabase.from('mahlet_items').delete({ count: 'exact' }).eq('id', id);
+  if (error) return { error: error.message };
+  if (!count) return { error: 'ፈቃድ የለዎትም።' };
+  await removeOldAudio(old?.audio_path, null);
+  refresh();
+}
+
+// ---------- one ማሕሌት, several named audios ----------
+export async function saveMahletAudio(_: FormState, fd: FormData): Promise<FormState> {
+  await requireStaff();
+  const mahlet_id = text(fd, 'mahlet_id');
+  const title = text(fd, 'title').slice(0, 160);
+  const audio_path = audioPath(fd, 'abnet');
+  if (!mahlet_id) return { error: 'ማሕሌቱ አልተገኘም።' };
+  if (!title) return { error: 'የድምፁን ስም ያስገቡ።' };
+  if (!audio_path) return { error: 'የድምፅ ፋይል ይምረጡ።' };
+  const supabase = await createClient();
+  const { error } = await supabase.from('mahlet_audios').insert({ mahlet_id, title, audio_path });
+  if (error) {
+    await supabase.storage.from('media').remove([audio_path]);
+    return { error: error.message };
+  }
+  refresh();
+  return { ok: 'ድምፁ ተጨምሯል።' };
+}
+
+export async function deleteMahletAudio(id: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  const { data: old } = await supabase.from('mahlet_audios').select('audio_path').eq('id', id).maybeSingle();
+  const { error, count } = await supabase.from('mahlet_audios').delete({ count: 'exact' }).eq('id', id);
   if (error) return { error: error.message };
   if (!count) return { error: 'ፈቃድ የለዎትም።' };
   await removeOldAudio(old?.audio_path, null);

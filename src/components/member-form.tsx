@@ -1,4 +1,5 @@
 'use client';
+import { FormProgress } from './form-progress';
 import { useActionState, useState, startTransition, useRef } from 'react';
 import Link from 'next/link';
 import { saveMember, type MemberFormState } from '@/app/staff/members/actions';
@@ -67,16 +68,6 @@ export type MemberInitial = {
 
 /** staff = HR registers/edits · public = self-registration (goes to HR) · approve = HR reviews an application */
 export type FormMode = 'staff' | 'public' | 'approve';
-
-const SECTIONS = [
-  ['sec-membership', 'የአባልነት መረጃ'],
-  ['sec-personal', 'የግል መረጃ ዝርዝር'],
-  ['sec-address', 'አድራሻ'],
-  ['sec-contacts', 'ንሰሐ አባት እና ተጠሪ'],
-  ['sec-education', 'ትምህርት'],
-  ['sec-work', 'ሥራ'],
-  ['sec-depts', 'ዝንባሌ'],
-] as const;
 
 const LANG_OPTIONS = LANGUAGES.map((l) => ({ value: l, label: l }));
 const DEPT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d.code, label: d.name }));
@@ -297,9 +288,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
       onInvalidCapture={(e) => { const d = (e.target as HTMLElement).closest('details'); if (d && !d.open) d.open = true; }}>
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
       {applicationId && <input type="hidden" name="application_id" value={applicationId} />}
-      <nav className="form-steps" aria-label="የቅጹ ክፍሎች">
-        {[...SECTIONS, ...(mode === 'public' ? [['sec-code', 'መግቢያ ኮድ'] as const] : [])].map(([id, title], i) => <a key={id} href={`#${id}`} onClick={() => { const d = document.getElementById(id); if (d instanceof HTMLDetailsElement) d.open = true; }}><span>{i + 1}</span>{title}</a>)}
-      </nav>
+      <FormProgress />
 
       <Section n={1} id="sec-membership" title="የአባልነት መረጃ">
         <div className="photo-field">
