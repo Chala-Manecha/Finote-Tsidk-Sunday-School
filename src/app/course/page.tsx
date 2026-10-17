@@ -62,25 +62,27 @@ export default async function CoursePage() {
               ))}
             </ol>
 
-            <h2 className="section">ክፍሎችና ኮርሶች <span className="small muted">— ክፍሉን ሲጫኑ ኮርሶቹ ይታያሉ</span></h2>
-            <div className="class-cards">
-              {byClass.map(([c, list]) => (
-                <details key={c} className="class-card">
-                  <summary>
-                    <span className="class-badge">{c === 'kids' ? '👶' : c}</span>
-                    <span><b>{classLabel(c)}</b><span className="small muted">{list.length} ኮርሶች</span></span>
-                  </summary>
-                  <ul>
-                    {list.map((r) => (
-                      <li key={r.course}>
-                        <b>📘 {r.course}</b>
-                        <span className="small">👤 {r.teachers ?? 'መምህር ገና አልተመደበም'}</span>
-                        <span className="small muted">🗓 {days(r.days)}{r.time_text ? ` · ${fmtTimeRange(r.time_text)}` : ''}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              ))}
+            <h2 className="section">ክፍሎችና ኮርሶች</h2>
+            <div className="table-wrap course-table">
+              <table>
+                <thead><tr><th>ክፍል</th><th>ኮርስ</th><th>መምህር</th><th>ቀን</th><th>ሰዓት</th></tr></thead>
+                <tbody>
+                  {byClass.flatMap(([c, list]) => list.map((r, i) => (
+                    <tr key={`${c}-${r.course}`} className={i === 0 ? 'class-first' : ''}>
+                      {i === 0 && (
+                        <td rowSpan={list.length} className="class-cell">
+                          <span className="class-badge">{c === 'kids' ? '👶' : c}</span>
+                          <span><b>{classLabel(c)}</b><span className="small muted">{list.length} ኮርሶች</span></span>
+                        </td>
+                      )}
+                      <td><b>📘 {r.course}</b></td>
+                      <td className="small">{r.teachers ?? <span className="muted">ገና አልተመደበም</span>}</td>
+                      <td className="small">{days(r.days)}</td>
+                      <td className="small">{r.time_text ? fmtTimeRange(r.time_text) : '—'}</td>
+                    </tr>
+                  )))}
+                </tbody>
+              </table>
             </div>
           </>
         )}

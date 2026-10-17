@@ -1873,3 +1873,16 @@ tr.today-row td { background: #FFF8E6; }
 .rep-tile.t-blue { border-left-color: #2563A8; }
 .rep-tile.t-gold { border-left-color: #C9A44C; }
 @media print { .rep-tile { break-inside: avoid; } }
+.report-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 8px; }
+.report-bar .toolbar.slim { margin: 0; }
+.report-bar select { padding: 5px 8px; font-size: .85rem; }
+.money-tabs.sm { margin: 0; padding: 3px; box-shadow: none; }
+.money-tabs.sm a { padding: 5px 12px; font-size: .82rem; }
+.money-tiles.slim { margin: 6px 0 10px; gap: 8px; }
+.money-tiles.slim > div { padding: 7px 12px; border-top-width: 3px; grid-template-columns: 1fr auto; align-items: baseline; }
+.money-tiles.slim b { font-size: 1.02rem; }
+.print-only { display: none; }
+@media print { .print-only { display: block; } }
+.course-table td.class-cell { vertical-align: top; background: #F8F5EC; min-width: 150px; }
+.course-table td.class-cell > span:last-child { display: grid; gap: 2px; margin-top: 4px; }
+.course-table tr.class-first td { border-top: 2px solid #E3D6B4; }

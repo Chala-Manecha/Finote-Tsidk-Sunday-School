@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { UsageView } from '../money-report/usage-view';
+import { PrintButton } from '@/components/print-button';
 
 /** ሒሳብና ንብረት and ኦዲት: how each department used money. */
 export default async function MoneyUsage({ params, searchParams }: {
@@ -10,7 +11,7 @@ export default async function MoneyUsage({ params, searchParams }: {
   const { d } = await searchParams;
   return (
     <>
-      <div className="page-bar"><h2 className="section" style={{ margin: 0 }}>የክፍላት ገንዘብ አጠቃቀም</h2></div>
+      <div className="page-bar no-print"><h2 className="section" style={{ margin: 0 }}>የክፍላት ገንዘብ አጠቃቀም</h2>{!d && <><span className="spacer" /><PrintButton /></>}</div>
       <UsageView dept={dept} d={d} />
     </>
   );

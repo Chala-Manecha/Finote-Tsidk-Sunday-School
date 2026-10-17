@@ -11,7 +11,7 @@ import { MultiSelect } from './multi-select';
 import { ageFromIso, isoToEc, todayIsoAddis } from '@/lib/ethiopian-calendar';
 import {
   DEPARTMENTS, EDUCATION_LEVELS, EMERGENCY_RELATIONS, GEEZ_LEVEL, LANGUAGES, MARITAL_STATUS, MEMBER_TYPE,
-  CLERGY_RANK, CLERGY_SERVICE, REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
+  CLERGY_RANK, CLERGY_SERVICE, CLERGY_TITLE, REGIONS, SEX, SUB_CITIES, TITLES, WORK_SECTORS, WORK_STATUS,
 } from '@/lib/constants';
 import { emptyEducation, emptyWork, type EducationEntry, type WorkEntry } from '@/lib/member-details';
 
@@ -153,6 +153,9 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
   const [hasPrior, setHasPrior] = useState(!!initial.prior_school);
   const [sex, setSex] = useState(initial.sex ?? '');
   const [hasClergy, setHasClergy] = useState(!!initial.clergy);
+  const [clergyRank, setClergyRank] = useState(initial.clergy?.rank ?? 'deacon');
+  // ክህነት ያላቸው፦ the title follows the rank (ዲያቆን / ቄስ)
+  const rankTitle = sex === 'male' && hasClergy ? CLERGY_TITLE[clergyRank] ?? null : null;
   const [isEthiopian, setIsEthiopian] = useState(initial.is_ethiopian ?? true);
   const [memberType, setMemberType] = useState(initial.member_type ?? 'regular');
   const [workStatus, setWorkStatus] = useState(initial.work_status ?? '');
@@ -322,10 +325,17 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
         <div className="form-grid">
           <div className="field">
             <label htmlFor="title">ማዕረግ</label>
-            <select id="title" name="title" defaultValue={initial.title ?? ''}>
-              <option value="">—</option>
-              {Object.entries(TITLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
+            {rankTitle ? (
+              <>
+                <input type="hidden" name="title" value={rankTitle} />
+                <output id="title" className="readonly" title="ከክህነት ማዕረጉ ይወሰዳል">{TITLES[rankTitle]} <span className="small muted">(ከክህነት)</span></output>
+              </>
+            ) : (
+              <select id="title" name="title" defaultValue={initial.title ?? ''}>
+                <option value="">—</option>
+                {Object.entries(TITLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            )}
           </div>
           <div className="field"><label htmlFor="first_name">ስም <span className="req">*</span></label><input id="first_name" name="first_name" required defaultValue={first} /></div>
           <div className="field"><label htmlFor="father_name">የአባት ስም <span className="req">*</span></label><input id="father_name" name="father_name" required defaultValue={father} /></div>
@@ -372,7 +382,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
               <div className="form-grid clergy-box">
                 <div className="field">
                   <label htmlFor="clergy_rank">የክህነት ማዕረግ <span className="req">*</span></label>
-                  <select id="clergy_rank" name="clergy_rank" required defaultValue={initial.clergy?.rank ?? 'deacon'}>
+                  <select id="clergy_rank" name="clergy_rank" required value={clergyRank} onChange={(e) => setClergyRank(e.target.value)}>
                     {Object.entries(CLERGY_RANK).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
@@ -552,7 +562,7 @@ export function MemberForm({ initial = {}, mode = 'staff', applicationId }: {
           <MultiSelect id="depts" name="depts" options={DEPT_OPTIONS} defaultValue={initial.depts ?? []} max={2} placeholder="ክፍል ይምረጡ" />
         </div>
         <fieldset className="program-pick">
-          <legend>መሳተፍ የሚፈልጉባቸው <span className="small muted">(ያልተመረጡት “አልመረጡም” ተብለው ይመዘገባሉ፤ ስብሰባ ለሁሉም አባላት ነው)</span></legend>
+          <legend>መሳተፍ የሚፈልጉባቸው</legend>
           {initial.programs === null
             ? <label className="check small"><input type="checkbox" name="programs_asked" value="1" /> ምርጫው ገና አልተመዘገበም — አሁን መዝግብ (ይህ ካልተመረጠ አይቀየርም)</label>
             : <input type="hidden" name="programs_asked" value="1" />}

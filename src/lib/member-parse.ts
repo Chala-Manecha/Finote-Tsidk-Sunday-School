@@ -1,5 +1,5 @@
 import 'server-only';
-import { isDeptCode, isProgram, SEX, WORK_STATUS, TITLES, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_TYPE, CLERGY_RANK, CLERGY_SERVICE } from '@/lib/constants';
+import { isDeptCode, isProgram, SEX, WORK_STATUS, TITLES, GEEZ_LEVEL, MARITAL_STATUS, MEMBER_TYPE, CLERGY_RANK, CLERGY_SERVICE, CLERGY_TITLE } from '@/lib/constants';
 import { cleanEducation, cleanWork } from '@/lib/member-details';
 
 export const DUPLICATE_NAME_MSG = 'በቅድሚያ ተመዝግበዋል። እባክዎ ስምዎትን በትክክል መሙላትዎን ያረጋግጡ!';
@@ -88,7 +88,8 @@ export function parseMemberForm(fd: FormData, isNew: boolean): ParsedMember | { 
   const member = {
     full_name: fullName,
     sex,
-    title: oneOf(str(fd, 'title'), TITLES),
+    // ክህነት ያላቸው፦ the title follows the rank (ዲያቆን / ቄስ)
+    title: (clergy && CLERGY_TITLE[clergy.rank]) || oneOf(str(fd, 'title'), TITLES),
     work_status: workStatus,
     dob,
     phone,

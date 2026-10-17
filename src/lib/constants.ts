@@ -28,6 +28,8 @@ export const WORK_STATUS = { student: 'ተማሪ', worker: 'ሠራተኛ' } as c
 export const MEMBER_STATUS = { new: 'አዲስ', existing: 'ነባር', lost: 'የጠፉ' } as const;
 /** ክህነት — asked at registration for male members who have it */
 export const CLERGY_RANK = { deacon: 'ዲያቆን', priest: 'ቄስ / ካህን', other: 'ሌላ' } as const;
+/** the name title (ማዕረግ) that goes with a ክህነት rank */
+export const CLERGY_TITLE: Record<string, 'diakon' | 'qesis'> = { deacon: 'diakon', priest: 'qesis' };
 export const CLERGY_SERVICE = { serving: 'በአገልግሎት ላይ', not_serving: 'አያገለግሉም', away: 'ርቀው ያሉ' } as const;
 export const GEEZ_LEVEL = { none: 'ምንም', understand: 'መረዳት ደረጃ', correct: 'ማረም ደረጃ' } as const;
 

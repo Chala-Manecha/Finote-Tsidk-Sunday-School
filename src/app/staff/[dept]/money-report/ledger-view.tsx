@@ -58,23 +58,19 @@ export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string;
   });
 
   const base = `/staff/${dept}/money-report`;
-  const keep = `${filterDept ? `&d=${filterDept}` : ''}${kind === 'all' ? '' : `&k=${kind}`}`;
   return (
     <div className="statement">
-      <div className="money-tabs no-print">
-        {([['all', 'ሁሉም'], ['in', 'ገቢ'], ['out', 'ወጪ'], ['bal', 'ቀሪ ሂሳብ']] as const).map(([k, l]) => (
-          <Link key={k} scroll={false} href={`${base}?p=${period}${filterDept ? `&d=${filterDept}` : ''}${k === 'all' ? '' : `&k=${k}`}`} className={kind === k ? 'on' : ''}>{l}</Link>
-        ))}
-      </div>
-      <div className="ctl-row no-print">
-        <div className="subtabs">
-          {(Object.keys(PERIODS) as Period[]).map((k) => (
-            <Link scroll={false} key={k} href={`${base}?p=${k}${keep}`} className={`btn sm ${k === period ? 'green' : 'secondary'}`}>{PERIODS[k].label}</Link>
+      <div className="report-bar no-print">
+        <div className="money-tabs sm">
+          {([['all', 'ሁሉም'], ['in', 'ገቢ'], ['out', 'ወጪ'], ['bal', 'ቀሪ ሂሳብ']] as const).map(([k, l]) => (
+            <Link key={k} scroll={false} href={`${base}?p=${period}${filterDept ? `&d=${filterDept}` : ''}${k === 'all' ? '' : `&k=${k}`}`} className={kind === k ? 'on' : ''}>{l}</Link>
           ))}
         </div>
         <form className="toolbar slim" action={base}>
-          <input type="hidden" name="p" value={period} />
           {kind !== 'all' && <input type="hidden" name="k" value={kind} />}
+          <select name="p" defaultValue={period} aria-label="ጊዜ">
+            {(Object.keys(PERIODS) as Period[]).map((k) => <option key={k} value={k}>{PERIODS[k].label}</option>)}
+          </select>
           <select name="d" defaultValue={filterDept ?? ''} aria-label="ክፍል">
             <option value="">ሁሉም ክፍሎች</option>
             {DEPARTMENTS.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
@@ -82,11 +78,12 @@ export async function LedgerView({ dept, sp }: { dept: string; sp: { p?: string;
           </select>
           <AutoSubmit />
         </form>
+        <span className="small muted">{range.label}</span>
       </div>
 
-      <StatementHeader title="የገንዘብ እንቅስቃሴ መግለጫ" subtitle={`${range.label}${filterDept ? ` · ${DEPT_NAME[filterDept] ?? GENERAL_DONATIONS}` : ''}`} />
+      <div className="print-only"><StatementHeader title="የገንዘብ እንቅስቃሴ መግለጫ" subtitle={`${range.label}${filterDept ? ` · ${DEPT_NAME[filterDept] ?? GENERAL_DONATIONS}` : ''}`} /></div>
 
-      <div className="money-tiles">
+      <div className="money-tiles slim">
         <div className="mt-open"><span>መነሻ ቀሪ ሂሳብ</span><b>{formatBirr(openingForPeriod)}</b></div>
         <div className="mt-in"><span>＋ ገቢ (ገቢ + ተመላሽ)</span><b>{formatBirr(totalIn)}</b></div>
         <div className="mt-out"><span>− ወጪ</span><b>{formatBirr(totalOut)}</b></div>
