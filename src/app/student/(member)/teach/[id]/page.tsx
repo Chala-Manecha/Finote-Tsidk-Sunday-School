@@ -85,7 +85,7 @@ export default async function TeachPage({ params, searchParams }: { params: Prom
         </div>
       </div>
 
-      <div className="exam-layout">
+      <div className="exam-layout teach-layout">
         <div className="exam-main">
           {view === 'marks' ? (
             <section className="card">

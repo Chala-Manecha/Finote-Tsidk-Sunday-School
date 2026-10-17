@@ -1928,3 +1928,12 @@ input, select, textarea { max-width: 100%; }
   .topbar:not(.site-header) > .brand { flex: 1 1 0; min-width: 0; }
   .topbar:not(.site-header) > .spacer { display: none; }
 }
+.exam-main, .exam-side, .dash-main, .dash-side { min-width: 0; }
+@media (max-width: 1000px) { .exam-layout, .dash-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1000px) { .teach-layout .exam-side { order: 1; } }
+@media (max-width: 700px) {
+  .marks-grid th:first-child, .marks-grid td:first-child { position: sticky; left: 0; z-index: 1; background: #fff; min-width: 128px; box-shadow: 1px 0 0 var(--line); }
+  .marks-grid thead th:first-child { background: #F6F9FC; }
+  .marks-grid input { width: 58px !important; min-width: 0; padding: 6px 6px; }
+  .marks-grid td, .marks-grid th { padding: 6px 6px; }
+}
